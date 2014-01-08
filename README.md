@@ -31,13 +31,19 @@ TODO
 Installation instructions
 -------------------------
 
-See the `src/examples` package for use cases and examples.
-
 ```bash
 cd GooglifyCmake
 mkdir build && cd build
 cmake ..
 make
+```
+
+See the `src/examples` package for use cases and examples. To run a few examples you can execute the following commands (starting from the `build` directory):
+
+```bash
+cd src/examples/a_package
+./cc_exe
+./java_exe
 ```
 
 Rules
