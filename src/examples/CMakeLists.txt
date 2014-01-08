@@ -1,0 +1,2 @@
+add_subdirectory(a_package)
+add_subdirectory(other_package)
