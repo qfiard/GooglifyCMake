@@ -3,39 +3,6 @@ GooglifyCMake
 
 A project that allows using CMake like Blaze (Google's build system) for C++, Java, Python and R.
 
-Installation instructions
--------------------------
-
-TODO
-
-Rules
------
-
-### Defining targets
-
-cc_binary
-cc_library
-cc_test
-j2e_binary
-java_binary
-java_library
-py_binary
-py_library
-r_binary
-
-### Linking targets
-
-link_local
-link
-
-### Generating sub-products
-
-bison_generate_parser
-flex_generate_scanner
-protobuf_generate_cc
-protobuf_generate_java
-protobuf_generate_py
-
 Motivation
 ----------
 
@@ -47,7 +14,7 @@ Blaze is designed to work in Google's highly hierarchical codebase, where each m
     cc_binary(name = ‘google_search_page’,
               deps = [ ‘:search’,
                        ‘:show_results’])
-    
+
     cc_library(name = ‘search’,
                srcs = [ ‘search.h’,‘search.cc’],
                deps = [‘//index:query’])
@@ -60,5 +27,68 @@ Specifications
 --------------
 
 TODO
+
+Installation instructions
+-------------------------
+
+See the `src/examples` package for use cases and examples.
+
+```bash
+cd GooglifyCmake
+mkdir build && cd build
+cmake ..
+make
+```
+
+Rules
+-----
+
+### Defining targets
+
+`cc_binary`
+
+`cc_library`
+
+`cc_test`
+
+`j2e_binary`
+
+`java_binary`
+
+`java_library`
+
+`py_binary`
+
+`py_library`
+
+`r_binary`
+
+### Linking targets
+
+`link`
+
+`link_local`
+
+### Including required data
+
+`add_data`
+
+`add_local_data`
+
+`add_file` ---j2e_binary only---
+
+`add_local_file` ---j2e_binary only---
+
+### Generating sub-products
+
+`bison_generate_parser`
+
+`flex_generate_scanner`
+
+`protobuf_generate_cc`
+
+`protobuf_generate_java`
+
+`protobuf_generate_py`
 
 
