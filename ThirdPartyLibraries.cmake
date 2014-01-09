@@ -1143,7 +1143,7 @@ add_custom_command(
   COMMAND date > ${MAVEN_LAST_DOWNLOAD}
   MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/third_party/pom.xml)
 set(GENERATE_CLASSPATH_FOR_MAVEN_LIBS
-    ${PROJECT_SOURCE_DIR}/cmake/generate_classpath_for_maven_libs.py)
+    ${PROJECT_SOURCE_DIR}/support/generate_classpath_for_maven_libs.py)
 add_custom_command(
   OUTPUT ${MAVEN_CLASSPATH_UPDATE}
   COMMAND ${GENERATE_CLASSPATH_FOR_MAVEN_LIBS} "${MVN}"
