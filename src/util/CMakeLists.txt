@@ -35,6 +35,7 @@ link(logging_test third_party.gtest)
 cc_library(ptr_set ptr_set.h)
 
 cc_library(socket socket.h socket.cc)
+link_local(socket logging)
 link(socket base.base)
 link(socket third_party.boost_asio)
 link(socket third_party.gflags)

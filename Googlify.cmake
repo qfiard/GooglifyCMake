@@ -245,7 +245,6 @@ function(java_binary TARGET SRC)
 endfunction(java_binary)
 
 function(link TARGET LIB)
-  message(STATUS "Linking >${LIB}<")
   # One level of indirection is needed for MATCHES.
   set(LIB_NAME ${LIB})
   if (LIB_NAME MATCHES "^third_party\\.")
@@ -303,7 +302,6 @@ function(link_third_party_with_full_targets_python TARGET LIB)
 endfunction(link_third_party_with_full_targets_python)
 
 function(link_third_party_with_full_targets TARGET LIB)
-  message(STATUS ${LIB} -> ${${LIB}})
   get_target_property(IS_JAVA "${TARGET}" IS_JAVA)
   if (${IS_JAVA} STREQUAL TRUE)
     link_third_party_with_full_targets_java(${TARGET} ${LIB})

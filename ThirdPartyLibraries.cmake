@@ -33,8 +33,12 @@ function(add_target OUT NAME)
   set(${OUT}_TARGET third_party.${NAME}_target PARENT_SCOPE)
 endfunction()
 
+macro(set_header_only NAME)
+  set(third_party.${NAME} ";")
+endmacro()
+
 macro(set_library NAME)
-  set(third_party.${NAME} ${ARGN})
+  set(third_party.${NAME} "" ${ARGN})
 endmacro()
 
 macro(append_library NAME)
@@ -247,29 +251,43 @@ set(BISON_EXECUTABLE ${BISON_PREFIX}/bin/bison)
 
 ################################################################################
 # Boost.
-set(BOOST_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth-1024")
-set(BUILD_COMMAND
-    b2 release toolset=clang-darwin cxxflags=${BOOST_CXX_FLAGS}
-        linkflags=${CMAKE_SHARED_LINKER_FLAGS}
-        define=BOOST_NO_CXX11_NUMERIC_LIMITS
-        define=BOOST_SYSTEM_NO_DEPRECATED install)
-add_external_project(
-  ${BOOST_TARGET}
-  PREFIX ${BOOST_PREFIX}
-  DOWNLOAD_DIR ${BOOST_PREFIX}/download
-  DOWNLOAD_COMMAND
-      wget -O boost_1_54_0.tar.bz2 http://downloads.sourceforge.net/project/boost/boost/1.54.0/boost_1_54_0.tar.bz2?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fboost%2Ffiles%2Fboost%2F1.54.0%2F&ts=1383838140&use_mirror=optimate &&
-      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/boost_1_54_0.tar.bz2.sig
-          boost_1_54_0.tar.bz2 &&
-      cd <SOURCE_DIR> &&
-      tar --strip-components 1 -xvf
-          ${BOOST_PREFIX}/download/boost_1_54_0.tar.bz2
-  CONFIGURE_COMMAND
-      ./bootstrap.sh --prefix=${BOOST_PREFIX}
-  BUILD_COMMAND ${BUILD_COMMAND}
-  PATCH_COMMAND
-      patch -Np0 < ${THIRD_PARTY_SOURCE_DIR}/boost.patch
-  BUILD_IN_SOURCE 1)
+set(BOOST_ROOT "" CACHE STRING "Boost install directory")
+set(BOOST_TIME_ZONE_CSV "" CACHE STRING "Boost time zone csv datafile")
+if ("${BOOST_ROOT}" STREQUAL "")
+  set(BOOST_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth-1024")
+  set(BUILD_COMMAND
+      b2 release toolset=clang-darwin cxxflags=${BOOST_CXX_FLAGS}
+          linkflags=${CMAKE_SHARED_LINKER_FLAGS}
+          define=BOOST_NO_CXX11_NUMERIC_LIMITS
+          define=BOOST_SYSTEM_NO_DEPRECATED install)
+  add_external_project(
+    ${BOOST_TARGET}
+    PREFIX ${BOOST_PREFIX}
+    DOWNLOAD_DIR ${BOOST_PREFIX}/download
+    DOWNLOAD_COMMAND
+        wget -O boost_1_54_0.tar.bz2 http://downloads.sourceforge.net/project/boost/boost/1.54.0/boost_1_54_0.tar.bz2?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fboost%2Ffiles%2Fboost%2F1.54.0%2F&ts=1383838140&use_mirror=optimate &&
+        gpg --verify ${THIRD_PARTY_SOURCE_DIR}/boost_1_54_0.tar.bz2.sig
+            boost_1_54_0.tar.bz2 &&
+        cd <SOURCE_DIR> &&
+        tar --strip-components 1 -xvf
+            ${BOOST_PREFIX}/download/boost_1_54_0.tar.bz2
+    CONFIGURE_COMMAND
+        ./bootstrap.sh --prefix=${BOOST_PREFIX}
+    BUILD_COMMAND ${BUILD_COMMAND}
+    PATCH_COMMAND
+        patch -Np0 < ${THIRD_PARTY_SOURCE_DIR}/boost.patch
+    BUILD_IN_SOURCE 1)
+  set(BOOST_TIME_ZONE_CSV
+      "${BOOST_PREFIX}/src/${BOOST_TARGET}/libs/date_time/data/date_time_zonespec.csv")
+else ()
+  if (NOT EXISTS ${BOOST_TIME_ZONE_CSV})
+    message(FATAL_ERROR
+            "You must specify an existing path to BOOST_TIME_ZONE_CSV when "
+            " using external Boost libraries.")
+  endif ()
+  set(BOOST_PREFIX ${BOOST_ROOT})
+  add_custom_target(${BOOST_TARGET})
+endif ()
 add_include_directory(${BOOST_PREFIX}/include)
 add_link_directory(${BOOST_PREFIX}/lib)
 set_library(boost_atomic boost_atomic)
@@ -281,7 +299,7 @@ set_library(boost_exception boost_exception)
 set_library(boost_filesystem boost_filesystem)
 set_library(boost_graph boost_graph)
 set_library(boost_graph_parallel boost_graph_parallel)
-set_library(boost_headers "")
+set_header_only(boost_headers)
 set_library(boost_iostreams boost_iostreams)
 set_library(boost_locale boost_locale)
 set_library(boost_log boost_log)
@@ -298,8 +316,6 @@ set_library(boost_test boost_test)
 set_library(boost_thread boost_thread)
 set_library(boost_timer boost_timer)
 set_library(boost_wave boost_wave)
-set(BOOST_TIME_ZONE_CSV
-    "${BOOST_PREFIX}/src/${BOOST_TARGET}/libs/date_time/data/date_time_zonespec.csv")
 
 # Dependencies.
 append_library(boost_filesystem boost_system)
@@ -485,7 +501,7 @@ add_dependencies(${EIGEN_TARGET} ${MPFR_TARGET})
 ################################################################################
 # Flex.
 add_external_project(
-  flex
+  ${FLEX_TARGET}
   PREFIX ${FLEX_PREFIX}
   DOWNLOAD_DIR ${FLEX_PREFIX}/download
   DOWNLOAD_COMMAND
@@ -1917,7 +1933,7 @@ function(bison_generate_parser YAC SRC_ HDR_)
       COMMAND  ${BISON_EXECUTABLE}
       ARGS -v -d -o ${SRC} ${ABS_YAC}
       DEPENDS ${BISON_TARGET} ${ABS_YAC}
-      COMMENT "Running Bison on ${LEX}"
+      COMMENT "Running Bison on ${YAC}"
       VERBATIM)
   add_custom_command(
       OUTPUT ${HDR}
