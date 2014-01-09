@@ -23,10 +23,74 @@ None of the build systems that I have tested prior to starting this project (Mak
 
 These frustrations were a main motivation to develop a new tool whose syntax would be as close as possible to that of Google's BUILD file and that would allow the rapid development of highly modular code (to promote code reuse) with an optional easy link to popular third party libraries ([Boost](http://boost.org), [OpenCV](http://opencv.org), [Google's Protocol Buffers](https://code.google.com/p/protobuf/) [GMP](http://gmplib.org), [JsonCpp](http://jsoncpp.sourceforge.net), [RapidXML](http://rapidxml.sourceforge.net)... --- as of now more than 30 external libraries are integrated in the build system).
 
-Specifications
---------------
+Specification and syntax
+------------------------
 
-TODO
+This tool is built on top of CMake, which was chosen for its non-verbose syntax, its portability and ease of include of external libraries (through the ExternalProject module).
+
+Before going any further let's consider a real-life example of a CMakeLists.txt file using this project:
+
+```CMake
+add_subdirectory(dev)
+add_subdirectory(proto)
+
+cc_library(abi abi.h)
+
+cc_test(abi_test abi_test.cc)
+link(abi_test third_party.gtest)
+
+cc_library(algorithm algorithm.h)
+
+cc_library(csv csv.h csv.cc)
+link_local(csv logging)
+link(csv third_party.gflags)
+
+cc_library(date_time date_time.h date_time.cc)
+link_local(date_time csv)
+link_local(date_time logging)
+link(date_time third_party.boost_date_time)
+add_data(date_time ${BOOST_TIME_ZONE_CSV})
+
+cc_test(date_time_test date_time_test.cc)
+link_local(date_time_test date_time)
+link_local(date_time_test logging)
+link(date_time_test third_party.gtest)
+
+cc_library(iterators iterators.h)
+
+cc_library(logging logging.h logging.cc)
+link(logging third_party.g2log)
+
+cc_test(logging_test logging_test.cc)
+link_local(logging_test logging)
+link(logging_test third_party.boost_filesystem)
+link(logging_test third_party.gtest)
+
+cc_library(ptr_set ptr_set.h)
+
+cc_library(socket socket.h socket.cc)
+link(socket base.base)
+link(socket third_party.boost_asio)
+link(socket third_party.gflags)
+
+java_library(socket_java Socket.java)
+
+cc_library(streams streams.h streams.cc)
+
+cc_library(strings strings.h strings.cc)
+link_local(strings logging)
+
+cc_test(strings_test strings_test.cc)
+link_local(strings_test strings)
+link(strings_test third_party.gtest)
+
+cc_library(system system.h system.cc)
+link_local(system logging)
+
+cc_test(system_test system_test.cc)
+link_local(system_test system)
+link(system_test third_party.gtest)
+```
 
 Installation instructions
 -------------------------
