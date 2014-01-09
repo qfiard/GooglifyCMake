@@ -1,0 +1,39 @@
+--- boost/date_time/local_time/custom_time_zone.hpp	2013-12-18 11:12:27.000000000 +0100
++++ boost/date_time/local_time/custom_time_zone.hpp	2013-12-18 11:11:42.000000000 +0100
+@@ -64,7 +64,7 @@ namespace local_time {
+     //! True if zone uses daylight savings adjustments
+     virtual bool has_dst() const
+     {
+-      return (dst_calc_rules_); //if calc_rule is set the tz has dst
++      return (bool) dst_calc_rules_; //if calc_rule is set the tz has dst
+     }
+     //! Local time that DST starts -- NADT if has_dst is false
+     virtual posix_time::ptime dst_local_start_time(gregorian::greg_year y) const
+--- tools/build/v2/tools/clang-darwin.jam	2013-10-15 22:31:49.000000000 +0100
++++ tools/build/v2/tools/clang-darwin.jam	2013-10-10 12:35:04.000000000 +0100
+@@ -164,7 +164,24 @@
+     "$(CONFIG_COMMAND)" $(USER_OPTIONS) -L"$(LINKPATH)" -o "$(<)" "$(>)" "$(LIBRARIES)" -l$(FINDLIBS-SA) -l$(FINDLIBS-ST) $(OPTIONS)
+ }
+
++import regex ;
++import path ;
++
++rule make-absolute ( path ) {
++  return [ path.root $(path) [ path.pwd ] ] ;
++}
++
++rule remove-grist ( target ) {
++  local res = [ regex.replace $(target) "<p" "" ] ;
++  return [ regex.replace $(res) ">" "/" ] ;
++}
++
++rule link.dll ( targets * : sources * : properties * )
++{
++    ABSOLUTE_PATH on $(targets) = [ make-absolute [ remove-grist $(targets[1]) ] ] ;
++}
++
+ actions link.dll bind LIBRARIES
+ {
+-    "$(CONFIG_COMMAND)" $(USER_OPTIONS) -L"$(LINKPATH)" -o "$(<)" -single_module -dynamiclib -install_name "$(<[1]:D=)" "$(>)"  "$(LIBRARIES)" -l$(FINDLIBS-SA) -l$(FINDLIBS-ST) $(OPTIONS)
++    "$(CONFIG_COMMAND)" $(USER_OPTIONS) -L"$(LINKPATH)" -o "$(<)" -single_module -dynamiclib -install_name "$(ABSOLUTE_PATH)" "$(>)"  "$(LIBRARIES)" -l$(FINDLIBS-SA) -l$(FINDLIBS-ST) $(OPTIONS)
+ }

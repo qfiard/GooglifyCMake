@@ -1,0 +1,33 @@
+--- sasldb/db_berkeley.c	2013-12-01 11:55:01.000000000 +0000
++++ sasldb/db_berkeley.c	2013-12-01 11:55:44.000000000 +0000
+@@ -101,7 +101,7 @@ static int berkeleydb_open(const sasl_ut
+     ret = db_create(mbdb, NULL, 0);
+     if (ret == 0 && *mbdb != NULL)
+     {
+-#if DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1
++#if (DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >=1))
+ 	ret = (*mbdb)->open(*mbdb, NULL, path, NULL, DB_HASH, flags, 0660);
+ #else
+ 	ret = (*mbdb)->open(*mbdb, path, NULL, DB_HASH, flags, 0660);
+--- config/ltconfig 2013-12-01 12:28:09.000000000 +0000
++++ config/ltconfig 2013-12-01 12:28:14.000000000 +0000
+@@ -1374,7 +1374,7 @@ else
+ 
+   darwin[15]* | rhapsody*)
+     allow_undefined_flag='-undefined error'
+-    archive_cmds='$CC $(test x$module = xyes && echo -bundle || echo -dynamiclib) $allow_undefined_flag -o $lib $libobjs $deplibs $linkopts -install_name $rpath/$soname $(test -n "$verstring" -a x$verstring != x0.0 && echo $verstring)'
++    archive_cmds='$CC -dynamiclib $allow_undefined_flag -o $lib $libobjs $deplibs $linkopts -install_name $rpath/$soname $(test -n "$verstring" -a x$verstring != x0.0 && echo $verstring)'
+     # We need to add '_' to the symbols in $export_symbols first
+     #archive_expsym_cmds="$archive_cmds"' && strip -s $export_symbols $lib'
+     hardcode_direct=yes
+--- utils/dbconverter-2.c 2013-12-01 12:35:42.000000000 +0000
++++ utils/dbconverter-2.c 2013-12-01 12:36:13.000000000 +0000
+@@ -214,7 +214,7 @@ static int berkeleydb_open(const char *p
+     ret = db_create(mbdb, NULL, 0);
+     if (ret == 0 && *mbdb != NULL)
+     {
+-#if DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1
++#if (DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1))
+	ret = (*mbdb)->open(*mbdb, NULL, path, NULL, DB_HASH, DB_CREATE, 0664);
+ #else
+	ret = (*mbdb)->open(*mbdb, path, NULL, DB_HASH, DB_CREATE, 0664);

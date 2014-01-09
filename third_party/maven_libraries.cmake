@@ -1,0 +1,15 @@
+# Include guard.
+if (DEFINED THIRD_PARTY_MAVEN_LIBRARIES_CMAKE_)
+  return()
+endif ()
+set(THIRD_PARTY_MAVEN_LIBRARIES_CMAKE_ TRUE)
+
+maven_library(commons-logging commons-logging 1.1.3)
+maven_library(javax.activation activation 1.1-rev-1)
+maven_library(junit junit 4.8.1)
+maven_library(protobuf_java_runtime protobuf-java 2.5.0)
+maven_library(servlet-api servlet-api 2.5)
+maven_library(spring-beans spring-beans 3.2.5.RELEASE)
+maven_library(spring-context spring-context 3.2.5.RELEASE)
+maven_library(spring-web spring-web 3.2.5.RELEASE)
+maven_library(spring-webmvc spring-webmvc 3.2.5.RELEASE)

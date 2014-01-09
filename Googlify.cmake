@@ -1,10 +1,24 @@
 #! @file
 
 # Include guard.
-if (DEFINED BLAZIFY_CMAKE_)
+if (DEFINED GOOGLIFY_CMAKE_)
   return()
 endif ()
-set(BLAZIFY_CMAKE_ TRUE)
+set(GOOGLIFY_CMAKE_ TRUE)
+
+include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_BINARY_DIR}/src)
+
+function(add_data TARGET DATA)
+  get_current_prefix(PREFIX)
+  add_custom_command(
+    TARGET "${PREFIX}${TARGET}" POST_BUILD
+    COMMAND ln -sf ${DATA} ${CMAKE_CURRENT_BINARY_DIR})
+endfunction(add_data)
+
+function(add_local_data TARGET DATA)
+  add_data(${TARGET} "${CMAKE_CURRENT_SOURCE_DIR}/${DATA}")
+endfunction(add_local_data)
 
 #! @brief Creates a new target for a C++ executable in the current package.
 #! @param TARGET Name of the target (relative to the current package).
@@ -43,6 +57,11 @@ function(cc_library TARGET)
   endif ()
   set_target_properties(${FULL_TARGET} PROPERTIES OUTPUT_NAME ${TARGET})
 endfunction(cc_library)
+
+function(cc_test TARGET)
+  cc_binary(${TARGET} ${ARGN})
+  add_test(NAME ${TARGET} COMMAND ${TARGET})
+endfunction(cc_test)
 
 #! @brief Returns the prefix of the current package.
 #! @param RESULT Name of the parent scope variable where the prefix should be
@@ -226,11 +245,12 @@ function(java_binary TARGET SRC)
 endfunction(java_binary)
 
 function(link TARGET LIB)
-  if ("${LIB}" MATCHES "^third_party\\.")
-    string(REPLACE "third_party." "" THIRD_PARTY_LIB ${LIB})
-    string(TOUPPER ${THIRD_PARTY_LIB} ULIB)
-    if (DEFINED "${ULIB}_TARGET" OR DEFINED "${ULIB}")
-      link_third_party(${TARGET} ${THIRD_PARTY_LIB})
+  message(STATUS "Linking >${LIB}<")
+  # One level of indirection is needed for MATCHES.
+  set(LIB_NAME ${LIB})
+  if (LIB_NAME MATCHES "^third_party\\.")
+    if (DEFINED "${LIB_NAME}")
+      link_third_party(${TARGET} ${LIB})
     else ()
       link_with_cmake_target(${TARGET} ${LIB})
     endif ()
@@ -243,6 +263,72 @@ function(link_local TARGET LIB)
   get_current_prefix(PREFIX)
   link(${TARGET} ${PREFIX}${LIB})
 endfunction()
+
+# Note: LIBS are in ARGN.
+function(link_third_party TARGET LIB)
+  get_full_target(${TARGET} FULL_TARGET)
+  link_third_party_with_full_targets("${FULL_TARGET}" ${LIB})
+endfunction(link_third_party)
+
+function(link_third_party_with_full_targets_java TARGET LIB)
+  string(TOUPPER ${LIB} ULIB)
+  if (NOT DEFINED "${ULIB}")
+    message(FATAL_ERROR "No such third-party library: ${LIB}")
+  endif ()
+  get_classpath_target_for_target(${TARGET} CLASSPATH_TARGET)
+  add_custom_command(
+    TARGET ${CLASSPATH_TARGET} POST_BUILD
+    COMMAND echo "${${ULIB}}" >> $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>
+    COMMAND cat "${${ULIB}}.classpath_" >>
+        $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>
+    # Remove duplicate lines.
+    COMMAND cat $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE> | sort | uniq | tee
+        $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE> > /dev/null
+    VERBATIM)
+  add_dependencies(${CLASSPATH_TARGET} ${MAVEN_LIBS_TARGET})
+endfunction(link_third_party_with_full_targets_java)
+
+function(link_third_party_with_full_targets_python TARGET LIB)
+  if (NOT DEFINED "${ULIB}_TARGET" AND NOT DEFINED "${ULIB}")
+    message(FATAL_ERROR "No such library: ${LIB}")
+  endif ()
+  if ("${LIB}" MATCHES "boost_.*")
+    set(LIB_TARGET ${BOOST_TARGET})
+  elseif ("${LIB}" MATCHES "opencv_.*")
+    set(LIB_TARGET ${OPENCV_TARGET})
+  else ()
+    set(LIB_TARGET ${${ULIB}_TARGET})
+  endif ()
+  add_dependencies(${TARGET} ${LIB_TARGET})
+endfunction(link_third_party_with_full_targets_python)
+
+function(link_third_party_with_full_targets TARGET LIB)
+  message(STATUS ${LIB} -> ${${LIB}})
+  get_target_property(IS_JAVA "${TARGET}" IS_JAVA)
+  if (${IS_JAVA} STREQUAL TRUE)
+    link_third_party_with_full_targets_java(${TARGET} ${LIB})
+    return()
+  endif ()
+  get_target_property(IS_PYTHON "${TARGET}" IS_PYTHON)
+  if (${IS_PYTHON} STREQUAL TRUE)
+    link_third_party_with_full_targets_python(${TARGET} ${LIB})
+    return()
+  endif ()
+  if (NOT DEFINED "${LIB}")
+    message(FATAL_ERROR "No such library: ${LIB}")
+  endif ()
+  # One level of indirection is needed for MATCHES.
+  set(LIB_NAME ${LIB})
+  if (LIB_NAME MATCHES "third_party\\.boost_.*")
+    set(LIB_TARGET ${BOOST_TARGET})
+  elseif (LIB_NAME MATCHES "third_party\\.opencv_.*")
+    set(LIB_TARGET ${OPENCV_TARGET})
+  else ()
+    set(LIB_TARGET ${LIB}_target)
+  endif ()
+  add_dependencies(${TARGET} ${LIB_TARGET})
+  target_link_libraries(${TARGET} ${${LIB}})
+endfunction(link_third_party_with_full_targets)
 
 function(link_with_cmake_target TARGET LIB)
   get_full_target(${TARGET} FULL_TARGET)

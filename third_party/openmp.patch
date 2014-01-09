@@ -1,0 +1,36 @@
+--- src/makefile.mk	2013-11-15 16:30:08.000000000 +0000
++++ src/makefile.mk	2013-11-15 16:21:39.000000000 +0000
+@@ -400,7 +400,7 @@ ifeq "$(os)" "lrb"
+ endif
+ 
+ ifeq "$(os)" "mac"
+-    ld-flags += -no-intel-extensions
++    # ld-flags += -no-intel-extensions
+     ld-flags += -single_module
+     ld-flags += -current_version $(VERSION).0 -compatibility_version $(VERSION).0
+ endif
+@@ -1372,7 +1372,7 @@ ifneq "$(filter %-dyna win-%,$(os)-$(LIN
+         endif
+     endif
+     ifeq "$(os)" "mac"
+-#        td_exp += /usr/lib/libgcc_s.1.dylib
++        td_exp += ${LIB_GCC}
+         td_exp += /usr/lib/libSystem.B.dylib
+     endif
+     ifeq "$(os)" "win"
+--- tools/check-tools.pl	2013-11-15 16:21:46.000000000 +0000
++++ tools/check-tools.pl	2013-11-15 16:21:39.000000000 +0000
+@@ -257,8 +257,11 @@ sub get_gnu_compiler_version($) {
+             # i686-apple-darwin8-gcc-4.0.1 (GCC) 4.0.1 (Apple Computer, Inc. build 5367)
+             # i686-apple-darwin9-gcc-4.0.1 (GCC) 4.0.1 (Apple Inc. build 5484)
+             # i686-apple-darwin11-llvm-gcc-4.2 (GCC) 4.2.1 (Based on Apple Inc. build 5658) (LLVM build 2336.9.00)
+-            $stdout =~ m{^.*? \(GCC\) (\d+\.\d+\.\d+) \(.*Apple.*?Inc\. build (\d+)\)}m;
+-            ( $ver, $bld ) = ( $1, $2 );
++            if ($stdout =~ m{^.*? \(GCC\) (\d+\.\d+\.\d+) \(.*Apple.*?Inc\. build (\d+)\)}m) {
++                ( $ver, $bld ) = ( $1, $2 );
++            } elsif ($stdout =~ m{^.*? \(GCC\) (\d+\.\d+\.\d+)}m) {
++                $ver = $1;
++            }
+         } else {
+             if ( 0 ) {
+             } elsif ( $stdout =~ m{^.*? \(GCC\) (\d+\.\d+\.\d+)(?: (\d+))?}m ) {

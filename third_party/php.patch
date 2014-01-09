@@ -1,0 +1,11 @@
+--- Makefile.global	2013-12-01 02:54:40.000000000 +0000
++++ Makefile.global	2013-12-01 02:55:14.000000000 +0000
+@@ -20,7 +20,7 @@ libphp$(PHP_MAJOR_VERSION).la: $(PHP_GLO
+ 	-@$(LIBTOOL) --silent --mode=install cp $@ $(phptempdir)/$@ >/dev/null 2>&1
+ 
+ libs/libphp$(PHP_MAJOR_VERSION).bundle: $(PHP_GLOBAL_OBJS) $(PHP_SAPI_OBJS)
+-	$(CC) $(MH_BUNDLE_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS) $(LDFLAGS) $(EXTRA_LDFLAGS) $(PHP_GLOBAL_OBJS:.lo=.o) $(PHP_SAPI_OBJS:.lo=.o) $(PHP_FRAMEWORKS) $(EXTRA_LIBS) $(ZEND_EXTRA_LIBS) -o $@ && cp $@ libs/libphp$(PHP_MAJOR_VERSION).so
++	$(CC) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS) $(LDFLAGS) $(EXTRA_LDFLAGS) $(PHP_GLOBAL_OBJS:.lo=.o) $(PHP_SAPI_OBJS:.lo=.o) $(PHP_FRAMEWORKS) $(EXTRA_LIBS) $(ZEND_EXTRA_LIBS) $(MH_BUNDLE_FLAGS) -o $@ && cp $@ libs/libphp$(PHP_MAJOR_VERSION).so
+ 
+ install: $(all_targets) $(install_targets)
+ 

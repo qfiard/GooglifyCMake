@@ -1,0 +1,23 @@
+--- CMakeLists.txt  2013-10-16 22:51:58.000000000 +0100
++++ CMakeLists_mod.txt  2013-10-16 23:18:58.000000000 +0100
+
+@@ -77,10 +77,15 @@ endif()
+ #cmake -DCMAKE_CXX_COMPILER=clang++ ..
+ #VERBOSE=1 make
+ IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+-   MESSAGE("")
+-   MESSAGE("cmake for Clang ")
+-  set(PLATFORM_LINK_LIBRIES rt  c++abi)
+-  set(CMAKE_CXX_FLAGS  " -g -Wall -std=c++11 -pthread -stdlib=libc++ -Wunused -D_GLIBCXX_USE_NANOSLEEP")
++  IF (APPLE)
++    MESSAGE("")
++    MESSAGE("cmake for Clang on Mac OS X")
++  ELSE ()
++    MESSAGE("")
++    MESSAGE("cmake for Clang ")
++    set(PLATFORM_LINK_LIBRIES rt)
++    set(CMAKE_CXX_FLAGS  " -g -Wall -std=c++11 -pthread -stdlib=libc++  -Wunused -D_GLIBCXX_USE_NANOSLEEP")
++  ENDIF ()
+   set(SRC_PLATFORM_SPECIFIC ${LOG_SRC}/crashhandler_unix.cpp)
+ 
+ ELSEIF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")

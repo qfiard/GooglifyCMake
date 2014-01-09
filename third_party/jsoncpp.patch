@@ -1,0 +1,10 @@
+--- src/lib_json/json_reader.cpp	(revision 275)
++++ src/lib_json/json_reader.cpp	(working copy)
+@@ -13,6 +13,7 @@
+ #include <cstdio>
+ #include <cassert>
+ #include <cstring>
++#include <istream>
+ #include <stdexcept>
+ 
+ #if defined(_MSC_VER)  &&  _MSC_VER >= 1400 // VC++ 8.0

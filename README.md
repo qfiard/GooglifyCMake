@@ -28,13 +28,12 @@ Specification and syntax
 
 This tool is built on top of CMake, which was chosen for its non-verbose syntax, its portability and ease of include of external libraries (through the ExternalProject module).
 
-Before going any further let's consider a real-life example of a `CMakeLists.txt` file using this project:
+Before going any further let's consider a real-life example of a `CMakeLists.txt` file using this project (it is the definition of the `util` module provided in this project):
 
 Module `util`:
 
 ```CMake
 add_subdirectory(dev)
-add_subdirectory(proto)
 
 cc_library(abi abi.h)
 
@@ -94,7 +93,7 @@ link_local(system_test system)
 link(system_test third_party.gtest)
 ```
 
-The first two lines recursively include the definitions of the modules `util.dev` and `util.proto`. Each following section is of the form:
+The first line recursively includes the definitions of the module `util.dev`. Each following section is of the form:
 
 1. A target definition rule (`cc_library`, `cc_test` or `java_library` in this example, see the section on **Rules** below for more target types), called with the name of the target (relative to the current package --- e.g. the rule `cc_library(strings ...)` will define a target named `util.strings`) and a list of sources.
 2. A number of `local_link` to link with targets defined in this module.

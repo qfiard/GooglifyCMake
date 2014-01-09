@@ -1,0 +1,21 @@
+--- support/shobj-conf	2013-10-25 02:11:07.000000000 +0100
++++ support/shobj-conf	2013-10-25 02:09:47.000000000 +0100
+@@ -157,7 +157,7 @@ freebsd[4-9]*|freebsdelf*|dragonfly*)
+ 	;;
+ 
+ # Darwin/MacOS X
+-darwin[89]*|darwin10*)
++darwin[89]*|darwin1[0-9]*)
+ 	SHOBJ_STATUS=supported
+ 	SHLIB_STATUS=supported
+ 	
+--- chardefs.h    2011-08-31 09:24:01.852751855 +0200
++++ chardefs.h 2011-08-31 09:24:07.143685706 +0200
+@@ -72,7 +72,7 @@
+ #  define IN_CTYPE_DOMAIN(c) isascii(c)
+ #endif
+ 
+-#if !defined (isxdigit) && !defined (HAVE_ISXDIGIT)
++#if !defined (isxdigit) && !defined (HAVE_ISXDIGIT) && !defined (__cplusplus) 
+ #  define isxdigit(c)   (isdigit((c)) || ((c) >= 'a' && (c) <= 'f') || ((c) >= 'A' && (c) <= 'F'))
+ #endif

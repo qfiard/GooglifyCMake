@@ -1,0 +1,11 @@
+--- include/tbb/pipeline.old.h	2013-11-20 12:15:08.000000000 +0000
++++ include/tbb/pipeline.h	2013-11-20 12:16:00.000000000 +0000
+@@ -342,7 +342,7 @@ template<> struct tbb_trivially_copyable
+ template<> struct tbb_trivially_copyable <float> { enum { value = !tbb_large_object<float>::value }; };
+ template<> struct tbb_trivially_copyable <double> { enum { value = !tbb_large_object<double>::value }; };
+ #else
+-#if __GNUC__==4 && __GNUC_MINOR__>=4 && __GXX_EXPERIMENTAL_CXX0X__
++#if __GNUC__==4 && __GNUC_MINOR__>=4 && __GXX_EXPERIMENTAL_CXX0X__ && __cplusplus < 201103L
+ template<typename T> struct tbb_trivially_copyable { enum { value = std::has_trivial_copy_constructor<T>::value }; };
+ #else
+ template<typename T> struct tbb_trivially_copyable { enum { value = std::is_trivially_copyable<T>::value }; };

@@ -1,0 +1,10 @@
+--- tools/clang/lib/CodeGen/CMakeLists.txt.old	2013-12-21 10:36:56.000000000 +0100
++++ tools/clang/lib/CodeGen/CMakeLists.txt	2013-12-21 10:36:59.000000000 +0100
+@@ -32,6 +32,7 @@ add_clang_library(clangCodeGen
+   CGExprConstant.cpp
+   CGExprCXX.cpp
+   CGExprScalar.cpp
++  CGLoopInfo.cpp
+   CGObjC.cpp
+   CGObjCGNU.cpp
+   CGObjCMac.cpp

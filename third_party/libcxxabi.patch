@@ -1,0 +1,32 @@
+--- buildit	2013-12-20 23:07:47.000000000 +0100
++++ buildit	2013-12-20 23:10:06.000000000 +0100
+@@ -67,10 +67,10 @@ case $TRIPLE in
+ 	;;
+   *)
+     RC_CFLAGS="-fPIC"
+-    SOEXT=so
+-    LDSHARED_FLAGS="-o libc++abi.so.1.0 \
+-        -shared -nodefaultlibs -Wl,-soname,libc++abi.so.1 \
+-        -lpthread -lrt -lc -lstdc++"
++    SOEXT=dylib
++    LDSHARED_FLAGS="-o libc++abi.1.0.dylib \
++        -shared -nodefaultlibs -Wl,-install_name,libc++abi.1.dylib \
++        -lpthread -lc"
+     ;;
+ esac
+ 
+@@ -82,12 +82,12 @@ fi
+ set -x
+ 
+ for FILE in ../src/*.cpp; do
+-	$CXX -c -g -O3 $RC_CFLAGS $EXTRA_FLAGS -I../include $OPTIONS $FILE
++	$CXX -c -g -O3 $RC_CFLAGS $EXTRA_FLAGS -I../include -I../../libcxx/src/libcxx_target/include $OPTIONS $FILE
+ done
+ case $TRIPLE in
+   *-*-mingw*)
+   for FILE in ../src/support/win32/*.cpp; do
+-    $CXX -c -g -Os $RC_CFLAGS $EXTRA_FLAGS -I../include $OPTIONS $FILE
++    $CXX -c -g -Os $RC_CFLAGS $EXTRA_FLAGS -I../include  -I../../libcxx/src/libcxx_target/include $OPTIONS $FILE
+   done
+   ;;
+ esac

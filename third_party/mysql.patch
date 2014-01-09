@@ -1,0 +1,2780 @@
+diff -rupN include/my_global.h ./include/my_global.h
+--- include/my_global.h	2013-12-21 02:00:47.000000000 +0100
++++ include/my_global.h	2013-12-21 02:19:42.000000000 +0100
+@@ -837,6 +837,7 @@ typedef long long	my_ptrdiff_t;
+ 
+ #define my_offsetof(TYPE, MEMBER) \
+         ((size_t)((char *)&(((TYPE *)0x10)->MEMBER) - (char*)0x10))
++#define my_int_offsetof(TYPE, MEMBER) ((int)my_offsetof(TYPE, MEMBER))
+ 
+ #define NullS		(char *) 0
+ 
+diff -rupN plugin/innodb_memcached/daemon_memcached/daemon/memcached.c ./plugin/innodb_memcached/daemon_memcached/daemon/memcached.c
+--- plugin/innodb_memcached/daemon_memcached/daemon/memcached.c	2013-12-21 02:00:53.000000000 +0100
++++ plugin/innodb_memcached/daemon_memcached/daemon/memcached.c	2013-12-21 02:05:25.000000000 +0100
+@@ -3733,27 +3733,27 @@ static void server_stats(ADD_STAT add_st
+     APPEND_STAT("curr_connections", "%u", stats.curr_conns);
+     APPEND_STAT("total_connections", "%u", stats.total_conns);
+     APPEND_STAT("connection_structures", "%u", stats.conn_structs);
+-    APPEND_STAT("cmd_get", "%"PRIu64, thread_stats.cmd_get);
+-    APPEND_STAT("cmd_set", "%"PRIu64, slab_stats.cmd_set);
+-    APPEND_STAT("cmd_flush", "%"PRIu64, thread_stats.cmd_flush);
+-    APPEND_STAT("auth_cmds", "%"PRIu64, thread_stats.auth_cmds);
+-    APPEND_STAT("auth_errors", "%"PRIu64, thread_stats.auth_errors);
+-    APPEND_STAT("get_hits", "%"PRIu64, slab_stats.get_hits);
+-    APPEND_STAT("get_misses", "%"PRIu64, thread_stats.get_misses);
+-    APPEND_STAT("delete_misses", "%"PRIu64, thread_stats.delete_misses);
+-    APPEND_STAT("delete_hits", "%"PRIu64, slab_stats.delete_hits);
+-    APPEND_STAT("incr_misses", "%"PRIu64, thread_stats.incr_misses);
+-    APPEND_STAT("incr_hits", "%"PRIu64, thread_stats.incr_hits);
+-    APPEND_STAT("decr_misses", "%"PRIu64, thread_stats.decr_misses);
+-    APPEND_STAT("decr_hits", "%"PRIu64, thread_stats.decr_hits);
+-    APPEND_STAT("cas_misses", "%"PRIu64, thread_stats.cas_misses);
+-    APPEND_STAT("cas_hits", "%"PRIu64, slab_stats.cas_hits);
+-    APPEND_STAT("cas_badval", "%"PRIu64, slab_stats.cas_badval);
+-    APPEND_STAT("bytes_read", "%"PRIu64, thread_stats.bytes_read);
+-    APPEND_STAT("bytes_written", "%"PRIu64, thread_stats.bytes_written);
+-    APPEND_STAT("limit_maxbytes", "%"PRIu64, settings.maxbytes);
++    APPEND_STAT("cmd_get", "%" PRIu64, thread_stats.cmd_get);
++    APPEND_STAT("cmd_set", "%" PRIu64, slab_stats.cmd_set);
++    APPEND_STAT("cmd_flush", "%" PRIu64, thread_stats.cmd_flush);
++    APPEND_STAT("auth_cmds", "%" PRIu64, thread_stats.auth_cmds);
++    APPEND_STAT("auth_errors", "%" PRIu64, thread_stats.auth_errors);
++    APPEND_STAT("get_hits", "%" PRIu64, slab_stats.get_hits);
++    APPEND_STAT("get_misses", "%" PRIu64, thread_stats.get_misses);
++    APPEND_STAT("delete_misses", "%" PRIu64, thread_stats.delete_misses);
++    APPEND_STAT("delete_hits", "%" PRIu64, slab_stats.delete_hits);
++    APPEND_STAT("incr_misses", "%" PRIu64, thread_stats.incr_misses);
++    APPEND_STAT("incr_hits", "%" PRIu64, thread_stats.incr_hits);
++    APPEND_STAT("decr_misses", "%" PRIu64, thread_stats.decr_misses);
++    APPEND_STAT("decr_hits", "%" PRIu64, thread_stats.decr_hits);
++    APPEND_STAT("cas_misses", "%" PRIu64, thread_stats.cas_misses);
++    APPEND_STAT("cas_hits", "%" PRIu64, slab_stats.cas_hits);
++    APPEND_STAT("cas_badval", "%" PRIu64, slab_stats.cas_badval);
++    APPEND_STAT("bytes_read", "%" PRIu64, thread_stats.bytes_read);
++    APPEND_STAT("bytes_written", "%" PRIu64, thread_stats.bytes_written);
++    APPEND_STAT("limit_maxbytes", "%" PRIu64, settings.maxbytes);
+     APPEND_STAT("accepting_conns", "%u",  is_listen_disabled() ? 0 : 1);
+-    APPEND_STAT("listen_disabled_num", "%"PRIu64, get_listen_disabled_num());
++    APPEND_STAT("listen_disabled_num", "%" PRIu64, get_listen_disabled_num());
+     APPEND_STAT("rejected_conns", "%" PRIu64, (unsigned long long)stats.rejected_conns);
+     APPEND_STAT("threads", "%d", settings.num_threads);
+     APPEND_STAT("conn_yields", "%" PRIu64, (unsigned long long)thread_stats.conn_yields);
+@@ -3768,53 +3768,53 @@ static void server_stats(ADD_STAT add_st
+     pthread_mutex_unlock(&tap_stats.mutex);
+ 
+     if (ts.sent.connect) {
+-        APPEND_STAT("tap_connect_sent", "%"PRIu64, ts.sent.connect);
++        APPEND_STAT("tap_connect_sent", "%" PRIu64, ts.sent.connect);
+     }
+     if (ts.sent.mutation) {
+-        APPEND_STAT("tap_mutation_sent", "%"PRIu64, ts.sent.mutation);
++        APPEND_STAT("tap_mutation_sent", "%" PRIu64, ts.sent.mutation);
+     }
+     if (ts.sent.checkpoint_start) {
+-        APPEND_STAT("tap_checkpoint_start_sent", "%"PRIu64, ts.sent.checkpoint_start);
++        APPEND_STAT("tap_checkpoint_start_sent", "%" PRIu64, ts.sent.checkpoint_start);
+     }
+     if (ts.sent.checkpoint_end) {
+-        APPEND_STAT("tap_checkpoint_end_sent", "%"PRIu64, ts.sent.checkpoint_end);
++        APPEND_STAT("tap_checkpoint_end_sent", "%" PRIu64, ts.sent.checkpoint_end);
+     }
+     if (ts.sent.delete) {
+-        APPEND_STAT("tap_delete_sent", "%"PRIu64, ts.sent.delete);
++        APPEND_STAT("tap_delete_sent", "%" PRIu64, ts.sent.delete);
+     }
+     if (ts.sent.flush) {
+-        APPEND_STAT("tap_flush_sent", "%"PRIu64, ts.sent.flush);
++        APPEND_STAT("tap_flush_sent", "%" PRIu64, ts.sent.flush);
+     }
+     if (ts.sent.opaque) {
+-        APPEND_STAT("tap_opaque_sent", "%"PRIu64, ts.sent.opaque);
++        APPEND_STAT("tap_opaque_sent", "%" PRIu64, ts.sent.opaque);
+     }
+     if (ts.sent.vbucket_set) {
+-        APPEND_STAT("tap_vbucket_set_sent", "%"PRIu64,
++        APPEND_STAT("tap_vbucket_set_sent", "%" PRIu64,
+                     ts.sent.vbucket_set);
+     }
+     if (ts.received.connect) {
+-        APPEND_STAT("tap_connect_received", "%"PRIu64, ts.received.connect);
++        APPEND_STAT("tap_connect_received", "%" PRIu64, ts.received.connect);
+     }
+     if (ts.received.mutation) {
+-        APPEND_STAT("tap_mutation_received", "%"PRIu64, ts.received.mutation);
++        APPEND_STAT("tap_mutation_received", "%" PRIu64, ts.received.mutation);
+     }
+     if (ts.received.checkpoint_start) {
+-        APPEND_STAT("tap_checkpoint_start_received", "%"PRIu64, ts.received.checkpoint_start);
++        APPEND_STAT("tap_checkpoint_start_received", "%" PRIu64, ts.received.checkpoint_start);
+     }
+     if (ts.received.checkpoint_end) {
+-        APPEND_STAT("tap_checkpoint_end_received", "%"PRIu64, ts.received.checkpoint_end);
++        APPEND_STAT("tap_checkpoint_end_received", "%" PRIu64, ts.received.checkpoint_end);
+     }
+     if (ts.received.delete) {
+-        APPEND_STAT("tap_delete_received", "%"PRIu64, ts.received.delete);
++        APPEND_STAT("tap_delete_received", "%" PRIu64, ts.received.delete);
+     }
+     if (ts.received.flush) {
+-        APPEND_STAT("tap_flush_received", "%"PRIu64, ts.received.flush);
++        APPEND_STAT("tap_flush_received", "%" PRIu64, ts.received.flush);
+     }
+     if (ts.received.opaque) {
+-        APPEND_STAT("tap_opaque_received", "%"PRIu64, ts.received.opaque);
++        APPEND_STAT("tap_opaque_received", "%" PRIu64, ts.received.opaque);
+     }
+     if (ts.received.vbucket_set) {
+-        APPEND_STAT("tap_vbucket_set_received", "%"PRIu64,
++        APPEND_STAT("tap_vbucket_set_received", "%" PRIu64,
+                     ts.received.vbucket_set);
+     }
+ }
+@@ -4128,7 +4128,7 @@ static inline char* process_get_command(
+                     settings.engine.v1->release(settings.engine.v0, c, it);
+                     return NULL;
+                   }
+-                  int cas_len = snprintf(cas, SUFFIX_SIZE, " %"PRIu64"\r\n",
++                  int cas_len = snprintf(cas, SUFFIX_SIZE, " %" PRIu64 "\r\n",
+                                          info.cas);
+                   if (add_iov(c, "VALUE ", 6) != 0 ||
+                       add_iov(c, info.key, info.nkey) != 0 ||
+@@ -4350,7 +4350,7 @@ static char* process_arithmetic_command(
+         } else {
+             STATS_INCR(c, decr_hits, key, nkey);
+         }
+-        snprintf(temp, sizeof(temp), "%"PRIu64, result);
++        snprintf(temp, sizeof(temp), "%" PRIu64, result);
+         out_string(c, temp);
+         break;
+     case ENGINE_KEY_ENOENT:
+@@ -6536,7 +6536,7 @@ static ENGINE_ERROR_CODE internal_arithm
+             }
+         }
+ 
+-        size_t nb = snprintf(value, sizeof(value), "%"PRIu64, val);
++        size_t nb = snprintf(value, sizeof(value), "%" PRIu64, val);
+         *result = val;
+         item *nit = NULL;
+         if (e->allocate(handle, cookie, &nit, key,
+@@ -6559,7 +6559,7 @@ static ENGINE_ERROR_CODE internal_arithm
+         e->release(handle, cookie, nit);
+     } else if (ret == ENGINE_KEY_ENOENT && create) {
+         char value[80];
+-        size_t nb = snprintf(value, sizeof(value), "%"PRIu64"\r\n", initial);
++        size_t nb = snprintf(value, sizeof(value), "%" PRIu64 "\r\n", initial);
+         *result = initial;
+         if (e->allocate(handle, cookie, &it, key, nkey, nb, 0, exptime) != ENGINE_SUCCESS) {
+             e->release(handle, cookie, it);
+diff -rupN plugin/innodb_memcached/daemon_memcached/daemon/topkeys.c ./plugin/innodb_memcached/daemon_memcached/daemon/topkeys.c
+--- plugin/innodb_memcached/daemon_memcached/daemon/topkeys.c	2013-12-21 02:00:53.000000000 +0100
++++ plugin/innodb_memcached/daemon_memcached/daemon/topkeys.c	2013-12-21 02:07:33.000000000 +0100
+@@ -159,7 +159,7 @@ static void tk_iterfunc(dlist_t *list, v
+     topkey_item_t *item = (topkey_item_t*)list;
+     char val_str[TK_MAX_VAL_LEN];
+     /* This line is magical. The missing comma before item->ctime is because the TK_ARGS macro ends with a comma. */
+-    int vlen = snprintf(val_str, sizeof(val_str) - 1, TK_OPS(TK_FMT)"ctime=%"PRIu32",atime=%"PRIu32, TK_OPS(TK_ARGS)
++    int vlen = snprintf(val_str, sizeof(val_str) - 1, TK_OPS(TK_FMT)"ctime=%" PRIu32 ",atime=%" PRIu32, TK_OPS(TK_ARGS)
+                         c->current_time - item->ctime, c->current_time - item->atime);
+     c->add_stat(item->key, item->nkey, val_str, vlen, c->cookie);
+ }
+diff -rupN plugin/innodb_memcached/daemon_memcached/engines/default_engine/default_engine.c ./plugin/innodb_memcached/daemon_memcached/engines/default_engine/default_engine.c
+--- plugin/innodb_memcached/daemon_memcached/engines/default_engine/default_engine.c	2013-12-21 02:00:53.000000000 +0100
++++ plugin/innodb_memcached/daemon_memcached/engines/default_engine/default_engine.c	2013-12-21 02:05:25.000000000 +0100
+@@ -399,17 +399,17 @@ static ENGINE_ERROR_CODE default_get_sta
+       int len;
+ 
+       pthread_mutex_lock(&engine->stats.lock);
+-      len = sprintf(val, "%"PRIu64, (uint64_t)engine->stats.evictions);
++      len = sprintf(val, "%" PRIu64, (uint64_t)engine->stats.evictions);
+       add_stat("evictions", 9, val, len, cookie);
+-      len = sprintf(val, "%"PRIu64, (uint64_t)engine->stats.curr_items);
++      len = sprintf(val, "%" PRIu64, (uint64_t)engine->stats.curr_items);
+       add_stat("curr_items", 10, val, len, cookie);
+-      len = sprintf(val, "%"PRIu64, (uint64_t)engine->stats.total_items);
++      len = sprintf(val, "%" PRIu64, (uint64_t)engine->stats.total_items);
+       add_stat("total_items", 11, val, len, cookie);
+-      len = sprintf(val, "%"PRIu64, (uint64_t)engine->stats.curr_bytes);
++      len = sprintf(val, "%" PRIu64, (uint64_t)engine->stats.curr_bytes);
+       add_stat("bytes", 5, val, len, cookie);
+-      len = sprintf(val, "%"PRIu64, engine->stats.reclaimed);
++      len = sprintf(val, "%" PRIu64, engine->stats.reclaimed);
+       add_stat("reclaimed", 9, val, len, cookie);
+-      len = sprintf(val, "%"PRIu64, (uint64_t)engine->config.maxbytes);
++      len = sprintf(val, "%" PRIu64, (uint64_t)engine->config.maxbytes);
+       add_stat("engine_maxbytes", 15, val, len, cookie);
+       pthread_mutex_unlock(&engine->stats.lock);
+    } else if (strncmp(stat_key, "slabs", 5) == 0) {
+@@ -434,13 +434,13 @@ static ENGINE_ERROR_CODE default_get_sta
+       if (engine->scrubber.started != 0) {
+          if (engine->scrubber.stopped != 0) {
+             time_t diff = engine->scrubber.started - engine->scrubber.stopped;
+-            len = sprintf(val, "%"PRIu64, (uint64_t)diff);
++            len = sprintf(val, "%" PRIu64, (uint64_t)diff);
+             add_stat("scrubber:last_run", 17, val, len, cookie);
+          }
+ 
+-         len = sprintf(val, "%"PRIu64, engine->scrubber.visited);
++         len = sprintf(val, "%" PRIu64, engine->scrubber.visited);
+          add_stat("scrubber:visited", 16, val, len, cookie);
+-         len = sprintf(val, "%"PRIu64, engine->scrubber.cleaned);
++         len = sprintf(val, "%" PRIu64, engine->scrubber.cleaned);
+          add_stat("scrubber:cleaned", 16, val, len, cookie);
+       }
+       pthread_mutex_unlock(&engine->scrubber.lock);
+diff -rupN plugin/innodb_memcached/daemon_memcached/engines/default_engine/items.c ./plugin/innodb_memcached/daemon_memcached/engines/default_engine/items.c
+--- plugin/innodb_memcached/daemon_memcached/engines/default_engine/items.c	2013-12-21 02:00:53.000000000 +0100
++++ plugin/innodb_memcached/daemon_memcached/engines/default_engine/items.c	2013-12-21 02:05:25.000000000 +0100
+@@ -589,7 +589,7 @@ static ENGINE_ERROR_CODE do_store_item(s
+                 EXTENSION_LOGGER_DESCRIPTOR *logger;
+                 logger = (void*)engine->server.extension->get_extension(EXTENSION_LOGGER);
+                 logger->log(EXTENSION_LOG_INFO, NULL,
+-                        "CAS:  failure: expected %"PRIu64", got %"PRIu64"\n",
++                        "CAS:  failure: expected %" PRIu64 ", got %" PRIu64 "\n",
+                         item_get_cas(old_it),
+                         item_get_cas(it));
+             }
+@@ -809,7 +809,7 @@ static ENGINE_ERROR_CODE do_arithmetic(s
+          return ENGINE_KEY_ENOENT;
+       } else {
+          char buffer[128];
+-         int len = snprintf(buffer, sizeof(buffer), "%"PRIu64,
++         int len = snprintf(buffer, sizeof(buffer), "%" PRIu64,
+                             (uint64_t)initial);
+ 
+          item = do_item_alloc(engine, key, nkey, 0, exptime, len, cookie);
+diff -rupN plugin/innodb_memcached/daemon_memcached/engines/default_engine/slabs.c ./plugin/innodb_memcached/daemon_memcached/engines/default_engine/slabs.c
+--- plugin/innodb_memcached/daemon_memcached/engines/default_engine/slabs.c	2013-12-21 02:00:53.000000000 +0100
++++ plugin/innodb_memcached/daemon_memcached/engines/default_engine/slabs.c	2013-12-21 02:05:25.000000000 +0100
+@@ -334,15 +334,15 @@ static void do_slabs_stats(struct defaul
+             add_statistics(cookie, add_stats, NULL, i, "mem_requested", "%zu",
+                            p->requested);
+ #ifdef FUTURE
+-            add_statistics(cookie, add_stats, NULL, i, "get_hits", "%"PRIu64,
++            add_statistics(cookie, add_stats, NULL, i, "get_hits", "%" PRIu64,
+                            thread_stats.slab_stats[i].get_hits);
+-            add_statistics(cookie, add_stats, NULL, i, "cmd_set", "%"PRIu64,
++            add_statistics(cookie, add_stats, NULL, i, "cmd_set", "%" PRIu64,
+                            thread_stats.slab_stats[i].set_cmds);
+-            add_statistics(cookie, add_stats, NULL, i, "delete_hits", "%"PRIu64,
++            add_statistics(cookie, add_stats, NULL, i, "delete_hits", "%" PRIu64,
+                            thread_stats.slab_stats[i].delete_hits);
+-            add_statistics(cookie, add_stats, NULL, i, "cas_hits", "%"PRIu64,
++            add_statistics(cookie, add_stats, NULL, i, "cas_hits", "%" PRIu64,
+                            thread_stats.slab_stats[i].cas_hits);
+-            add_statistics(cookie, add_stats, NULL, i, "cas_badval", "%"PRIu64,
++            add_statistics(cookie, add_stats, NULL, i, "cas_badval", "%" PRIu64,
+                            thread_stats.slab_stats[i].cas_badval);
+ #endif
+             total++;
+diff -rupN plugin/innodb_memcached/innodb_memcache/cache-src/default_engine.c ./plugin/innodb_memcached/innodb_memcache/cache-src/default_engine.c
+--- plugin/innodb_memcached/innodb_memcache/cache-src/default_engine.c	2013-12-21 02:00:54.000000000 +0100
++++ plugin/innodb_memcached/innodb_memcache/cache-src/default_engine.c	2013-12-21 02:05:25.000000000 +0100
+@@ -356,17 +356,17 @@ static ENGINE_ERROR_CODE default_get_sta
+       int len;
+ 
+       pthread_mutex_lock(&engine->stats.lock);
+-      len = sprintf(val, "%"PRIu64, (uint64_t)engine->stats.evictions);
++      len = sprintf(val, "%" PRIu64, (uint64_t)engine->stats.evictions);
+       add_stat("evictions", 9, val, len, cookie);
+-      len = sprintf(val, "%"PRIu64, (uint64_t)engine->stats.curr_items);
++      len = sprintf(val, "%" PRIu64, (uint64_t)engine->stats.curr_items);
+       add_stat("curr_items", 10, val, len, cookie);
+-      len = sprintf(val, "%"PRIu64, (uint64_t)engine->stats.total_items);
++      len = sprintf(val, "%" PRIu64, (uint64_t)engine->stats.total_items);
+       add_stat("total_items", 11, val, len, cookie);
+-      len = sprintf(val, "%"PRIu64, (uint64_t)engine->stats.curr_bytes);
++      len = sprintf(val, "%" PRIu64, (uint64_t)engine->stats.curr_bytes);
+       add_stat("bytes", 5, val, len, cookie);
+-      len = sprintf(val, "%"PRIu64, engine->stats.reclaimed);
++      len = sprintf(val, "%" PRIu64, engine->stats.reclaimed);
+       add_stat("reclaimed", 9, val, len, cookie);
+-      len = sprintf(val, "%"PRIu64, (uint64_t)engine->config.maxbytes);
++      len = sprintf(val, "%" PRIu64, (uint64_t)engine->config.maxbytes);
+       add_stat("engine_maxbytes", 15, val, len, cookie);
+       pthread_mutex_unlock(&engine->stats.lock);
+    } else if (strncmp(stat_key, "slabs", 5) == 0) {
+@@ -391,13 +391,13 @@ static ENGINE_ERROR_CODE default_get_sta
+       if (engine->scrubber.started != 0) {
+          if (engine->scrubber.stopped != 0) {
+             time_t diff = engine->scrubber.started - engine->scrubber.stopped;
+-            len = sprintf(val, "%"PRIu64, (uint64_t)diff);
++            len = sprintf(val, "%" PRIu64, (uint64_t)diff);
+             add_stat("scrubber:last_run", 17, val, len, cookie);
+          }
+ 
+-         len = sprintf(val, "%"PRIu64, engine->scrubber.visited);
++         len = sprintf(val, "%" PRIu64, engine->scrubber.visited);
+          add_stat("scrubber:visited", 16, val, len, cookie);
+-         len = sprintf(val, "%"PRIu64, engine->scrubber.cleaned);
++         len = sprintf(val, "%" PRIu64, engine->scrubber.cleaned);
+          add_stat("scrubber:cleaned", 16, val, len, cookie);
+       }
+       pthread_mutex_unlock(&engine->scrubber.lock);
+diff -rupN plugin/innodb_memcached/innodb_memcache/cache-src/items.c ./plugin/innodb_memcached/innodb_memcache/cache-src/items.c
+--- plugin/innodb_memcached/innodb_memcache/cache-src/items.c	2013-12-21 02:00:54.000000000 +0100
++++ plugin/innodb_memcached/innodb_memcache/cache-src/items.c	2013-12-21 02:05:25.000000000 +0100
+@@ -605,7 +605,7 @@ static ENGINE_ERROR_CODE do_store_item(s
+         } else {
+             if (engine->config.verbose > 1) {
+                 fprintf(stderr,
+-                        "CAS:  failure: expected %"PRIu64", got %"PRIu64"\n",
++                        "CAS:  failure: expected %" PRIu64 ", got %" PRIu64 "\n",
+                         item_get_cas(old_it),
+                         item_get_cas(it));
+             }
+@@ -823,7 +823,7 @@ static ENGINE_ERROR_CODE do_arithmetic(s
+          return ENGINE_KEY_ENOENT;
+       } else {
+          char buffer[128];
+-         int len = snprintf(buffer, sizeof(buffer), "%"PRIu64"\r\n",
++         int len = snprintf(buffer, sizeof(buffer), "%" PRIu64 "\r\n",
+                             (uint64_t)initial);
+ 
+          item = do_item_alloc(engine, key, nkey, 0, exptime, len, cookie);
+diff -rupN plugin/innodb_memcached/innodb_memcache/cache-src/slabs.c ./plugin/innodb_memcached/innodb_memcache/cache-src/slabs.c
+--- plugin/innodb_memcached/innodb_memcache/cache-src/slabs.c	2013-12-21 02:00:54.000000000 +0100
++++ plugin/innodb_memcached/innodb_memcache/cache-src/slabs.c	2013-12-21 02:05:25.000000000 +0100
+@@ -326,15 +326,15 @@ static void do_slabs_stats(struct defaul
+             add_statistics(cookie, add_stats, NULL, i, "mem_requested", "%zu",
+                            p->requested);
+ #ifdef FUTURE
+-            add_statistics(cookie, add_stats, NULL, i, "get_hits", "%"PRIu64,
++            add_statistics(cookie, add_stats, NULL, i, "get_hits", "%" PRIu64,
+                            thread_stats.slab_stats[i].get_hits);
+-            add_statistics(cookie, add_stats, NULL, i, "cmd_set", "%"PRIu64,
++            add_statistics(cookie, add_stats, NULL, i, "cmd_set", "%" PRIu64,
+                            thread_stats.slab_stats[i].set_cmds);
+-            add_statistics(cookie, add_stats, NULL, i, "delete_hits", "%"PRIu64,
++            add_statistics(cookie, add_stats, NULL, i, "delete_hits", "%" PRIu64,
+                            thread_stats.slab_stats[i].delete_hits);
+-            add_statistics(cookie, add_stats, NULL, i, "cas_hits", "%"PRIu64,
++            add_statistics(cookie, add_stats, NULL, i, "cas_hits", "%" PRIu64,
+                            thread_stats.slab_stats[i].cas_hits);
+-            add_statistics(cookie, add_stats, NULL, i, "cas_badval", "%"PRIu64,
++            add_statistics(cookie, add_stats, NULL, i, "cas_badval", "%" PRIu64,
+                            thread_stats.slab_stats[i].cas_badval);
+ #endif
+             total++;
+diff -rupN sql/.!968!item_xmlfunc.cc ./sql/.!968!item_xmlfunc.cc
+--- sql/.!968!item_xmlfunc.cc	1970-01-01 01:00:00.000000000 +0100
++++ sql/.!968!item_xmlfunc.cc	2013-12-21 02:03:11.000000000 +0100
+@@ -0,0 +1,1027 @@
++/* Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
++
++   This program is free software; you can redistribute it and/or modify
++   it under the terms of the GNU General Public License as published by
++   the Free Software Foundation; version 2 of the License.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program; if not, write to the Free Software
++   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA */
++
++#include "sql_priv.h"
++/*
++  It is necessary to include set_var.h instead of item.h because there
++  are dependencies on include order for set_var.h and item.h. This
++  will be resolved later.
++*/
++#include "sql_class.h"                          // set_var.h: THD
++#include "sql_parse.h"                          // check_stack_overrun 
++#include "set_var.h"
++#include "my_xml.h"
++#include "sp_pcontext.h"
++#include "sql_class.h"                          // THD
++
++/*
++  TODO: future development directions:
++  1. add real constants for XPATH_NODESET_CMP and XPATH_NODESET
++     into enum Type in item.h.
++  2. add nodeset_to_nodeset_comparator
++  3. add lacking functions:
++       - name()
++       - lang()
++       - string()
++       - id()
++       - translate()
++       - local-name()
++       - starts-with()
++       - namespace-uri()
++       - substring-after()
++       - normalize-space()
++       - substring-before()
++  4. add lacking axis:
++       - following-sibling
++       - following, 
++       - preceding-sibling 
++       - preceding
++*/
++
++
++/* Structure to store a parsed XML tree */
++typedef struct my_xml_node_st
++{
++  uint level;                 /* level in XML tree, 0 means root node   */
++  enum my_xml_node_type type; /* node type: node, or attribute, or text */
++  uint parent;                /* link to the parent                     */
++  const char *beg;            /* beginning of the name or text          */
++  const char *end;            /* end of the name or text                */
++  const char *tagend;         /* where this tag ends                    */
++} MY_XML_NODE;
++
++
++/* Lexical analizer token */
++typedef struct my_xpath_lex_st
++{
++  int        term;  /* token type, see MY_XPATH_LEX_XXXXX below */
++  const char *beg;  /* beginnign of the token                   */
++  const char *end;  /* end of the token                         */
++} MY_XPATH_LEX;
++
++
++/* Structure to store nodesets */
++typedef struct my_xpath_flt_st
++{
++  uint num;     /* absolute position in MY_XML_NODE array */
++  uint pos;     /* relative position in context           */
++  uint size;    /* context size                           */
++} MY_XPATH_FLT;
++
++
++/* XPath function creator */
++typedef struct my_xpath_function_names_st
++{
++  const char *name;  /* function name           */
++  size_t length;     /* function name length    */
++  size_t minargs;    /* min number of arguments */
++  size_t maxargs;    /* max number of arguments */
++  Item *(*create)(struct my_xpath_st *xpath, Item **args, uint nargs);
++} MY_XPATH_FUNC;
++
++
++/* XPath query parser */
++typedef struct my_xpath_st
++{
++  int debug;
++  MY_XPATH_LEX query;    /* Whole query                               */
++  MY_XPATH_LEX lasttok;  /* last scanned token                        */
++  MY_XPATH_LEX prevtok;  /* previous scanned token                    */
++  int axis;              /* last scanned axis                         */
++  int extra;             /* last scanned "extra", context dependent   */
++  MY_XPATH_FUNC *func;   /* last scanned function creator             */
++  Item *item;            /* current expression                        */
++  Item *context;         /* last scanned context                      */
++  Item *rootelement;     /* The root element                          */
++  String *context_cache; /* last context provider                     */
++  String *pxml;          /* Parsed XML, an array of MY_XML_NODE       */
++  const CHARSET_INFO *cs;/* character set/collation string comparison */
++  int error;
++} MY_XPATH;
++
++
++/* Dynamic array of MY_XPATH_FLT */
++class XPathFilter :public String
++{
++public:
++  XPathFilter() :String() {}
++  inline bool append_element(MY_XPATH_FLT *flt)
++  {
++    String *str= this;
++    return str->append((const char*)flt, (uint32) sizeof(MY_XPATH_FLT));
++  }
++  inline bool append_element(uint32 num, uint32 pos)
++  {
++    MY_XPATH_FLT add;
++    add.num= num;
++    add.pos= pos;
++    add.size= 0;
++    return append_element(&add);
++  }
++  inline bool append_element(uint32 num, uint32 pos, uint32 size)
++  {
++    MY_XPATH_FLT add;
++    add.num= num;
++    add.pos= pos;
++    add.size= size;
++    return append_element(&add);
++  }
++  inline MY_XPATH_FLT *element(uint i)
++  { 
++    return (MY_XPATH_FLT*) (ptr() + i * sizeof(MY_XPATH_FLT));
++  }
++  inline uint32 numelements()
++  {
++    return length() / sizeof(MY_XPATH_FLT);
++  }
++};
++
++
++/*
++  Common features of the functions returning a node set.
++*/
++class Item_nodeset_func :public Item_str_func
++{
++protected:
++  String tmp_value, tmp2_value;
++  MY_XPATH_FLT *fltbeg, *fltend;
++  MY_XML_NODE *nodebeg, *nodeend;
++  uint numnodes;
++public:
++  String *pxml;
++  String context_cache;
++  Item_nodeset_func(String *pxml_arg) :Item_str_func(), pxml(pxml_arg) {}
++  Item_nodeset_func(Item *a, String *pxml_arg) 
++    :Item_str_func(a), pxml(pxml_arg) {}
++  Item_nodeset_func(Item *a, Item *b, String *pxml_arg) 
++    :Item_str_func(a, b), pxml(pxml_arg) {}
++  Item_nodeset_func(Item *a, Item *b, Item *c, String *pxml_arg) 
++    :Item_str_func(a,b,c), pxml(pxml_arg) {}
++  void prepare_nodes()
++  {
++    nodebeg= (MY_XML_NODE*) pxml->ptr();
++    nodeend= (MY_XML_NODE*) (pxml->ptr() + pxml->length());
++    numnodes= nodeend - nodebeg;
++  }
++  void prepare(String *nodeset)
++  {
++    prepare_nodes();
++    String *res= args[0]->val_nodeset(&tmp_value);
++    fltbeg= (MY_XPATH_FLT*) res->ptr();
++    fltend= (MY_XPATH_FLT*) (res->ptr() + res->length());
++    nodeset->length(0);
++  }
++  enum Type type() const { return XPATH_NODESET; }
++  String *val_str(String *str)
++  {
++    prepare_nodes();
++    String *res= val_nodeset(&tmp2_value);
++    fltbeg= (MY_XPATH_FLT*) res->ptr();
++    fltend= (MY_XPATH_FLT*) (res->ptr() + res->length());
++    String active;
++    active.alloc(numnodes);
++    memset(const_cast<char*>(active.ptr()), 0, numnodes);
++    for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++    {
++      MY_XML_NODE *node;
++      uint j;
++      for (j=0, node= nodebeg ; j < numnodes; j++, node++)
++      {
++        if (node->type == MY_XML_NODE_TEXT &&
++            node->parent == flt->num)
++          active[j]= 1;
++      }
++    }
++
++    str->length(0);
++    str->set_charset(collation.collation);
++    for (uint i=0 ; i < numnodes; i++)
++    {
++      if(active[i])
++      {
++        if (str->length())
++          str->append(" ", 1, &my_charset_latin1);
++        str->append(nodebeg[i].beg, nodebeg[i].end - nodebeg[i].beg);
++      }
++    }
++    return str;
++  }
++  enum Item_result result_type () const { return STRING_RESULT; }
++  void fix_length_and_dec()
++  {
++    max_length= MAX_BLOB_WIDTH;
++    collation.collation= pxml->charset();
++  }
++  const char *func_name() const { return "nodeset"; }
++};
++
++
++/* Returns an XML root */
++class Item_nodeset_func_rootelement :public Item_nodeset_func
++{
++public:
++  Item_nodeset_func_rootelement(String *pxml): Item_nodeset_func(pxml) {}
++  const char *func_name() const { return "xpath_rootelement"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Returns a Union of two node sets */
++class Item_nodeset_func_union :public Item_nodeset_func
++{
++public:
++  Item_nodeset_func_union(Item *a, Item *b, String *pxml)
++    :Item_nodeset_func(a, b, pxml) {}
++  const char *func_name() const { return "xpath_union"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Makes one step towards the given axis */
++class Item_nodeset_func_axisbyname :public Item_nodeset_func
++{
++  const char *node_name;
++  uint node_namelen;
++public:
++  Item_nodeset_func_axisbyname(Item *a, const char *n_arg, uint l_arg,
++                               String *pxml): 
++    Item_nodeset_func(a, pxml), node_name(n_arg), node_namelen(l_arg) { }
++  const char *func_name() const { return "xpath_axisbyname"; }
++  bool validname(MY_XML_NODE *n)
++  {
++    if (node_name[0] == '*')
++      return 1;
++    return (node_namelen == (uint) (n->end - n->beg)) &&
++            !memcmp(node_name, n->beg, node_namelen);
++  }
++};
++
++
++/* Returns self */
++class Item_nodeset_func_selfbyname: public Item_nodeset_func_axisbyname
++{
++public:
++  Item_nodeset_func_selfbyname(Item *a, const char *n_arg, uint l_arg,
++                                String *pxml): 
++    Item_nodeset_func_axisbyname(a, n_arg, l_arg, pxml) {}
++  const char *func_name() const { return "xpath_selfbyname"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Returns children */
++class Item_nodeset_func_childbyname: public Item_nodeset_func_axisbyname
++{
++public:
++  Item_nodeset_func_childbyname(Item *a, const char *n_arg, uint l_arg,
++                                String *pxml): 
++    Item_nodeset_func_axisbyname(a, n_arg, l_arg, pxml) {}
++  const char *func_name() const { return "xpath_childbyname"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Returns descendants */
++class Item_nodeset_func_descendantbyname: public Item_nodeset_func_axisbyname
++{
++  bool need_self;
++public:
++  Item_nodeset_func_descendantbyname(Item *a, const char *n_arg, uint l_arg,
++                                     String *pxml, bool need_self_arg): 
++    Item_nodeset_func_axisbyname(a, n_arg, l_arg, pxml), 
++      need_self(need_self_arg) {}
++  const char *func_name() const { return "xpath_descendantbyname"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Returns ancestors */
++class Item_nodeset_func_ancestorbyname: public Item_nodeset_func_axisbyname
++{
++  bool need_self;
++public:
++  Item_nodeset_func_ancestorbyname(Item *a, const char *n_arg, uint l_arg,
++                                   String *pxml, bool need_self_arg): 
++    Item_nodeset_func_axisbyname(a, n_arg, l_arg, pxml),
++      need_self(need_self_arg) {}
++  const char *func_name() const { return "xpath_ancestorbyname"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Returns parents */
++class Item_nodeset_func_parentbyname: public Item_nodeset_func_axisbyname
++{
++public:
++  Item_nodeset_func_parentbyname(Item *a, const char *n_arg, uint l_arg,
++                                 String *pxml): 
++    Item_nodeset_func_axisbyname(a, n_arg, l_arg, pxml) {}
++  const char *func_name() const { return "xpath_parentbyname"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Returns attributes */
++class Item_nodeset_func_attributebyname: public Item_nodeset_func_axisbyname
++{
++public:
++  Item_nodeset_func_attributebyname(Item *a, const char *n_arg, uint l_arg,
++                                    String *pxml): 
++    Item_nodeset_func_axisbyname(a, n_arg, l_arg, pxml) {}
++  const char *func_name() const { return "xpath_attributebyname"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/*
++  Condition iterator: goes through all nodes in the current
++  context and checks a condition, returning those nodes
++  giving TRUE condition result.
++*/
++class Item_nodeset_func_predicate :public Item_nodeset_func
++{
++public:
++  Item_nodeset_func_predicate(Item *a, Item *b, String *pxml):
++    Item_nodeset_func(a, b, pxml) {}
++  const char *func_name() const { return "xpath_predicate"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Selects nodes with a given position in context */
++class Item_nodeset_func_elementbyindex :public Item_nodeset_func
++{
++public:
++  Item_nodeset_func_elementbyindex(Item *a, Item *b, String *pxml): 
++    Item_nodeset_func(a, b, pxml) { }
++  const char *func_name() const { return "xpath_elementbyindex"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/*
++  We need to distinguish a number from a boolean:
++  a[1] and a[true] are different things in XPath.
++*/
++class Item_bool :public Item_int
++{
++public:
++  Item_bool(int32 i): Item_int(i) {}
++  const char *func_name() const { return "xpath_bool"; }
++  bool is_bool_func() { return 1; }
++};
++
++
++/*
++  Converts its argument into a boolean value.
++  * a number is true if it is non-zero
++  * a node-set is true if and only if it is non-empty
++  * a string is true if and only if its length is non-zero
++*/
++class Item_xpath_cast_bool :public Item_int_func
++{
++  String *pxml;
++  String tmp_value;
++public:
++  Item_xpath_cast_bool(Item *a, String *pxml_arg)
++    :Item_int_func(a), pxml(pxml_arg) {}
++  const char *func_name() const { return "xpath_cast_bool"; }
++  bool is_bool_func() { return 1; }
++  longlong val_int()
++  {
++    if (args[0]->type() == XPATH_NODESET)
++    {
++      String *flt= args[0]->val_nodeset(&tmp_value);
++      return flt->length() == sizeof(MY_XPATH_FLT) ? 1 : 0;
++    }
++    return args[0]->val_real() ? 1 : 0;
++  }
++};
++
++
++/*
++  Converts its argument into a number
++*/
++class Item_xpath_cast_number :public Item_real_func
++{
++public:
++  Item_xpath_cast_number(Item *a): Item_real_func(a) {}
++  const char *func_name() const { return "xpath_cast_number"; }
++  virtual double val_real() { return args[0]->val_real(); }
++};
++
++
++/*
++  Context cache, for predicate
++*/
++class Item_nodeset_context_cache :public Item_nodeset_func
++{
++public:
++  String *string_cache;
++  Item_nodeset_context_cache(String *str_arg, String *pxml):
++    Item_nodeset_func(pxml), string_cache(str_arg) { }
++  String *val_nodeset(String *res)
++  { return string_cache; }
++  void fix_length_and_dec() { max_length= MAX_BLOB_WIDTH; }
++};
++
++
++class Item_func_xpath_position :public Item_int_func
++{
++  String *pxml;
++  String tmp_value;
++public:
++  Item_func_xpath_position(Item *a, String *p)
++    :Item_int_func(a), pxml(p) {}
++  const char *func_name() const { return "xpath_position"; }
++  void fix_length_and_dec() { max_length=10; }
++  longlong val_int()
++  {
++    String *flt= args[0]->val_nodeset(&tmp_value);
++    if (flt->length() == sizeof(MY_XPATH_FLT))
++      return ((MY_XPATH_FLT*)flt->ptr())->pos + 1;
++    return 0;
++  }
++};
++
++
++class Item_func_xpath_count :public Item_int_func
++{
++  String *pxml;
++  String tmp_value;
++public:
++  Item_func_xpath_count(Item *a, String *p)
++    :Item_int_func(a), pxml(p) {}
++  const char *func_name() const { return "xpath_count"; }
++  void fix_length_and_dec() { max_length=10; }
++  longlong val_int()
++  {
++    uint predicate_supplied_context_size;
++    String *res= args[0]->val_nodeset(&tmp_value);
++    if (res->length() == sizeof(MY_XPATH_FLT) &&
++        (predicate_supplied_context_size= ((MY_XPATH_FLT*)res->ptr())->size))
++      return predicate_supplied_context_size;
++    return res->length() / sizeof(MY_XPATH_FLT);
++  }
++};
++
++
++class Item_func_xpath_sum :public Item_real_func
++{
++  String *pxml;
++  String tmp_value;
++public:
++  Item_func_xpath_sum(Item *a, String *p)
++    :Item_real_func(a), pxml(p) {}
++
++  const char *func_name() const { return "xpath_sum"; }
++  double val_real()
++  {
++    double sum= 0;
++    String *res= args[0]->val_nodeset(&tmp_value);
++    MY_XPATH_FLT *fltbeg= (MY_XPATH_FLT*) res->ptr();
++    MY_XPATH_FLT *fltend= (MY_XPATH_FLT*) (res->ptr() + res->length());
++    uint numnodes= pxml->length() / sizeof(MY_XML_NODE);
++    MY_XML_NODE *nodebeg= (MY_XML_NODE*) pxml->ptr();
++  
++    for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++    {
++      MY_XML_NODE *self= &nodebeg[flt->num];
++      for (uint j= flt->num + 1; j < numnodes; j++)
++      {
++        MY_XML_NODE *node= &nodebeg[j];
++        if (node->level <= self->level)
++          break;
++        if ((node->parent == flt->num) &&
++            (node->type == MY_XML_NODE_TEXT))
++        {
++          char *end;
++          int err;
++          double add= my_strntod(collation.collation, (char*) node->beg,
++                                 node->end - node->beg, &end, &err);
++          if (!err)
++            sum+= add;
++        }
++      }
++    }
++    return sum;
++  }
++};
++
++
++class Item_nodeset_to_const_comparator :public Item_bool_func
++{
++  String *pxml;
++  String tmp_nodeset;
++public:
++  Item_nodeset_to_const_comparator(Item *nodeset, Item *cmpfunc, String *p) 
++    :Item_bool_func(nodeset,cmpfunc), pxml(p) {}
++  enum Type type() const { return XPATH_NODESET_CMP; };
++  const char *func_name() const { return "xpath_nodeset_to_const_comparator"; }
++  bool is_bool_func() { return 1; }
++
++  longlong val_int()
++  {
++    Item_func *comp= (Item_func*)args[1];
++    Item_string *fake= (Item_string*)(comp->arguments()[0]);
++    String *res= args[0]->val_nodeset(&tmp_nodeset);
++    MY_XPATH_FLT *fltbeg= (MY_XPATH_FLT*) res->ptr();
++    MY_XPATH_FLT *fltend= (MY_XPATH_FLT*) (res->ptr() + res->length());
++    MY_XML_NODE *nodebeg= (MY_XML_NODE*) pxml->ptr();
++    uint numnodes= pxml->length() / sizeof(MY_XML_NODE);
++
++    for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++    {
++      MY_XML_NODE *self= &nodebeg[flt->num];
++      for (uint j= flt->num + 1; j < numnodes; j++)
++      {
++        MY_XML_NODE *node= &nodebeg[j];
++        if (node->level <= self->level)
++          break;
++        if ((node->parent == flt->num) &&
++            (node->type == MY_XML_NODE_TEXT))
++        {
++          fake->str_value.set(node->beg, node->end - node->beg,
++                              collation.collation);
++          if (args[1]->val_int())
++            return 1;
++        }
++      }
++    }
++    return 0;
++  }
++};
++
++
++String *Item_nodeset_func_rootelement::val_nodeset(String *nodeset)
++{
++  nodeset->length(0);
++  ((XPathFilter*)nodeset)->append_element(0, 0);
++  return nodeset;
++}
++
++
++String * Item_nodeset_func_union::val_nodeset(String *nodeset)
++{
++  uint num_nodes= pxml->length() / sizeof(MY_XML_NODE);
++  String set0, *s0= args[0]->val_nodeset(&set0);
++  String set1, *s1= args[1]->val_nodeset(&set1);
++  String both_str;
++  both_str.alloc(num_nodes);
++  char *both= (char*) both_str.ptr();
++  memset(both, 0, num_nodes);
++  MY_XPATH_FLT *flt;
++
++  fltbeg= (MY_XPATH_FLT*) s0->ptr();
++  fltend= (MY_XPATH_FLT*) (s0->ptr() + s0->length());
++  for (flt= fltbeg; flt < fltend; flt++)
++    both[flt->num]= 1;
++
++  fltbeg= (MY_XPATH_FLT*) s1->ptr();
++  fltend= (MY_XPATH_FLT*) (s1->ptr() + s1->length());
++  for (flt= fltbeg; flt < fltend; flt++)
++    both[flt->num]= 1;
++
++  nodeset->length(0);
++  for (uint i= 0, pos= 0; i < num_nodes; i++)
++  {
++    if (both[i])
++     ((XPathFilter*)nodeset)->append_element(i, pos++);
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_selfbyname::val_nodeset(String *nodeset)
++{
++  prepare(nodeset);
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    uint pos= 0;
++    MY_XML_NODE *self= &nodebeg[flt->num];
++    if (validname(self))
++      ((XPathFilter*)nodeset)->append_element(flt->num,pos++);
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_childbyname::val_nodeset(String *nodeset)
++{
++  prepare(nodeset);
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    MY_XML_NODE *self= &nodebeg[flt->num];
++    for (uint pos= 0, j= flt->num + 1 ; j < numnodes; j++)
++    {
++      MY_XML_NODE *node= &nodebeg[j];
++      if (node->level <= self->level)
++        break;
++      if ((node->parent == flt->num) &&
++          (node->type == MY_XML_NODE_TAG) &&
++          validname(node))
++        ((XPathFilter*)nodeset)->append_element(j, pos++);
++    }
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_descendantbyname::val_nodeset(String *nodeset)
++{
++  prepare(nodeset);
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    uint pos= 0;
++    MY_XML_NODE *self= &nodebeg[flt->num];
++    if (need_self && validname(self))
++      ((XPathFilter*)nodeset)->append_element(flt->num,pos++);
++    for (uint j= flt->num + 1 ; j < numnodes ; j++)
++    {
++      MY_XML_NODE *node= &nodebeg[j];
++      if (node->level <= self->level)
++        break;
++      if ((node->type == MY_XML_NODE_TAG) && validname(node))
++        ((XPathFilter*)nodeset)->append_element(j,pos++);
++    }
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_ancestorbyname::val_nodeset(String *nodeset)
++{
++  char *active;
++  String active_str;
++  prepare(nodeset);
++  active_str.alloc(numnodes);
++  active= (char*) active_str.ptr();
++  memset(active, 0, numnodes);
++  uint pos= 0;
++
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    /*
++       Go to the root and add all nodes on the way.
++       Don't add the root if context is the root itelf
++    */
++    MY_XML_NODE *self= &nodebeg[flt->num];
++    if (need_self && validname(self))
++    {
++      active[flt->num]= 1;
++      pos++;
++    }
++
++    for (uint j= self->parent; nodebeg[j].parent != j; j= nodebeg[j].parent)
++    {
++      if (flt->num && validname(&nodebeg[j]))
++      {
++        active[j]= 1;
++        pos++;
++      }
++    }
++  }
++
++  for (uint j= 0; j < numnodes ; j++)
++  {
++    if (active[j])
++      ((XPathFilter*)nodeset)->append_element(j, --pos);
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_parentbyname::val_nodeset(String *nodeset)
++{
++  char *active;
++  String active_str;
++  prepare(nodeset);
++  active_str.alloc(numnodes);
++  active= (char*) active_str.ptr();
++  memset(active, 0, numnodes);
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    uint j= nodebeg[flt->num].parent;
++    if (flt->num && validname(&nodebeg[j]))
++        active[j]= 1;
++  }
++  for (uint j= 0, pos= 0; j < numnodes ; j++)
++  {
++    if (active[j])
++      ((XPathFilter*)nodeset)->append_element(j, pos++);
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_attributebyname::val_nodeset(String *nodeset)
++{
++  prepare(nodeset);
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    MY_XML_NODE *self= &nodebeg[flt->num];
++    for (uint pos=0, j= flt->num + 1 ; j < numnodes; j++)
++    {
++      MY_XML_NODE *node= &nodebeg[j];
++      if (node->level <= self->level)
++        break;
++      if ((node->parent == flt->num) &&
++         (node->type == MY_XML_NODE_ATTR) &&
++          validname(node))
++        ((XPathFilter*)nodeset)->append_element(j, pos++);
++    }
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_predicate::val_nodeset(String *str)
++{
++  Item_nodeset_func *nodeset_func= (Item_nodeset_func*) args[0];
++  Item_func *comp_func= (Item_func*)args[1];
++  uint pos= 0, size;
++  prepare(str);
++  size= fltend - fltbeg;
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    nodeset_func->context_cache.length(0);
++    ((XPathFilter*)(&nodeset_func->context_cache))->append_element(flt->num,
++                                                                   flt->pos,
++                                                                   size);
++    if (comp_func->val_int())
++      ((XPathFilter*)str)->append_element(flt->num, pos++);
++  }
++  return str;
++}
++
++
++String *Item_nodeset_func_elementbyindex::val_nodeset(String *nodeset)
++{
++  Item_nodeset_func *nodeset_func= (Item_nodeset_func*) args[0];
++  prepare(nodeset);
++  MY_XPATH_FLT *flt;
++  uint pos, size= fltend - fltbeg;
++  for (pos= 0, flt= fltbeg; flt < fltend; flt++)
++  {
++    nodeset_func->context_cache.length(0);
++    ((XPathFilter*)(&nodeset_func->context_cache))->append_element(flt->num,
++                                                                   flt->pos,
++                                                                   size);
++    int index= (int) (args[1]->val_int()) - 1;
++    if (index >= 0 && (flt->pos == (uint) index || args[1]->is_bool_func()))
++      ((XPathFilter*)nodeset)->append_element(flt->num, pos++);
++  }
++  return nodeset;
++}
++
++
++/*
++  If item is a node set, then casts it to boolean,
++  otherwise returns the item itself.
++*/
++static Item* nodeset2bool(MY_XPATH *xpath, Item *item)
++{
++  if (item->type() == Item::XPATH_NODESET)
++    return new Item_xpath_cast_bool(item, xpath->pxml);
++  return item;
++}
++
++
++/*
++  XPath lexical tokens
++*/
++#define MY_XPATH_LEX_DIGITS   'd'
++#define MY_XPATH_LEX_IDENT    'i'
++#define MY_XPATH_LEX_STRING   's'
++#define MY_XPATH_LEX_SLASH    '/'
++#define MY_XPATH_LEX_LB       '['
++#define MY_XPATH_LEX_RB       ']'
++#define MY_XPATH_LEX_LP       '('
++#define MY_XPATH_LEX_RP       ')'
++#define MY_XPATH_LEX_EQ       '='
++#define MY_XPATH_LEX_LESS     '<'
++#define MY_XPATH_LEX_GREATER  '>'
++#define MY_XPATH_LEX_AT       '@'
++#define MY_XPATH_LEX_COLON    ':'
++#define MY_XPATH_LEX_ASTERISK '*'
++#define MY_XPATH_LEX_DOT      '.'
++#define MY_XPATH_LEX_VLINE    '|'
++#define MY_XPATH_LEX_MINUS    '-'
++#define MY_XPATH_LEX_PLUS     '+'
++#define MY_XPATH_LEX_EXCL     '!'
++#define MY_XPATH_LEX_COMMA    ','
++#define MY_XPATH_LEX_DOLLAR   '$'
++#define MY_XPATH_LEX_ERROR    'A'
++#define MY_XPATH_LEX_EOF      'B'
++#define MY_XPATH_LEX_AND      'C'
++#define MY_XPATH_LEX_OR       'D'
++#define MY_XPATH_LEX_DIV      'E'
++#define MY_XPATH_LEX_MOD      'F'
++#define MY_XPATH_LEX_FUNC     'G'
++#define MY_XPATH_LEX_NODETYPE 'H'
++#define MY_XPATH_LEX_AXIS     'I'
++#define MY_XPATH_LEX_LE       'J'
++#define MY_XPATH_LEX_GE       'K'
++
++
++/*
++  XPath axis type
++*/
++#define MY_XPATH_AXIS_ANCESTOR            0
++#define MY_XPATH_AXIS_ANCESTOR_OR_SELF    1
++#define MY_XPATH_AXIS_ATTRIBUTE           2
++#define MY_XPATH_AXIS_CHILD               3
++#define MY_XPATH_AXIS_DESCENDANT          4
++#define MY_XPATH_AXIS_DESCENDANT_OR_SELF  5
++#define MY_XPATH_AXIS_FOLLOWING           6
++#define MY_XPATH_AXIS_FOLLOWING_SIBLING   7
++#define MY_XPATH_AXIS_NAMESPACE           8
++#define MY_XPATH_AXIS_PARENT              9
++#define MY_XPATH_AXIS_PRECEDING          10
++#define MY_XPATH_AXIS_PRECEDING_SIBLING  11
++#define MY_XPATH_AXIS_SELF               12
++
++
++/*
++  Create scalar comparator
++
++  SYNOPSYS
++    Create a comparator function for scalar arguments,
++    for the given arguments and operation.
++
++  RETURN
++    The newly created item.
++*/
++static Item *eq_func(int oper, Item *a, Item *b)
++{
++  switch (oper)
++  {
++    case '=': return new Item_func_eq(a, b);
++    case '!': return new Item_func_ne(a, b);
++    case MY_XPATH_LEX_GE: return new Item_func_ge(a, b);
++    case MY_XPATH_LEX_LE: return new Item_func_le(a, b);
++    case MY_XPATH_LEX_GREATER: return new Item_func_gt(a, b);
++    case MY_XPATH_LEX_LESS: return new Item_func_lt(a, b);
++  }
++  return 0;
++}
++
++
++/*
++  Create scalar comparator
++
++  SYNOPSYS
++    Create a comparator function for scalar arguments,
++    for the given arguments and reverse operation, e.g.
++
++    A > B  is converted into  B < A
++
++  RETURN
++    The newly created item.
++*/
++static Item *eq_func_reverse(int oper, Item *a, Item *b)
++{
++  switch (oper)
++  {
++    case '=': return new Item_func_eq(a, b);
++    case '!': return new Item_func_ne(a, b);
++    case MY_XPATH_LEX_GE: return new Item_func_le(a, b);
++    case MY_XPATH_LEX_LE: return new Item_func_ge(a, b);
++    case MY_XPATH_LEX_GREATER: return new Item_func_lt(a, b);
++    case MY_XPATH_LEX_LESS: return new Item_func_gt(a, b);
++  }
++  return 0;
++}
++
++
++/*
++  Create a comparator
++
++  SYNOPSYS
++    Create a comparator for scalar or non-scalar arguments,
++    for the given arguments and operation.
++
++  RETURN
++    The newly created item.
++*/
++static Item *create_comparator(MY_XPATH *xpath,
++                               int oper, MY_XPATH_LEX *context,
++                               Item *a, Item *b)
++{
++  if (a->type() != Item::XPATH_NODESET &&
++      b->type() != Item::XPATH_NODESET)
++  {
++    return eq_func(oper, a, b); // two scalar arguments
++  }
++  else if (a->type() == Item::XPATH_NODESET &&
++           b->type() == Item::XPATH_NODESET)
++  {
++    uint len= xpath->query.end - context->beg;
++    set_if_smaller(len, 32);
++    my_printf_error(ER_UNKNOWN_ERROR,
++                    "XPATH error: "
++                    "comparison of two nodesets is not supported: '%.*s'",
++                    MYF(0), len, context->beg);
++
++    return 0; // TODO: Comparison of two nodesets
++  }
++  else
++  {
++    /*
++     Compare a node set to a scalar value.
++     We just create a fake Item_string() argument,
++     which will be filled to the partular value
++     in a loop through all of the nodes in the node set.
++    */
++
++    Item_string *fake= new Item_string("", 0, xpath->cs);
++    /* Don't cache fake because its value will be changed during comparison.*/
++    fake->set_used_tables(RAND_TABLE_BIT);
++    Item_nodeset_func *nodeset;
++    Item *scalar, *comp;
++    if (a->type() == Item::XPATH_NODESET)
++    {
++      nodeset= (Item_nodeset_func*) a;
++      scalar= b;
++      comp= eq_func(oper, (Item*)fake, scalar);
++    }
++    else
++    {
++      nodeset= (Item_nodeset_func*) b;
++      scalar= a;
++      comp= eq_func_reverse(oper, fake, scalar);
++    }
++    return new Item_nodeset_to_const_comparator(nodeset, comp, xpath->pxml);
++  }
++}
++
++
++/*
++  Create a step
++
++  SYNOPSYS
++    Create a step function for the given argument and axis.
++
++  RETURN
++    The newly created item.
++*/
++static Item* nametestfunc(MY_XPATH *xpath,
++                          int type, Item *arg, const char *beg, uint len)
++{
++  DBUG_ASSERT(arg != 0);
++  DBUG_ASSERT(arg->type() == Item::XPATH_NODESET);
++  DBUG_ASSERT(beg != 0);
++  DBUG_ASSERT(len > 0);
++
++  Item *res;
++  switch (type)
++  {
++  case MY_XPATH_AXIS_ANCESTOR:
++    res= new Item_nodeset_func_ancestorbyname(arg, beg, len, xpath->pxml, 0);
++    break;
++  case MY_XPATH_AXIS_ANCESTOR_OR_SELF:
++    res= new Item_nodeset_func_ancestorbyname(arg, beg, len, xpath->pxml, 1);
++    break;
++  case MY_XPATH_AXIS_PARENT:
++    res= new Item_nodeset_func_parentbyname(arg, beg, len, xpath->pxml);
++    break;
++  case MY_XPATH_AXIS_DESCENDANT:
++    res= new Item_nodeset_func_descendantbyname(arg, beg, len, xpath->pxml, 0);
++    break;
++  case MY_XPATH_AXIS_DESCENDANT_OR_SELF:
++    res= new Item_nodeset_func_descendantbyname(arg, beg, len, xpath->pxml, 1);
++    break;
++  case MY_XPATH_AXIS_ATTRIBUTE:
++    res= new Item_nodeset_func_attributebyname(arg, beg, len, xpath->pxml);
++    break;
++  case MY_XPATH_AXIS_SELF:
++    res= new Item_nodeset_func_selfbyname(arg, beg, len, xpath->pxml);
++    break;
++  default:
++    res= new Item_nodeset_func_childbyname(arg, beg, len, xpath->pxml);
++  }
++  return res;
++}
++
++
++/*
++  Tokens consisting of one character, for faster lexical analizer.
++*/
++static char simpletok[128]=
++{
++  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
++/*
++    ! " # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ?
++  @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \ ] ^ _
+diff -rupN sql/.!971!item_xmlfunc.cc ./sql/.!971!item_xmlfunc.cc
+--- sql/.!971!item_xmlfunc.cc	1970-01-01 01:00:00.000000000 +0100
++++ sql/.!971!item_xmlfunc.cc	2013-12-21 02:03:11.000000000 +0100
+@@ -0,0 +1,1027 @@
++/* Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
++
++   This program is free software; you can redistribute it and/or modify
++   it under the terms of the GNU General Public License as published by
++   the Free Software Foundation; version 2 of the License.
++
++   This program is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++   GNU General Public License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with this program; if not, write to the Free Software
++   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA */
++
++#include "sql_priv.h"
++/*
++  It is necessary to include set_var.h instead of item.h because there
++  are dependencies on include order for set_var.h and item.h. This
++  will be resolved later.
++*/
++#include "sql_class.h"                          // set_var.h: THD
++#include "sql_parse.h"                          // check_stack_overrun 
++#include "set_var.h"
++#include "my_xml.h"
++#include "sp_pcontext.h"
++#include "sql_class.h"                          // THD
++
++/*
++  TODO: future development directions:
++  1. add real constants for XPATH_NODESET_CMP and XPATH_NODESET
++     into enum Type in item.h.
++  2. add nodeset_to_nodeset_comparator
++  3. add lacking functions:
++       - name()
++       - lang()
++       - string()
++       - id()
++       - translate()
++       - local-name()
++       - starts-with()
++       - namespace-uri()
++       - substring-after()
++       - normalize-space()
++       - substring-before()
++  4. add lacking axis:
++       - following-sibling
++       - following, 
++       - preceding-sibling 
++       - preceding
++*/
++
++
++/* Structure to store a parsed XML tree */
++typedef struct my_xml_node_st
++{
++  uint level;                 /* level in XML tree, 0 means root node   */
++  enum my_xml_node_type type; /* node type: node, or attribute, or text */
++  uint parent;                /* link to the parent                     */
++  const char *beg;            /* beginning of the name or text          */
++  const char *end;            /* end of the name or text                */
++  const char *tagend;         /* where this tag ends                    */
++} MY_XML_NODE;
++
++
++/* Lexical analizer token */
++typedef struct my_xpath_lex_st
++{
++  int        term;  /* token type, see MY_XPATH_LEX_XXXXX below */
++  const char *beg;  /* beginnign of the token                   */
++  const char *end;  /* end of the token                         */
++} MY_XPATH_LEX;
++
++
++/* Structure to store nodesets */
++typedef struct my_xpath_flt_st
++{
++  uint num;     /* absolute position in MY_XML_NODE array */
++  uint pos;     /* relative position in context           */
++  uint size;    /* context size                           */
++} MY_XPATH_FLT;
++
++
++/* XPath function creator */
++typedef struct my_xpath_function_names_st
++{
++  const char *name;  /* function name           */
++  size_t length;     /* function name length    */
++  size_t minargs;    /* min number of arguments */
++  size_t maxargs;    /* max number of arguments */
++  Item *(*create)(struct my_xpath_st *xpath, Item **args, uint nargs);
++} MY_XPATH_FUNC;
++
++
++/* XPath query parser */
++typedef struct my_xpath_st
++{
++  int debug;
++  MY_XPATH_LEX query;    /* Whole query                               */
++  MY_XPATH_LEX lasttok;  /* last scanned token                        */
++  MY_XPATH_LEX prevtok;  /* previous scanned token                    */
++  int axis;              /* last scanned axis                         */
++  int extra;             /* last scanned "extra", context dependent   */
++  MY_XPATH_FUNC *func;   /* last scanned function creator             */
++  Item *item;            /* current expression                        */
++  Item *context;         /* last scanned context                      */
++  Item *rootelement;     /* The root element                          */
++  String *context_cache; /* last context provider                     */
++  String *pxml;          /* Parsed XML, an array of MY_XML_NODE       */
++  const CHARSET_INFO *cs;/* character set/collation string comparison */
++  int error;
++} MY_XPATH;
++
++
++/* Dynamic array of MY_XPATH_FLT */
++class XPathFilter :public String
++{
++public:
++  XPathFilter() :String() {}
++  inline bool append_element(MY_XPATH_FLT *flt)
++  {
++    String *str= this;
++    return str->append((const char*)flt, (uint32) sizeof(MY_XPATH_FLT));
++  }
++  inline bool append_element(uint32 num, uint32 pos)
++  {
++    MY_XPATH_FLT add;
++    add.num= num;
++    add.pos= pos;
++    add.size= 0;
++    return append_element(&add);
++  }
++  inline bool append_element(uint32 num, uint32 pos, uint32 size)
++  {
++    MY_XPATH_FLT add;
++    add.num= num;
++    add.pos= pos;
++    add.size= size;
++    return append_element(&add);
++  }
++  inline MY_XPATH_FLT *element(uint i)
++  { 
++    return (MY_XPATH_FLT*) (ptr() + i * sizeof(MY_XPATH_FLT));
++  }
++  inline uint32 numelements()
++  {
++    return length() / sizeof(MY_XPATH_FLT);
++  }
++};
++
++
++/*
++  Common features of the functions returning a node set.
++*/
++class Item_nodeset_func :public Item_str_func
++{
++protected:
++  String tmp_value, tmp2_value;
++  MY_XPATH_FLT *fltbeg, *fltend;
++  MY_XML_NODE *nodebeg, *nodeend;
++  uint numnodes;
++public:
++  String *pxml;
++  String context_cache;
++  Item_nodeset_func(String *pxml_arg) :Item_str_func(), pxml(pxml_arg) {}
++  Item_nodeset_func(Item *a, String *pxml_arg) 
++    :Item_str_func(a), pxml(pxml_arg) {}
++  Item_nodeset_func(Item *a, Item *b, String *pxml_arg) 
++    :Item_str_func(a, b), pxml(pxml_arg) {}
++  Item_nodeset_func(Item *a, Item *b, Item *c, String *pxml_arg) 
++    :Item_str_func(a,b,c), pxml(pxml_arg) {}
++  void prepare_nodes()
++  {
++    nodebeg= (MY_XML_NODE*) pxml->ptr();
++    nodeend= (MY_XML_NODE*) (pxml->ptr() + pxml->length());
++    numnodes= nodeend - nodebeg;
++  }
++  void prepare(String *nodeset)
++  {
++    prepare_nodes();
++    String *res= args[0]->val_nodeset(&tmp_value);
++    fltbeg= (MY_XPATH_FLT*) res->ptr();
++    fltend= (MY_XPATH_FLT*) (res->ptr() + res->length());
++    nodeset->length(0);
++  }
++  enum Type type() const { return XPATH_NODESET; }
++  String *val_str(String *str)
++  {
++    prepare_nodes();
++    String *res= val_nodeset(&tmp2_value);
++    fltbeg= (MY_XPATH_FLT*) res->ptr();
++    fltend= (MY_XPATH_FLT*) (res->ptr() + res->length());
++    String active;
++    active.alloc(numnodes);
++    memset(const_cast<char*>(active.ptr()), 0, numnodes);
++    for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++    {
++      MY_XML_NODE *node;
++      uint j;
++      for (j=0, node= nodebeg ; j < numnodes; j++, node++)
++      {
++        if (node->type == MY_XML_NODE_TEXT &&
++            node->parent == flt->num)
++          active[j]= 1;
++      }
++    }
++
++    str->length(0);
++    str->set_charset(collation.collation);
++    for (uint i=0 ; i < numnodes; i++)
++    {
++      if(active[i])
++      {
++        if (str->length())
++          str->append(" ", 1, &my_charset_latin1);
++        str->append(nodebeg[i].beg, nodebeg[i].end - nodebeg[i].beg);
++      }
++    }
++    return str;
++  }
++  enum Item_result result_type () const { return STRING_RESULT; }
++  void fix_length_and_dec()
++  {
++    max_length= MAX_BLOB_WIDTH;
++    collation.collation= pxml->charset();
++  }
++  const char *func_name() const { return "nodeset"; }
++};
++
++
++/* Returns an XML root */
++class Item_nodeset_func_rootelement :public Item_nodeset_func
++{
++public:
++  Item_nodeset_func_rootelement(String *pxml): Item_nodeset_func(pxml) {}
++  const char *func_name() const { return "xpath_rootelement"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Returns a Union of two node sets */
++class Item_nodeset_func_union :public Item_nodeset_func
++{
++public:
++  Item_nodeset_func_union(Item *a, Item *b, String *pxml)
++    :Item_nodeset_func(a, b, pxml) {}
++  const char *func_name() const { return "xpath_union"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Makes one step towards the given axis */
++class Item_nodeset_func_axisbyname :public Item_nodeset_func
++{
++  const char *node_name;
++  uint node_namelen;
++public:
++  Item_nodeset_func_axisbyname(Item *a, const char *n_arg, uint l_arg,
++                               String *pxml): 
++    Item_nodeset_func(a, pxml), node_name(n_arg), node_namelen(l_arg) { }
++  const char *func_name() const { return "xpath_axisbyname"; }
++  bool validname(MY_XML_NODE *n)
++  {
++    if (node_name[0] == '*')
++      return 1;
++    return (node_namelen == (uint) (n->end - n->beg)) &&
++            !memcmp(node_name, n->beg, node_namelen);
++  }
++};
++
++
++/* Returns self */
++class Item_nodeset_func_selfbyname: public Item_nodeset_func_axisbyname
++{
++public:
++  Item_nodeset_func_selfbyname(Item *a, const char *n_arg, uint l_arg,
++                                String *pxml): 
++    Item_nodeset_func_axisbyname(a, n_arg, l_arg, pxml) {}
++  const char *func_name() const { return "xpath_selfbyname"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Returns children */
++class Item_nodeset_func_childbyname: public Item_nodeset_func_axisbyname
++{
++public:
++  Item_nodeset_func_childbyname(Item *a, const char *n_arg, uint l_arg,
++                                String *pxml): 
++    Item_nodeset_func_axisbyname(a, n_arg, l_arg, pxml) {}
++  const char *func_name() const { return "xpath_childbyname"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Returns descendants */
++class Item_nodeset_func_descendantbyname: public Item_nodeset_func_axisbyname
++{
++  bool need_self;
++public:
++  Item_nodeset_func_descendantbyname(Item *a, const char *n_arg, uint l_arg,
++                                     String *pxml, bool need_self_arg): 
++    Item_nodeset_func_axisbyname(a, n_arg, l_arg, pxml), 
++      need_self(need_self_arg) {}
++  const char *func_name() const { return "xpath_descendantbyname"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Returns ancestors */
++class Item_nodeset_func_ancestorbyname: public Item_nodeset_func_axisbyname
++{
++  bool need_self;
++public:
++  Item_nodeset_func_ancestorbyname(Item *a, const char *n_arg, uint l_arg,
++                                   String *pxml, bool need_self_arg): 
++    Item_nodeset_func_axisbyname(a, n_arg, l_arg, pxml),
++      need_self(need_self_arg) {}
++  const char *func_name() const { return "xpath_ancestorbyname"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Returns parents */
++class Item_nodeset_func_parentbyname: public Item_nodeset_func_axisbyname
++{
++public:
++  Item_nodeset_func_parentbyname(Item *a, const char *n_arg, uint l_arg,
++                                 String *pxml): 
++    Item_nodeset_func_axisbyname(a, n_arg, l_arg, pxml) {}
++  const char *func_name() const { return "xpath_parentbyname"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Returns attributes */
++class Item_nodeset_func_attributebyname: public Item_nodeset_func_axisbyname
++{
++public:
++  Item_nodeset_func_attributebyname(Item *a, const char *n_arg, uint l_arg,
++                                    String *pxml): 
++    Item_nodeset_func_axisbyname(a, n_arg, l_arg, pxml) {}
++  const char *func_name() const { return "xpath_attributebyname"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/*
++  Condition iterator: goes through all nodes in the current
++  context and checks a condition, returning those nodes
++  giving TRUE condition result.
++*/
++class Item_nodeset_func_predicate :public Item_nodeset_func
++{
++public:
++  Item_nodeset_func_predicate(Item *a, Item *b, String *pxml):
++    Item_nodeset_func(a, b, pxml) {}
++  const char *func_name() const { return "xpath_predicate"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/* Selects nodes with a given position in context */
++class Item_nodeset_func_elementbyindex :public Item_nodeset_func
++{
++public:
++  Item_nodeset_func_elementbyindex(Item *a, Item *b, String *pxml): 
++    Item_nodeset_func(a, b, pxml) { }
++  const char *func_name() const { return "xpath_elementbyindex"; }
++  String *val_nodeset(String *nodeset);
++};
++
++
++/*
++  We need to distinguish a number from a boolean:
++  a[1] and a[true] are different things in XPath.
++*/
++class Item_bool :public Item_int
++{
++public:
++  Item_bool(int32 i): Item_int(i) {}
++  const char *func_name() const { return "xpath_bool"; }
++  bool is_bool_func() { return 1; }
++};
++
++
++/*
++  Converts its argument into a boolean value.
++  * a number is true if it is non-zero
++  * a node-set is true if and only if it is non-empty
++  * a string is true if and only if its length is non-zero
++*/
++class Item_xpath_cast_bool :public Item_int_func
++{
++  String *pxml;
++  String tmp_value;
++public:
++  Item_xpath_cast_bool(Item *a, String *pxml_arg)
++    :Item_int_func(a), pxml(pxml_arg) {}
++  const char *func_name() const { return "xpath_cast_bool"; }
++  bool is_bool_func() { return 1; }
++  longlong val_int()
++  {
++    if (args[0]->type() == XPATH_NODESET)
++    {
++      String *flt= args[0]->val_nodeset(&tmp_value);
++      return flt->length() == sizeof(MY_XPATH_FLT) ? 1 : 0;
++    }
++    return args[0]->val_real() ? 1 : 0;
++  }
++};
++
++
++/*
++  Converts its argument into a number
++*/
++class Item_xpath_cast_number :public Item_real_func
++{
++public:
++  Item_xpath_cast_number(Item *a): Item_real_func(a) {}
++  const char *func_name() const { return "xpath_cast_number"; }
++  virtual double val_real() { return args[0]->val_real(); }
++};
++
++
++/*
++  Context cache, for predicate
++*/
++class Item_nodeset_context_cache :public Item_nodeset_func
++{
++public:
++  String *string_cache;
++  Item_nodeset_context_cache(String *str_arg, String *pxml):
++    Item_nodeset_func(pxml), string_cache(str_arg) { }
++  String *val_nodeset(String *res)
++  { return string_cache; }
++  void fix_length_and_dec() { max_length= MAX_BLOB_WIDTH; }
++};
++
++
++class Item_func_xpath_position :public Item_int_func
++{
++  String *pxml;
++  String tmp_value;
++public:
++  Item_func_xpath_position(Item *a, String *p)
++    :Item_int_func(a), pxml(p) {}
++  const char *func_name() const { return "xpath_position"; }
++  void fix_length_and_dec() { max_length=10; }
++  longlong val_int()
++  {
++    String *flt= args[0]->val_nodeset(&tmp_value);
++    if (flt->length() == sizeof(MY_XPATH_FLT))
++      return ((MY_XPATH_FLT*)flt->ptr())->pos + 1;
++    return 0;
++  }
++};
++
++
++class Item_func_xpath_count :public Item_int_func
++{
++  String *pxml;
++  String tmp_value;
++public:
++  Item_func_xpath_count(Item *a, String *p)
++    :Item_int_func(a), pxml(p) {}
++  const char *func_name() const { return "xpath_count"; }
++  void fix_length_and_dec() { max_length=10; }
++  longlong val_int()
++  {
++    uint predicate_supplied_context_size;
++    String *res= args[0]->val_nodeset(&tmp_value);
++    if (res->length() == sizeof(MY_XPATH_FLT) &&
++        (predicate_supplied_context_size= ((MY_XPATH_FLT*)res->ptr())->size))
++      return predicate_supplied_context_size;
++    return res->length() / sizeof(MY_XPATH_FLT);
++  }
++};
++
++
++class Item_func_xpath_sum :public Item_real_func
++{
++  String *pxml;
++  String tmp_value;
++public:
++  Item_func_xpath_sum(Item *a, String *p)
++    :Item_real_func(a), pxml(p) {}
++
++  const char *func_name() const { return "xpath_sum"; }
++  double val_real()
++  {
++    double sum= 0;
++    String *res= args[0]->val_nodeset(&tmp_value);
++    MY_XPATH_FLT *fltbeg= (MY_XPATH_FLT*) res->ptr();
++    MY_XPATH_FLT *fltend= (MY_XPATH_FLT*) (res->ptr() + res->length());
++    uint numnodes= pxml->length() / sizeof(MY_XML_NODE);
++    MY_XML_NODE *nodebeg= (MY_XML_NODE*) pxml->ptr();
++  
++    for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++    {
++      MY_XML_NODE *self= &nodebeg[flt->num];
++      for (uint j= flt->num + 1; j < numnodes; j++)
++      {
++        MY_XML_NODE *node= &nodebeg[j];
++        if (node->level <= self->level)
++          break;
++        if ((node->parent == flt->num) &&
++            (node->type == MY_XML_NODE_TEXT))
++        {
++          char *end;
++          int err;
++          double add= my_strntod(collation.collation, (char*) node->beg,
++                                 node->end - node->beg, &end, &err);
++          if (!err)
++            sum+= add;
++        }
++      }
++    }
++    return sum;
++  }
++};
++
++
++class Item_nodeset_to_const_comparator :public Item_bool_func
++{
++  String *pxml;
++  String tmp_nodeset;
++public:
++  Item_nodeset_to_const_comparator(Item *nodeset, Item *cmpfunc, String *p) 
++    :Item_bool_func(nodeset,cmpfunc), pxml(p) {}
++  enum Type type() const { return XPATH_NODESET_CMP; };
++  const char *func_name() const { return "xpath_nodeset_to_const_comparator"; }
++  bool is_bool_func() { return 1; }
++
++  longlong val_int()
++  {
++    Item_func *comp= (Item_func*)args[1];
++    Item_string *fake= (Item_string*)(comp->arguments()[0]);
++    String *res= args[0]->val_nodeset(&tmp_nodeset);
++    MY_XPATH_FLT *fltbeg= (MY_XPATH_FLT*) res->ptr();
++    MY_XPATH_FLT *fltend= (MY_XPATH_FLT*) (res->ptr() + res->length());
++    MY_XML_NODE *nodebeg= (MY_XML_NODE*) pxml->ptr();
++    uint numnodes= pxml->length() / sizeof(MY_XML_NODE);
++
++    for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++    {
++      MY_XML_NODE *self= &nodebeg[flt->num];
++      for (uint j= flt->num + 1; j < numnodes; j++)
++      {
++        MY_XML_NODE *node= &nodebeg[j];
++        if (node->level <= self->level)
++          break;
++        if ((node->parent == flt->num) &&
++            (node->type == MY_XML_NODE_TEXT))
++        {
++          fake->str_value.set(node->beg, node->end - node->beg,
++                              collation.collation);
++          if (args[1]->val_int())
++            return 1;
++        }
++      }
++    }
++    return 0;
++  }
++};
++
++
++String *Item_nodeset_func_rootelement::val_nodeset(String *nodeset)
++{
++  nodeset->length(0);
++  ((XPathFilter*)nodeset)->append_element(0, 0);
++  return nodeset;
++}
++
++
++String * Item_nodeset_func_union::val_nodeset(String *nodeset)
++{
++  uint num_nodes= pxml->length() / sizeof(MY_XML_NODE);
++  String set0, *s0= args[0]->val_nodeset(&set0);
++  String set1, *s1= args[1]->val_nodeset(&set1);
++  String both_str;
++  both_str.alloc(num_nodes);
++  char *both= (char*) both_str.ptr();
++  memset(both, 0, num_nodes);
++  MY_XPATH_FLT *flt;
++
++  fltbeg= (MY_XPATH_FLT*) s0->ptr();
++  fltend= (MY_XPATH_FLT*) (s0->ptr() + s0->length());
++  for (flt= fltbeg; flt < fltend; flt++)
++    both[flt->num]= 1;
++
++  fltbeg= (MY_XPATH_FLT*) s1->ptr();
++  fltend= (MY_XPATH_FLT*) (s1->ptr() + s1->length());
++  for (flt= fltbeg; flt < fltend; flt++)
++    both[flt->num]= 1;
++
++  nodeset->length(0);
++  for (uint i= 0, pos= 0; i < num_nodes; i++)
++  {
++    if (both[i])
++     ((XPathFilter*)nodeset)->append_element(i, pos++);
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_selfbyname::val_nodeset(String *nodeset)
++{
++  prepare(nodeset);
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    uint pos= 0;
++    MY_XML_NODE *self= &nodebeg[flt->num];
++    if (validname(self))
++      ((XPathFilter*)nodeset)->append_element(flt->num,pos++);
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_childbyname::val_nodeset(String *nodeset)
++{
++  prepare(nodeset);
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    MY_XML_NODE *self= &nodebeg[flt->num];
++    for (uint pos= 0, j= flt->num + 1 ; j < numnodes; j++)
++    {
++      MY_XML_NODE *node= &nodebeg[j];
++      if (node->level <= self->level)
++        break;
++      if ((node->parent == flt->num) &&
++          (node->type == MY_XML_NODE_TAG) &&
++          validname(node))
++        ((XPathFilter*)nodeset)->append_element(j, pos++);
++    }
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_descendantbyname::val_nodeset(String *nodeset)
++{
++  prepare(nodeset);
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    uint pos= 0;
++    MY_XML_NODE *self= &nodebeg[flt->num];
++    if (need_self && validname(self))
++      ((XPathFilter*)nodeset)->append_element(flt->num,pos++);
++    for (uint j= flt->num + 1 ; j < numnodes ; j++)
++    {
++      MY_XML_NODE *node= &nodebeg[j];
++      if (node->level <= self->level)
++        break;
++      if ((node->type == MY_XML_NODE_TAG) && validname(node))
++        ((XPathFilter*)nodeset)->append_element(j,pos++);
++    }
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_ancestorbyname::val_nodeset(String *nodeset)
++{
++  char *active;
++  String active_str;
++  prepare(nodeset);
++  active_str.alloc(numnodes);
++  active= (char*) active_str.ptr();
++  memset(active, 0, numnodes);
++  uint pos= 0;
++
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    /*
++       Go to the root and add all nodes on the way.
++       Don't add the root if context is the root itelf
++    */
++    MY_XML_NODE *self= &nodebeg[flt->num];
++    if (need_self && validname(self))
++    {
++      active[flt->num]= 1;
++      pos++;
++    }
++
++    for (uint j= self->parent; nodebeg[j].parent != j; j= nodebeg[j].parent)
++    {
++      if (flt->num && validname(&nodebeg[j]))
++      {
++        active[j]= 1;
++        pos++;
++      }
++    }
++  }
++
++  for (uint j= 0; j < numnodes ; j++)
++  {
++    if (active[j])
++      ((XPathFilter*)nodeset)->append_element(j, --pos);
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_parentbyname::val_nodeset(String *nodeset)
++{
++  char *active;
++  String active_str;
++  prepare(nodeset);
++  active_str.alloc(numnodes);
++  active= (char*) active_str.ptr();
++  memset(active, 0, numnodes);
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    uint j= nodebeg[flt->num].parent;
++    if (flt->num && validname(&nodebeg[j]))
++        active[j]= 1;
++  }
++  for (uint j= 0, pos= 0; j < numnodes ; j++)
++  {
++    if (active[j])
++      ((XPathFilter*)nodeset)->append_element(j, pos++);
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_attributebyname::val_nodeset(String *nodeset)
++{
++  prepare(nodeset);
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    MY_XML_NODE *self= &nodebeg[flt->num];
++    for (uint pos=0, j= flt->num + 1 ; j < numnodes; j++)
++    {
++      MY_XML_NODE *node= &nodebeg[j];
++      if (node->level <= self->level)
++        break;
++      if ((node->parent == flt->num) &&
++         (node->type == MY_XML_NODE_ATTR) &&
++          validname(node))
++        ((XPathFilter*)nodeset)->append_element(j, pos++);
++    }
++  }
++  return nodeset;
++}
++
++
++String *Item_nodeset_func_predicate::val_nodeset(String *str)
++{
++  Item_nodeset_func *nodeset_func= (Item_nodeset_func*) args[0];
++  Item_func *comp_func= (Item_func*)args[1];
++  uint pos= 0, size;
++  prepare(str);
++  size= fltend - fltbeg;
++  for (MY_XPATH_FLT *flt= fltbeg; flt < fltend; flt++)
++  {
++    nodeset_func->context_cache.length(0);
++    ((XPathFilter*)(&nodeset_func->context_cache))->append_element(flt->num,
++                                                                   flt->pos,
++                                                                   size);
++    if (comp_func->val_int())
++      ((XPathFilter*)str)->append_element(flt->num, pos++);
++  }
++  return str;
++}
++
++
++String *Item_nodeset_func_elementbyindex::val_nodeset(String *nodeset)
++{
++  Item_nodeset_func *nodeset_func= (Item_nodeset_func*) args[0];
++  prepare(nodeset);
++  MY_XPATH_FLT *flt;
++  uint pos, size= fltend - fltbeg;
++  for (pos= 0, flt= fltbeg; flt < fltend; flt++)
++  {
++    nodeset_func->context_cache.length(0);
++    ((XPathFilter*)(&nodeset_func->context_cache))->append_element(flt->num,
++                                                                   flt->pos,
++                                                                   size);
++    int index= (int) (args[1]->val_int()) - 1;
++    if (index >= 0 && (flt->pos == (uint) index || args[1]->is_bool_func()))
++      ((XPathFilter*)nodeset)->append_element(flt->num, pos++);
++  }
++  return nodeset;
++}
++
++
++/*
++  If item is a node set, then casts it to boolean,
++  otherwise returns the item itself.
++*/
++static Item* nodeset2bool(MY_XPATH *xpath, Item *item)
++{
++  if (item->type() == Item::XPATH_NODESET)
++    return new Item_xpath_cast_bool(item, xpath->pxml);
++  return item;
++}
++
++
++/*
++  XPath lexical tokens
++*/
++#define MY_XPATH_LEX_DIGITS   'd'
++#define MY_XPATH_LEX_IDENT    'i'
++#define MY_XPATH_LEX_STRING   's'
++#define MY_XPATH_LEX_SLASH    '/'
++#define MY_XPATH_LEX_LB       '['
++#define MY_XPATH_LEX_RB       ']'
++#define MY_XPATH_LEX_LP       '('
++#define MY_XPATH_LEX_RP       ')'
++#define MY_XPATH_LEX_EQ       '='
++#define MY_XPATH_LEX_LESS     '<'
++#define MY_XPATH_LEX_GREATER  '>'
++#define MY_XPATH_LEX_AT       '@'
++#define MY_XPATH_LEX_COLON    ':'
++#define MY_XPATH_LEX_ASTERISK '*'
++#define MY_XPATH_LEX_DOT      '.'
++#define MY_XPATH_LEX_VLINE    '|'
++#define MY_XPATH_LEX_MINUS    '-'
++#define MY_XPATH_LEX_PLUS     '+'
++#define MY_XPATH_LEX_EXCL     '!'
++#define MY_XPATH_LEX_COMMA    ','
++#define MY_XPATH_LEX_DOLLAR   '$'
++#define MY_XPATH_LEX_ERROR    'A'
++#define MY_XPATH_LEX_EOF      'B'
++#define MY_XPATH_LEX_AND      'C'
++#define MY_XPATH_LEX_OR       'D'
++#define MY_XPATH_LEX_DIV      'E'
++#define MY_XPATH_LEX_MOD      'F'
++#define MY_XPATH_LEX_FUNC     'G'
++#define MY_XPATH_LEX_NODETYPE 'H'
++#define MY_XPATH_LEX_AXIS     'I'
++#define MY_XPATH_LEX_LE       'J'
++#define MY_XPATH_LEX_GE       'K'
++
++
++/*
++  XPath axis type
++*/
++#define MY_XPATH_AXIS_ANCESTOR            0
++#define MY_XPATH_AXIS_ANCESTOR_OR_SELF    1
++#define MY_XPATH_AXIS_ATTRIBUTE           2
++#define MY_XPATH_AXIS_CHILD               3
++#define MY_XPATH_AXIS_DESCENDANT          4
++#define MY_XPATH_AXIS_DESCENDANT_OR_SELF  5
++#define MY_XPATH_AXIS_FOLLOWING           6
++#define MY_XPATH_AXIS_FOLLOWING_SIBLING   7
++#define MY_XPATH_AXIS_NAMESPACE           8
++#define MY_XPATH_AXIS_PARENT              9
++#define MY_XPATH_AXIS_PRECEDING          10
++#define MY_XPATH_AXIS_PRECEDING_SIBLING  11
++#define MY_XPATH_AXIS_SELF               12
++
++
++/*
++  Create scalar comparator
++
++  SYNOPSYS
++    Create a comparator function for scalar arguments,
++    for the given arguments and operation.
++
++  RETURN
++    The newly created item.
++*/
++static Item *eq_func(int oper, Item *a, Item *b)
++{
++  switch (oper)
++  {
++    case '=': return new Item_func_eq(a, b);
++    case '!': return new Item_func_ne(a, b);
++    case MY_XPATH_LEX_GE: return new Item_func_ge(a, b);
++    case MY_XPATH_LEX_LE: return new Item_func_le(a, b);
++    case MY_XPATH_LEX_GREATER: return new Item_func_gt(a, b);
++    case MY_XPATH_LEX_LESS: return new Item_func_lt(a, b);
++  }
++  return 0;
++}
++
++
++/*
++  Create scalar comparator
++
++  SYNOPSYS
++    Create a comparator function for scalar arguments,
++    for the given arguments and reverse operation, e.g.
++
++    A > B  is converted into  B < A
++
++  RETURN
++    The newly created item.
++*/
++static Item *eq_func_reverse(int oper, Item *a, Item *b)
++{
++  switch (oper)
++  {
++    case '=': return new Item_func_eq(a, b);
++    case '!': return new Item_func_ne(a, b);
++    case MY_XPATH_LEX_GE: return new Item_func_le(a, b);
++    case MY_XPATH_LEX_LE: return new Item_func_ge(a, b);
++    case MY_XPATH_LEX_GREATER: return new Item_func_lt(a, b);
++    case MY_XPATH_LEX_LESS: return new Item_func_gt(a, b);
++  }
++  return 0;
++}
++
++
++/*
++  Create a comparator
++
++  SYNOPSYS
++    Create a comparator for scalar or non-scalar arguments,
++    for the given arguments and operation.
++
++  RETURN
++    The newly created item.
++*/
++static Item *create_comparator(MY_XPATH *xpath,
++                               int oper, MY_XPATH_LEX *context,
++                               Item *a, Item *b)
++{
++  if (a->type() != Item::XPATH_NODESET &&
++      b->type() != Item::XPATH_NODESET)
++  {
++    return eq_func(oper, a, b); // two scalar arguments
++  }
++  else if (a->type() == Item::XPATH_NODESET &&
++           b->type() == Item::XPATH_NODESET)
++  {
++    uint len= xpath->query.end - context->beg;
++    set_if_smaller(len, 32);
++    my_printf_error(ER_UNKNOWN_ERROR,
++                    "XPATH error: "
++                    "comparison of two nodesets is not supported: '%.*s'",
++                    MYF(0), len, context->beg);
++
++    return 0; // TODO: Comparison of two nodesets
++  }
++  else
++  {
++    /*
++     Compare a node set to a scalar value.
++     We just create a fake Item_string() argument,
++     which will be filled to the partular value
++     in a loop through all of the nodes in the node set.
++    */
++
++    Item_string *fake= new Item_string("", 0, xpath->cs);
++    /* Don't cache fake because its value will be changed during comparison.*/
++    fake->set_used_tables(RAND_TABLE_BIT);
++    Item_nodeset_func *nodeset;
++    Item *scalar, *comp;
++    if (a->type() == Item::XPATH_NODESET)
++    {
++      nodeset= (Item_nodeset_func*) a;
++      scalar= b;
++      comp= eq_func(oper, (Item*)fake, scalar);
++    }
++    else
++    {
++      nodeset= (Item_nodeset_func*) b;
++      scalar= a;
++      comp= eq_func_reverse(oper, fake, scalar);
++    }
++    return new Item_nodeset_to_const_comparator(nodeset, comp, xpath->pxml);
++  }
++}
++
++
++/*
++  Create a step
++
++  SYNOPSYS
++    Create a step function for the given argument and axis.
++
++  RETURN
++    The newly created item.
++*/
++static Item* nametestfunc(MY_XPATH *xpath,
++                          int type, Item *arg, const char *beg, uint len)
++{
++  DBUG_ASSERT(arg != 0);
++  DBUG_ASSERT(arg->type() == Item::XPATH_NODESET);
++  DBUG_ASSERT(beg != 0);
++  DBUG_ASSERT(len > 0);
++
++  Item *res;
++  switch (type)
++  {
++  case MY_XPATH_AXIS_ANCESTOR:
++    res= new Item_nodeset_func_ancestorbyname(arg, beg, len, xpath->pxml, 0);
++    break;
++  case MY_XPATH_AXIS_ANCESTOR_OR_SELF:
++    res= new Item_nodeset_func_ancestorbyname(arg, beg, len, xpath->pxml, 1);
++    break;
++  case MY_XPATH_AXIS_PARENT:
++    res= new Item_nodeset_func_parentbyname(arg, beg, len, xpath->pxml);
++    break;
++  case MY_XPATH_AXIS_DESCENDANT:
++    res= new Item_nodeset_func_descendantbyname(arg, beg, len, xpath->pxml, 0);
++    break;
++  case MY_XPATH_AXIS_DESCENDANT_OR_SELF:
++    res= new Item_nodeset_func_descendantbyname(arg, beg, len, xpath->pxml, 1);
++    break;
++  case MY_XPATH_AXIS_ATTRIBUTE:
++    res= new Item_nodeset_func_attributebyname(arg, beg, len, xpath->pxml);
++    break;
++  case MY_XPATH_AXIS_SELF:
++    res= new Item_nodeset_func_selfbyname(arg, beg, len, xpath->pxml);
++    break;
++  default:
++    res= new Item_nodeset_func_childbyname(arg, beg, len, xpath->pxml);
++  }
++  return res;
++}
++
++
++/*
++  Tokens consisting of one character, for faster lexical analizer.
++*/
++static char simpletok[128]=
++{
++  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
++/*
++    ! " # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ?
++  @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \ ] ^ _
+diff -rupN sql/sql_trigger.cc ./sql/sql_trigger.cc
+--- sql/sql_trigger.cc	2013-12-21 02:00:54.000000000 +0100
++++ sql/sql_trigger.cc	2013-12-21 02:20:53.000000000 +0100
+@@ -192,32 +192,32 @@ static File_option triggers_file_paramet
+ {
+   {
+     { C_STRING_WITH_LEN("triggers") },
+-    my_offsetof(class Table_triggers_list, definitions_list),
++    my_int_offsetof(class Table_triggers_list, definitions_list),
+     FILE_OPTIONS_STRLIST
+   },
+   {
+     { C_STRING_WITH_LEN("sql_modes") },
+-    my_offsetof(class Table_triggers_list, definition_modes_list),
++    my_int_offsetof(class Table_triggers_list, definition_modes_list),
+     FILE_OPTIONS_ULLLIST
+   },
+   {
+     { C_STRING_WITH_LEN("definers") },
+-    my_offsetof(class Table_triggers_list, definers_list),
++    my_int_offsetof(class Table_triggers_list, definers_list),
+     FILE_OPTIONS_STRLIST
+   },
+   {
+     { C_STRING_WITH_LEN("client_cs_names") },
+-    my_offsetof(class Table_triggers_list, client_cs_names),
++    my_int_offsetof(class Table_triggers_list, client_cs_names),
+     FILE_OPTIONS_STRLIST
+   },
+   {
+     { C_STRING_WITH_LEN("connection_cl_names") },
+-    my_offsetof(class Table_triggers_list, connection_cl_names),
++    my_int_offsetof(class Table_triggers_list, connection_cl_names),
+     FILE_OPTIONS_STRLIST
+   },
+   {
+     { C_STRING_WITH_LEN("db_cl_names") },
+-    my_offsetof(class Table_triggers_list, db_cl_names),
++    my_int_offsetof(class Table_triggers_list, db_cl_names),
+     FILE_OPTIONS_STRLIST
+   },
+   { { 0, 0 }, 0, FILE_OPTIONS_STRING }
+@@ -226,7 +226,7 @@ static File_option triggers_file_paramet
+ File_option sql_modes_parameters=
+ {
+   { C_STRING_WITH_LEN("sql_modes") },
+-  my_offsetof(class Table_triggers_list, definition_modes_list),
++  my_int_offsetof(class Table_triggers_list, definition_modes_list),
+   FILE_OPTIONS_ULLLIST
+ };
+ 
+diff -rupN sql/sql_view.cc ./sql/sql_view.cc
+--- sql/sql_view.cc	2013-12-21 02:00:54.000000000 +0100
++++ sql/sql_view.cc	2013-12-21 02:24:46.000000000 +0100
+@@ -762,46 +762,46 @@ static const int required_view_parameter
+ */
+ static File_option view_parameters[]=
+ {{{ C_STRING_WITH_LEN("query")},
+-  my_offsetof(TABLE_LIST, select_stmt),
++  my_int_offsetof(TABLE_LIST, select_stmt),
+   FILE_OPTIONS_ESTRING},
+  {{ C_STRING_WITH_LEN("md5")},
+-  my_offsetof(TABLE_LIST, md5),
++  my_int_offsetof(TABLE_LIST, md5),
+   FILE_OPTIONS_STRING},
+  {{ C_STRING_WITH_LEN("updatable")},
+-  my_offsetof(TABLE_LIST, updatable_view),
++  my_int_offsetof(TABLE_LIST, updatable_view),
+   FILE_OPTIONS_ULONGLONG},
+  {{ C_STRING_WITH_LEN("algorithm")},
+-  my_offsetof(TABLE_LIST, algorithm),
++  my_int_offsetof(TABLE_LIST, algorithm),
+   FILE_OPTIONS_ULONGLONG},
+  {{ C_STRING_WITH_LEN("definer_user")},
+-  my_offsetof(TABLE_LIST, definer.user),
++  my_int_offsetof(TABLE_LIST, definer.user),
+   FILE_OPTIONS_STRING},
+  {{ C_STRING_WITH_LEN("definer_host")},
+-  my_offsetof(TABLE_LIST, definer.host),
++  my_int_offsetof(TABLE_LIST, definer.host),
+   FILE_OPTIONS_STRING},
+  {{ C_STRING_WITH_LEN("suid")},
+-  my_offsetof(TABLE_LIST, view_suid),
++  my_int_offsetof(TABLE_LIST, view_suid),
+   FILE_OPTIONS_ULONGLONG},
+  {{ C_STRING_WITH_LEN("with_check_option")},
+-  my_offsetof(TABLE_LIST, with_check),
++  my_int_offsetof(TABLE_LIST, with_check),
+   FILE_OPTIONS_ULONGLONG},
+  {{ C_STRING_WITH_LEN("timestamp")},
+-  my_offsetof(TABLE_LIST, timestamp),
++  my_int_offsetof(TABLE_LIST, timestamp),
+   FILE_OPTIONS_TIMESTAMP},
+  {{ C_STRING_WITH_LEN("create-version")},
+-  my_offsetof(TABLE_LIST, file_version),
++  my_int_offsetof(TABLE_LIST, file_version),
+   FILE_OPTIONS_ULONGLONG},
+  {{ C_STRING_WITH_LEN("source")},
+-  my_offsetof(TABLE_LIST, source),
++  my_int_offsetof(TABLE_LIST, source),
+   FILE_OPTIONS_ESTRING},
+  {{(char*) STRING_WITH_LEN("client_cs_name")},
+-  my_offsetof(TABLE_LIST, view_client_cs_name),
++  my_int_offsetof(TABLE_LIST, view_client_cs_name),
+   FILE_OPTIONS_STRING},
+  {{(char*) STRING_WITH_LEN("connection_cl_name")},
+-  my_offsetof(TABLE_LIST, view_connection_cl_name),
++  my_int_offsetof(TABLE_LIST, view_connection_cl_name),
+   FILE_OPTIONS_STRING},
+  {{(char*) STRING_WITH_LEN("view_body_utf8")},
+-  my_offsetof(TABLE_LIST, view_body_utf8),
++  my_int_offsetof(TABLE_LIST, view_body_utf8),
+   FILE_OPTIONS_ESTRING},
+  {{NullS, 0},			0,
+   FILE_OPTIONS_STRING}
+diff -rupN storage/innobase/fil/fil0fil.cc ./storage/innobase/fil/fil0fil.cc
+--- storage/innobase/fil/fil0fil.cc	2013-12-21 02:00:54.000000000 +0100
++++ storage/innobase/fil/fil0fil.cc	2013-12-21 02:10:52.000000000 +0100
+@@ -758,7 +758,7 @@ fil_node_open_file(
+ 			fprintf(stderr,
+ 				"InnoDB: Error: the size of single-table"
+ 				" tablespace file %s\n"
+-				"InnoDB: is only "UINT64PF","
++				"InnoDB: is only " UINT64PF ","
+ 				" should be at least %lu!\n",
+ 				node->name,
+ 				size_bytes,
+diff -rupN storage/innobase/fts/fts0opt.cc ./storage/innobase/fts/fts0opt.cc
+--- storage/innobase/fts/fts0opt.cc	2013-12-21 02:00:54.000000000 +0100
++++ storage/innobase/fts/fts0opt.cc	2013-12-21 02:13:11.000000000 +0100
+@@ -644,12 +644,12 @@ fts_zip_read_word(
+ 			}
+ 			break;
+ 
+-		case Z_BUF_ERROR:	/* No progress possible. */
++		case (ulint)Z_BUF_ERROR:	/* No progress possible. */
+ 		case Z_STREAM_END:
+ 			inflateEnd(zip->zp);
+ 			break;
+ 
+-		case Z_STREAM_ERROR:
++		case (ulint)Z_STREAM_ERROR:
+ 		default:
+ 			ut_error;
+ 		}
+@@ -735,8 +735,8 @@ fts_fetch_index_words(
+ 			break;
+ 
+ 		case Z_STREAM_END:
+-		case Z_BUF_ERROR:
+-		case Z_STREAM_ERROR:
++		case (ulint)Z_BUF_ERROR:
++		case (ulint)Z_STREAM_ERROR:
+ 		default:
+ 			ut_error;
+ 			break;
+diff -rupN storage/innobase/handler/ha_innodb.cc ./storage/innobase/handler/ha_innodb.cc
+--- storage/innobase/handler/ha_innodb.cc	2013-12-21 02:00:54.000000000 +0100
++++ storage/innobase/handler/ha_innodb.cc	2013-12-21 02:15:04.000000000 +0100
+@@ -3803,7 +3803,7 @@ innobase_close_connection(
+ 
+ 		sql_print_warning(
+ 			"MySQL is closing a connection that has an active "
+-			"InnoDB transaction.  "TRX_ID_FMT" row modifications "
++			"InnoDB transaction.  " TRX_ID_FMT " row modifications "
+ 			"will roll back.",
+ 			trx->undo_no);
+ 	}
+@@ -6914,7 +6914,7 @@ calc_row_difference(
+ 			if (doc_id < prebuilt->table->fts->cache->next_doc_id) {
+ 				fprintf(stderr,
+ 					"InnoDB: FTS Doc ID must be larger than"
+-					" "IB_ID_FMT" for table",
++					" " IB_ID_FMT " for table",
+ 					innodb_table->fts->cache->next_doc_id
+ 					- 1);
+ 				ut_print_name(stderr, trx,
+@@ -6926,9 +6926,9 @@ calc_row_difference(
+ 				    - prebuilt->table->fts->cache->next_doc_id)
+ 				   >= FTS_DOC_ID_MAX_STEP) {
+ 				fprintf(stderr,
+-					"InnoDB: Doc ID "UINT64PF" is too"
++					"InnoDB: Doc ID " UINT64PF " is too"
+ 					" big. Its difference with largest"
+-					" Doc ID used "UINT64PF" cannot"
++					" Doc ID used " UINT64PF " cannot"
+ 					" exceed or equal to %d\n",
+ 					doc_id,
+ 					prebuilt->table->fts->cache->next_doc_id - 1,
+diff -rupN storage/innobase/include/univ.i ./storage/innobase/include/univ.i
+--- storage/innobase/include/univ.i	2013-12-21 02:00:54.000000000 +0100
++++ storage/innobase/include/univ.i	2013-12-21 02:15:54.000000000 +0100
+@@ -440,10 +440,10 @@ typedef unsigned __int64 ib_uint64_t;
+ typedef unsigned __int32 ib_uint32_t;
+ #else
+ /* Use the integer types and formatting strings defined in the C99 standard. */
+-# define UINT32PF	"%"PRIu32
+-# define INT64PF	"%"PRId64
+-# define UINT64PF	"%"PRIu64
+-# define UINT64PFx	"%016"PRIx64
++# define UINT32PF	"%" PRIu32
++# define INT64PF	"%" PRId64
++# define UINT64PF	"%" PRIu64
++# define UINT64PFx	"%016" PRIx64
+ # define DBUG_LSN_PF    UINT64PF
+ typedef int64_t ib_int64_t;
+ typedef uint64_t ib_uint64_t;
+diff -rupN storage/innobase/os/os0file.cc ./storage/innobase/os/os0file.cc
+--- storage/innobase/os/os0file.cc	2013-12-21 02:00:54.000000000 +0100
++++ storage/innobase/os/os0file.cc	2013-12-21 02:15:54.000000000 +0100
+@@ -2638,7 +2638,7 @@ try_again:
+ 	}
+ 
+ 	ib_logf(IB_LOG_LEVEL_ERROR,
+-		"Tried to read "ULINTPF" bytes at offset " UINT64PF". "
++		"Tried to read " ULINTPF " bytes at offset " UINT64PF ". "
+ 		"Was only able to read %ld.", n, offset, (lint) ret);
+ #endif /* __WIN__ */
+ #ifdef __WIN__
+@@ -2964,7 +2964,7 @@ retry:
+ 
+ 		fprintf(stderr,
+ 			" InnoDB: Error: Write to file %s failed"
+-			" at offset "UINT64PF".\n"
++			" at offset " UINT64PF ".\n"
+ 			"InnoDB: %lu bytes should have been written,"
+ 			" only %ld were written.\n"
+ 			"InnoDB: Operating system error number %lu.\n"
+diff -rupN storage/innobase/row/row0ins.cc ./storage/innobase/row/row0ins.cc
+--- storage/innobase/row/row0ins.cc	2013-12-21 02:00:54.000000000 +0100
++++ storage/innobase/row/row0ins.cc	2013-12-21 02:15:04.000000000 +0100
+@@ -658,7 +658,7 @@ row_ins_cascade_calc_update_vec(
+ 						fprintf(stderr,
+ 						       "InnoDB: FTS Doc ID "
+ 						       "must be larger than "
+-						       IB_ID_FMT" for table",
++						       IB_ID_FMT " for table",
+ 						       n_doc_id -1);
+ 
+ 						ut_print_name(stderr, trx,
+diff -rupN storage/innobase/row/row0merge.cc ./storage/innobase/row/row0merge.cc
+--- storage/innobase/row/row0merge.cc	2013-12-21 02:00:54.000000000 +0100
++++ storage/innobase/row/row0merge.cc	2013-12-21 02:10:52.000000000 +0100
+@@ -786,7 +786,7 @@ row_merge_read(
+ 	if (UNIV_UNLIKELY(!success)) {
+ 		ut_print_timestamp(stderr);
+ 		fprintf(stderr,
+-			"  InnoDB: failed to read merge block at "UINT64PF"\n",
++			"  InnoDB: failed to read merge block at " UINT64PF "\n",
+ 			ofs);
+ 	}
+ 
+diff -rupN storage/innobase/row/row0mysql.cc ./storage/innobase/row/row0mysql.cc
+--- storage/innobase/row/row0mysql.cc	2013-12-21 02:00:54.000000000 +0100
++++ storage/innobase/row/row0mysql.cc	2013-12-21 02:10:52.000000000 +0100
+@@ -1357,7 +1357,7 @@ error_exit:
+ 			if (doc_id < next_doc_id) {
+ 				fprintf(stderr,
+ 					"InnoDB: FTS Doc ID must be large than"
+-					" "UINT64PF" for table",
++					" " UINT64PF " for table",
+ 					next_doc_id - 1);
+ 				ut_print_name(stderr, trx, TRUE, table->name);
+ 				putc('\n', stderr);
+@@ -1372,9 +1372,9 @@ error_exit:
+ 
+ 			if (doc_id - next_doc_id >= FTS_DOC_ID_MAX_STEP) {
+ 				fprintf(stderr,
+-					"InnoDB: Doc ID "UINT64PF" is too"
++					"InnoDB: Doc ID " UINT64PF " is too"
+ 					" big. Its difference with largest"
+-					" used Doc ID "UINT64PF" cannot"
++					" used Doc ID " UINT64PF " cannot"
+ 					" exceed or equal to %d\n",
+ 					doc_id, next_doc_id - 1,
+ 					FTS_DOC_ID_MAX_STEP);
+diff -rupN storage/innobase/srv/srv0mon.cc ./storage/innobase/srv/srv0mon.cc
+--- storage/innobase/srv/srv0mon.cc	2013-12-21 02:00:54.000000000 +0100
++++ storage/innobase/srv/srv0mon.cc	2013-12-21 02:17:20.000000000 +0100
+@@ -41,8 +41,8 @@ Created 12/9/2009 Jimmy Yang
+ /* Macro to standardize the counter names for counters in the
+ "monitor_buf_page" module as they have very structured defines */
+ #define	MONITOR_BUF_PAGE(name, description, code, op, op_code)	\
+-	{"buffer_page_"op"_"name, "buffer_page_io",		\
+-	 "Number of "description" Pages "op,			\
++	{"buffer_page_" op "_" name, "buffer_page_io",		\
++	 "Number of " description " Pages " op,			\
+ 	 MONITOR_GROUP_MODULE, MONITOR_DEFAULT_START,		\
+ 	 MONITOR_##code##_##op_code}
+ 
+diff -rupN storage/innobase/srv/srv0start.cc ./storage/innobase/srv/srv0start.cc
+--- storage/innobase/srv/srv0start.cc	2013-12-21 02:00:54.000000000 +0100
++++ storage/innobase/srv/srv0start.cc	2013-12-21 02:10:52.000000000 +0100
+@@ -2153,9 +2153,9 @@ innobase_start_or_create_for_mysql(void)
+ 			} else if (size != srv_log_file_size) {
+ 				ib_logf(IB_LOG_LEVEL_ERROR,
+ 					"Log file %s is"
+-					" of different size "UINT64PF" bytes"
++					" of different size " UINT64PF " bytes"
+ 					" than other log"
+-					" files "UINT64PF" bytes!",
++					" files " UINT64PF " bytes!",
+ 					logfilename,
+ 					size << UNIV_PAGE_SIZE_SHIFT,
+ 					(os_offset_t) srv_log_file_size
+diff -rupN storage/innobase/sync/sync0sync.cc ./storage/innobase/sync/sync0sync.cc
+--- storage/innobase/sync/sync0sync.cc	2013-12-21 02:00:54.000000000 +0100
++++ storage/innobase/sync/sync0sync.cc	2013-12-21 02:10:52.000000000 +0100
+@@ -1557,12 +1557,12 @@ sync_print_wait_info(
+ 	FILE*	file)		/*!< in: file where to print */
+ {
+ 	fprintf(file,
+-		"Mutex spin waits "UINT64PF", rounds "UINT64PF", "
+-		"OS waits "UINT64PF"\n"
+-		"RW-shared spins "UINT64PF", rounds "UINT64PF", "
+-		"OS waits "UINT64PF"\n"
+-		"RW-excl spins "UINT64PF", rounds "UINT64PF", "
+-		"OS waits "UINT64PF"\n",
++		"Mutex spin waits " UINT64PF ", rounds " UINT64PF ", "
++		"OS waits " UINT64PF "\n"
++		"RW-shared spins " UINT64PF ", rounds " UINT64PF ", "
++		"OS waits " UINT64PF "\n"
++		"RW-excl spins " UINT64PF ", rounds " UINT64PF ", "
++		"OS waits " UINT64PF "\n",
+ 		(ib_uint64_t) mutex_spin_wait_count,
+ 		(ib_uint64_t) mutex_spin_round_count,
+ 		(ib_uint64_t) mutex_os_wait_count,
+diff -rupN storage/innobase/trx/trx0i_s.cc ./storage/innobase/trx/trx0i_s.cc
+--- storage/innobase/trx/trx0i_s.cc	2013-12-21 02:00:54.000000000 +0100
++++ storage/innobase/trx/trx0i_s.cc	2013-12-21 02:14:42.000000000 +0100
+@@ -1653,7 +1653,7 @@ trx_i_s_create_lock_id(
+ 	} else {
+ 		/* table lock */
+ 		res_len = ut_snprintf(lock_id, lock_id_size,
+-				      TRX_ID_FMT":"UINT64PF,
++				      TRX_ID_FMT ":" UINT64PF,
+ 				      row->lock_trx_id,
+ 				      row->lock_table_id);
+ 	}
+diff -rupN storage/innobase/trx/trx0trx.cc ./storage/innobase/trx/trx0trx.cc
+--- storage/innobase/trx/trx0trx.cc	2013-12-21 02:00:54.000000000 +0100
++++ storage/innobase/trx/trx0trx.cc	2013-12-21 02:14:42.000000000 +0100
+@@ -1787,7 +1787,7 @@ state_ok:
+ 
+ 	if (trx->undo_no != 0) {
+ 		newline = TRUE;
+-		fprintf(f, ", undo log entries "TRX_ID_FMT, trx->undo_no);
++		fprintf(f, ", undo log entries " TRX_ID_FMT, trx->undo_no);
+ 	}
+ 
+ 	if (newline) {
+@@ -2086,7 +2086,7 @@ trx_recover_for_mysql(
+ 			ut_print_timestamp(stderr);
+ 			fprintf(stderr,
+ 				"  InnoDB: Transaction contains changes"
+-				" to "TRX_ID_FMT" rows\n",
++				" to " TRX_ID_FMT " rows\n",
+ 				trx->undo_no);
+ 
+ 			count++;
