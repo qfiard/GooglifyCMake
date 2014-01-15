@@ -8,7 +8,8 @@
 
 namespace util {
 
-template <class T> class conditional_deleter {
+template <class T>
+class conditional_deleter {
  public:
   conditional_deleter() : owner_(true) {}
   explicit conditional_deleter(bool owner) : owner_(owner) {}

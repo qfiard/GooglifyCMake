@@ -25,7 +25,7 @@ void Init(const std::string &name, const std::string &log_directory = "/tmp");
 }  // namespace util
 
 template <class T>
-    std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
+std::ostream &operator<<(std::ostream &os, const std::vector<T> &v) {
   os << "[";
   bool first = true;
   for (const auto &value : v) {

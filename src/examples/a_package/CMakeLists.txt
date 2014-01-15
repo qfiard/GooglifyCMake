@@ -12,6 +12,12 @@ link_local(java_exe my_lib_java)
 link(java_exe examples.other_package.my_lib_java)
 
 cc_library(my_lib my_lib.h my_lib.cc)
-py_library(my_lib_py my_lib.py)
 
 java_library(my_lib_java MyLib.java)
+
+py_library(my_lib_py my_lib.py)
+
+cc_test(my_lib_test my_lib_test.cc)
+link_local(my_lib_test my_lib)
+link(my_lib_test third_party.gmock)
+link(my_lib_test third_party.gtest)

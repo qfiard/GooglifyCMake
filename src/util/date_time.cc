@@ -38,8 +38,7 @@ static std::unordered_map<std::string, TimeDuration>
     utc_offset_for_timezone_abbr;
 
 const std::unordered_map<std::size_t, std::size_t> kOffsetFieldForField = {
-  { 1, 5 }, { 3, 6 }
-};
+    {1, 5}, {3, 6}};
 
 static void InitUTCOffsetForTimezoneAbbr() {
   std::ifstream date_time_zonespec("date_time_zonespec.csv");

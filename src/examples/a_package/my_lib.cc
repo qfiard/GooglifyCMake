@@ -9,5 +9,5 @@ void MyLib::HelloWorld() {
   printf("Hello, World from examples::a_package::MyLib!\n");
 }
 
-} // namespace a_package
-} // namespace examples
+}  // namespace a_package
+}  // namespace examples

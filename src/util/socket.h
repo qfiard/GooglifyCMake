@@ -14,7 +14,8 @@ namespace util {
 
 DECLARE_int32(max_buffer_size);
 
-template <class MessageType, class SocketType> class Socket {
+template <class MessageType, class SocketType>
+class Socket {
  public:
   typedef boost::function<void(const MessageType&)> ReadCallback;
   typedef boost::function<void()> WriteCallback;

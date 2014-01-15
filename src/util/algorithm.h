@@ -29,37 +29,43 @@ bool CompareSecondReversed(const std::pair<A, B> &p1,
   return p1.second > p2.second;
 }
 
-template <class A, class B> class FirstComparator {
+template <class A, class B>
+class FirstComparator {
  public:
   bool operator()(const std::pair<A, B> &p1, const std::pair<A, B> &p2) {
     return p1.first < p2.first;
   }
 };
 
-template <class A, class B> class ReversedFirstComparator {
+template <class A, class B>
+class ReversedFirstComparator {
  public:
   bool operator()(const std::pair<A, B> &p1, const std::pair<A, B> &p2) {
     return p1.first > p2.first;
   }
 };
 
-template <class A, class B> class SecondComparator {
+template <class A, class B>
+class SecondComparator {
  public:
   bool operator()(const std::pair<A, B> &p1, const std::pair<A, B> &p2) {
     return p1.second < p2.second;
   }
 };
 
-template <class A, class B> class ReverseSecondComparator {
+template <class A, class B>
+class ReverseSecondComparator {
  public:
   bool operator()(const std::pair<A, B> &p1, const std::pair<A, B> &p2) {
     return p1.second > p2.second;
   }
 };
 
-template <class T, class Compare = std::less<T> > class PointerComparator {
+template <class T, class Compare = std::less<T> >
+class PointerComparator {
  public:
-  template <class TPtr> bool operator()(const TPtr &p1, const TPtr &p2) {
+  template <class TPtr>
+  bool operator()(const TPtr &p1, const TPtr &p2) {
     Compare compare;
     return compare(*p1, *p2);
   }

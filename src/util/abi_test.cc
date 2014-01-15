@@ -4,8 +4,7 @@
 namespace util {
 namespace abi {
 
-class ABC {
-};
+class ABC {};
 
 namespace {
 

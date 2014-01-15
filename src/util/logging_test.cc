@@ -21,8 +21,7 @@ std::string GetLastLine(std::string file_path) {
 
 fs::path GetFirstFileInDirectory(const fs::path &directory) {
   fs::directory_iterator end;
-  for (fs::directory_iterator it(directory); it != end; ++it)
-    return *it;
+  for (fs::directory_iterator it(directory); it != end; ++it) return *it;
   throw "No file in directory.";
 }
 

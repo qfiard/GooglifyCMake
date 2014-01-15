@@ -7,7 +7,8 @@
 namespace util {
 namespace iterators {
 
-template <class Container> class ConstPairIterator {
+template <class Container>
+class ConstPairIterator {
  public:
   ConstPairIterator(const typename Container::const_iterator &it)
       : pair_iterator_(it) {}
@@ -70,14 +71,14 @@ void swap(ConstPairIterator<Container> &it1,
 }
 
 template <class Container>
-    bool operator==(const ConstPairIterator<Container> &it1,
-                    const ConstPairIterator<Container> &it2) {
+bool operator==(const ConstPairIterator<Container> &it1,
+                const ConstPairIterator<Container> &it2) {
   return it1.pair_iterator() == it2.pair_iterator();
 }
 
 template <class Container>
-    bool operator!=(const ConstPairIterator<Container> &it1,
-                    const ConstPairIterator<Container> &it2) {
+bool operator!=(const ConstPairIterator<Container> &it1,
+                const ConstPairIterator<Container> &it2) {
   return it1.pair_iterator() != it2.pair_iterator();
 }
 
