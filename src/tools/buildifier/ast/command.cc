@@ -74,12 +74,14 @@ void Command::WrapToCharactersLimit(std::ostream *stream) const {
   std::stringstream wrapped_at_paren, wrapped_on_newline;
   WrapToCharactersLimitAtParen(&wrapped_at_paren);
   WrapToCharactersLimitOnNewLine(&wrapped_on_newline);
+  const std::string &wrapped_at_paren_str = wrapped_at_paren.str();
+  const std::string &wrapped_on_newline_str = wrapped_on_newline.str();
   // Check if content wrapped at parenthesis is valid.
   {
     std::string tmp_line;
     while (std::getline(wrapped_at_paren, tmp_line)) {
       if (tmp_line.size() > kMaxLineLength) {
-        *stream << wrapped_on_newline.str();
+        *stream << wrapped_on_newline_str;
         return;
       }
     }
@@ -87,13 +89,13 @@ void Command::WrapToCharactersLimit(std::ostream *stream) const {
   // Wrapped at parenthesis is valid, in this case we return the content that
   // has the minimum number of newlines, with a preference for newline wrapping
   // if they have the same number of newlines (ASCII art issue).
-  if (std::count(wrapped_at_paren.str().begin(), wrapped_at_paren.str().end(),
-                 '\n') < std::count(wrapped_on_newline.str().begin(),
-                                    wrapped_on_newline.str().end(), '\n')) {
-    *stream << wrapped_at_paren.str();
+  if (std::count(wrapped_at_paren_str.begin(), wrapped_at_paren_str.end(),
+                 '\n') < std::count(wrapped_on_newline_str.begin(),
+                                    wrapped_on_newline_str.end(), '\n')) {
+    *stream << wrapped_at_paren_str;
     return;
   }
-  *stream << wrapped_on_newline.str();
+  *stream << wrapped_on_newline_str;
 }
 
 void Command::WrapToCharactersLimitAtParen(std::ostream *stream) const {
