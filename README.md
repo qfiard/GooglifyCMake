@@ -3,6 +3,23 @@ GooglifyCMake
 
 A project that allows using CMake like Blaze (Google's build system) for C++, Java, Python and R.
 
+Warning
+-------
+
+Some of the third-party libraries included may not compile on a system that is not identical to the one used for the development of this project:
+- Mac OS X 10.9 Maverick (x86_64-apple-darwin13.0.0)
+- Clang 3.5
+- Latest libc++ (http://libcxx.llvm.org) and libc++abi installed
+
+Clang 3.5, libc++ and libc++abi are included as third-party targets in this project, feel free to build them and install them on your system.
+
+Pull requests are greatly welcome for all non-portable third-party libraries and targets, notably:
+- HAProxy
+- ICU
+- IMAP-2007f
+- LDAP SASL
+- libcurl
+
 Motivation
 ----------
 
