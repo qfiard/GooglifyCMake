@@ -1,9 +1,6 @@
 cc_library(ast ast.h ast.cc)
-link_local(ast command)
-link_local(ast target)
-link(ast base.base)
-link(ast tools.buildifier.parser.processor)
-link(ast util.algorithm)
+link_local(ast command target)
+link(ast base.base tools.buildifier.parser.processor util.algorithm)
 
 cc_library(command command.h command.cc)
 link(command util.dev.config)

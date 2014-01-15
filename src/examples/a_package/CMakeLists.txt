@@ -19,5 +19,4 @@ py_library(my_lib_py my_lib.py)
 
 cc_test(my_lib_test my_lib_test.cc)
 link_local(my_lib_test my_lib)
-link(my_lib_test third_party.gmock)
-link(my_lib_test third_party.gtest)
+link(my_lib_test third_party.gmock third_party.gtest)
