@@ -74,7 +74,7 @@ void Command::WrapToCharactersLimit(std::ostream *stream) const {
   std::stringstream wrapped_at_paren, wrapped_on_newline;
   WrapToCharactersLimitAtParen(&wrapped_at_paren);
   WrapToCharactersLimitOnNewLine(&wrapped_on_newline);
-  // Chcek if content wrapped at parenthesis is valid.
+  // Check if content wrapped at parenthesis is valid.
   {
     std::string tmp_line;
     while (std::getline(wrapped_at_paren, tmp_line)) {
