@@ -109,8 +109,8 @@ link(system_test third_party.gtest)
 The first line recursively includes the definitions of the module `util.dev`. Each following section is of the form:
 
 1. A target definition rule (`cc_library`, `cc_test` or `java_library` in this example, see the section on **Rules** below for more target types), called with the name of the target (relative to the current package --- e.g. the rule `cc_library(strings ...)` will define a target named `util.strings`) and a list of sources.
-2. One `local_link` rule to link with targets defined in this module.
-2. One `link` rule to link with global targets.
+2. An optional `local_link` rule to link with targets defined in this module.
+2. An optional `link` rule to link with global targets.
 3. A number of other rules to modify target properties (here `add_data` to allow a target to access a data file).
 
 The other of the rules is not impose by CMake, which only requires that the target definition rule be placed before any other rule associated with that target. By convention and to imitate Google Blaze we choose to always follow the above order, an automatic formatting tool is provided in the package `tools.buildifier` to easily maintain `CMakeLists.txt` files using this syntax.
