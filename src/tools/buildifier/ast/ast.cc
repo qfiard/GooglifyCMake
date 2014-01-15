@@ -30,6 +30,12 @@ bool AST::AddCommand(const std::string &command,
   return true;
 }
 
+void AST::Normalize() {
+  for (const auto &pair : targets_) {
+    pair.second->Normalize();
+  }
+}
+
 void AST::SaveToBuildFile(const std::string build_file_path) const {
   std::ofstream build_file(build_file_path);
   bool first = true;

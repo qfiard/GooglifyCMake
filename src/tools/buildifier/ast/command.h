@@ -31,6 +31,7 @@ class Command {
   Type GetType() const;
   static Type GetTypeForCommandName(const std::string &command_name);
   void SaveToStream(std::ostream *stream) const;
+  const std::vector<std::string> &args() const;
 
  private:
   void WrapToCharactersLimit(std::ostream *output) const;

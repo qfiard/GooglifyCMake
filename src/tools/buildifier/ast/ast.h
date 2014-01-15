@@ -18,6 +18,7 @@ class AST : public parser::Processor {
   AST() {}
   virtual bool AddCommand(const std::string &command,
                           const std::vector<std::string> &args);
+  void Normalize();
   void SaveToBuildFile(const std::string build_file_path) const;
 
  private:

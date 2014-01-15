@@ -148,6 +148,8 @@ void Command::WrapToCharactersLimitOnNewLine(std::ostream *stream) const {
   *stream << ")\n";
 }
 
+const std::vector<std::string> &Command::args() const { return args_; }
+
 bool operator<(const Command &c1, const Command &c2) {
   Command::Type type1 = c1.GetType(), type2 = c2.GetType();
   if (type1 != type2) return type1 < type2;

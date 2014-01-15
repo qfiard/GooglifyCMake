@@ -22,6 +22,7 @@ int App::Run() {
     std::cout << "Build file parsing failed." << std::endl;
     return parse_result;
   }
+  ast_.Normalize();
   ast_.SaveToBuildFile(build_file_path_);
   return 0;
 }

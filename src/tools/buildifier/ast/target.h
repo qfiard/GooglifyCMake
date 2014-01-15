@@ -18,6 +18,7 @@ class Target {
  public:
   Target(const std::string &name);
   void AddCommand(Command *command);
+  void Normalize();
   void SaveToStream(std::ostream *stream) const;
 
  private:
