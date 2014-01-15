@@ -64,14 +64,12 @@ link_local(csv logging)
 link(csv third_party.gflags)
 
 cc_library(date_time date_time.h date_time.cc)
-link_local(date_time csv)
-link_local(date_time logging)
+link_local(date_time csv logging)
 link(date_time third_party.boost_date_time)
 add_data(date_time ${BOOST_TIME_ZONE_CSV})
 
 cc_test(date_time_test date_time_test.cc)
-link_local(date_time_test date_time)
-link_local(date_time_test logging)
+link_local(date_time_test date_time logging)
 link(date_time_test third_party.gtest)
 
 cc_library(iterators iterators.h)
@@ -81,15 +79,13 @@ link(logging third_party.g2log)
 
 cc_test(logging_test logging_test.cc)
 link_local(logging_test logging)
-link(logging_test third_party.boost_filesystem)
-link(logging_test third_party.gtest)
+link(logging_test third_party.boost_filesystem third_party.gtest)
 
 cc_library(ptr_set ptr_set.h)
 
 cc_library(socket socket.h socket.cc)
-link(socket base.base)
-link(socket third_party.boost_asio)
-link(socket third_party.gflags)
+link_local(socket logging)
+link(socket base.base third_party.boost_asio third_party.gflags)
 
 java_library(socket_java Socket.java)
 
@@ -113,8 +109,8 @@ link(system_test third_party.gtest)
 The first line recursively includes the definitions of the module `util.dev`. Each following section is of the form:
 
 1. A target definition rule (`cc_library`, `cc_test` or `java_library` in this example, see the section on **Rules** below for more target types), called with the name of the target (relative to the current package --- e.g. the rule `cc_library(strings ...)` will define a target named `util.strings`) and a list of sources.
-2. A number of `local_link` to link with targets defined in this module.
-2. A number of `link` rules to link with global targets.
+2. One `local_link` rule to link with targets defined in this module.
+2. One `link` rule to link with global targets.
 3. A number of other rules to modify target properties (here `add_data` to allow a target to access a data file).
 
 The other of the rules is not impose by CMake, which only requires that the target definition rule be placed before any other rule associated with that target. By convention and to imitate Google Blaze we choose to always follow the above order, an automatic formatting tool is provided in the package `tools.buildifier` to easily maintain `CMakeLists.txt` files using this syntax.
@@ -125,19 +121,15 @@ Here is another example where generating rules are required (it is the definitio
 bison_generate_parser(parser.y PARSER_SRC PARSER_HDR)
 flex_generate_scanner(lexer.l LEXER_SRC LEXER_HDR)
 
-cc_library(
-    parser scanner.h scanner.cc ${PARSER_SRC} ${PARSER_HDR} ${LEXER_SRC}
-    ${LEXER_SRC})
+cc_library(parser scanner.h scanner.cc ${PARSER_SRC} ${PARSER_HDR} ${LEXER_SRC}
+           ${LEXER_SRC})
 link_local(parser processor)
-link(parser base.base)
-link(parser third_party.boost_filesystem)
-link(parser third_party.boost_headers)
-link(parser util.logging)
+link(parser base.base third_party.boost_filesystem third_party.boost_headers
+     util.logging)
 
 cc_test(parser_test parser_test.cc)
 link_local(parser_test parser)
-link(parser_test third_party.gmock)
-link(parser_test third_party.gtest)
+link(parser_test third_party.gmock third_party.gtest)
 
 cc_library(processor processor.h)
 link(processor base.base)
