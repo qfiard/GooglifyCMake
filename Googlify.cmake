@@ -422,7 +422,7 @@ function(link_third_party_with_full_targets_java TARGET LIB)
         $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE> > /dev/null
     VERBATIM)
   set(LIB_TARGET ${LIB}_target)
-  add_dependencies(${TARGET} ${LIB_TARGET})
+  add_dependencies(${CLASSPATH_TARGET} ${LIB_TARGET})
 endfunction(link_third_party_with_full_targets_java)
 
 function(link_third_party_with_full_targets_python TARGET LIB)
@@ -554,13 +554,15 @@ function(py_library TARGET)
   add_custom_target("${FULL_TARGET}" ALL SOURCES ${ARGN};${INIT_PY})
   set_target_properties("${FULL_TARGET}" PROPERTIES IS_PYTHON TRUE)
   foreach (SRC ${ARGN})
-    set(src ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
-    set(link ${CMAKE_CURRENT_BINARY_DIR}/${SRC})
-    add_custom_command(
-      TARGET ${FULL_TARGET} POST_BUILD
-      COMMAND ln -sf ${src} ${link}
-      DEPENDS ${link}
-      VERBATIM)
+    if (SRC MATCHES "$${PROJECT_BINARY_DIR}")
+      set(src ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
+      set(link ${CMAKE_CURRENT_BINARY_DIR}/${SRC})
+      add_custom_command(
+        TARGET ${FULL_TARGET} POST_BUILD
+        COMMAND ln -sf ${src} ${link}
+        DEPENDS ${link}
+        VERBATIM)
+    endif ()
   endforeach ()
   link(${TARGET} third_party.virtualenv)
 endfunction(py_library)
