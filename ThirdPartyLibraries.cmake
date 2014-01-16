@@ -413,6 +413,7 @@ add_external_project(
   PREFIX ${CURL_ASIO_PREFIX}
   DOWNLOAD_COMMAND
       ${GIT} clone --depth 1 https://github.com/QuentinFiard/curl-asio.git
+          ${CURL_ASIO_TARGET}
   CONFIGURE_COMMAND
       BOOST_ROOT=${BOOST_PREFIX} cmake <SOURCE_DIR>
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
@@ -433,7 +434,7 @@ add_external_project_step(
   WORKING_DIRECTORY ${CURL_ASIO_PREFIX}/lib)
 add_include_directory(${CURL_ASIO_PREFIX}/include)
 add_link_directory(${CURL_ASIO_PREFIX}/lib)
-set_library(curl_asio libcurlasio boost_system libcurl)
+set_library(curl-asio libcurlasio boost_system curl)
 add_dependencies(${CURL_ASIO_TARGET} ${BOOST_TARGET})
 add_dependencies(${CURL_ASIO_TARGET} ${LIBCURL_TARGET})
 
@@ -661,8 +662,6 @@ add_external_project(
       ./configure --prefix=${GMP_PREFIX} --enable-cxx CC=${CMAKE_C_COMPILER}
           CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS}
           CXXFLAGS=${CMAKE_CXX_FLAGS} LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
-  BUILD_COMMAND make -j${PROCESSOR_COUNT}
-  INSTALL_COMMAND make install
   BUILD_IN_SOURCE 1)
 add_dependencies(${GMP_TARGET} ${GNUTAR_TARGET})
 set_library(gmp gmp)
@@ -1142,7 +1141,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${MAVEN_PREFIX}/download/apache-maven-3.1.1-src.tar.gz
-  CONFIGURE_COMMAND ""
+  CONFIGURE_COMMAND echo ""
   BUILD_COMMAND
       M2_HOME=${MAVEN_PREFIX}/build ${ANT}
   INSTALL_COMMAND
