@@ -3,6 +3,8 @@ include(ExternalProject)
 set(THIRD_PARTY_BINARY_DIR ${PROJECT_BINARY_DIR}/third_party)
 set(THIRD_PARTY_SOURCE_DIR ${PROJECT_SOURCE_DIR}/third_party)
 
+option(SKIP_PORTABILITY_WARNINGS "Skip portability warnings" OFF)
+
 # Required executables.
 find_program(ANT ant)
 if (${ANT} STREQUAL ANT-NOTFOUND)
@@ -572,10 +574,12 @@ set_library(g2log lib_g2logger)
 
 ################################################################################
 # GNU GCC compiler.
-message(
-    WARNING
-    "If you indend to build GCC please replace SYSROOT with the correct value"
-    " for your system. You can otherwise safely ignore this warning.")
+if (NOT SKIP_PORTABILITY_WARNINGS)
+  message(
+      WARNING
+      "If you indend to build GCC please replace SYSROOT with the correct value"
+      " for your system. You can otherwise safely ignore this warning.")
+endif ()
 set(SYSROOT /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk)
 add_external_project(
   ${GCC_TARGET}
@@ -1626,8 +1630,8 @@ add_external_project(
   BUILD_IN_SOURCE 1)
 add_external_project_step(${PROTOBUF_TARGET} build_python_runtime
   COMMAND /usr/bin/env python setup.py build
-  DEPENDER install
   DEPENDEES build
+  DEPENDERS install
   WORKING_DIRECTORY <SOURCE_DIR>/python)
 add_external_project_step(${PROTOBUF_TARGET} install_python_runtime
   COMMAND /usr/bin/env python setup.py install
@@ -1954,3 +1958,9 @@ function(use_openmp TARGET)
   add_cxxflags(${TARGET} ${OPENMP_COMPILE_FLAG})
   add_compile_defs(${TARGET} "USE_OPENMP")
 endfunction(use_openmp)
+
+################################################################################
+# External dependency management.
+################################################################################
+include(${PROJECT_SOURCE_DIR}/third_party/maven_libraries.cmake)
+include(${PROJECT_SOURCE_DIR}/third_party/pip_libraries.cmake)

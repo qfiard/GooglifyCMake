@@ -67,8 +67,11 @@ function(add_file TARGET SRC DEST)
       MAIN_DEPENDENCY ${FULL_SRC}
       VERBATIM)
   else ()
-    # The source is assumed to be a cmake target.
     set(TARGET ${SRC})
+    set(TARGET_NAME ${TARGET})  # One level of indirection for MATCHES.
+    if (TARGET_NAME MATCHES "^third_party\\.")
+      set(TARGET ${TARGET}_target)
+    endif ()
     add_custom_command(
       TARGET ${TEMP_DIR_TARGET} POST_BUILD
       COMMAND cp -rf $<TARGET_PROPERTY:${TARGET},TARGET_FILE> ${DEST}
@@ -405,34 +408,28 @@ function(link_third_party TARGET LIB)
 endfunction(link_third_party)
 
 function(link_third_party_with_full_targets_java TARGET LIB)
-  string(TOUPPER ${LIB} ULIB)
-  if (NOT DEFINED "${ULIB}")
-    message(FATAL_ERROR "No such third-party library: ${LIB}")
+  if (NOT DEFINED "${LIB}")
+    message(FATAL_ERROR "No such library: ${LIB}")
   endif ()
   get_classpath_target_for_target(${TARGET} CLASSPATH_TARGET)
   add_custom_command(
     TARGET ${CLASSPATH_TARGET} POST_BUILD
-    COMMAND echo "${${ULIB}}" >> $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>
-    COMMAND cat "${${ULIB}}.classpath_" >>
+    COMMAND echo "${${LIB}}" >> $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>
+    COMMAND cat "${${LIB}}.classpath_" >>
         $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>
     # Remove duplicate lines.
     COMMAND cat $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE> | sort | uniq | tee
         $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE> > /dev/null
     VERBATIM)
-  add_dependencies(${CLASSPATH_TARGET} ${MAVEN_LIBS_TARGET})
+  set(LIB_TARGET ${LIB}_target)
+  add_dependencies(${TARGET} ${LIB_TARGET})
 endfunction(link_third_party_with_full_targets_java)
 
 function(link_third_party_with_full_targets_python TARGET LIB)
-  if (NOT DEFINED "${ULIB}_TARGET" AND NOT DEFINED "${ULIB}")
+  if (NOT DEFINED "${LIB}")
     message(FATAL_ERROR "No such library: ${LIB}")
   endif ()
-  if ("${LIB}" MATCHES "boost_.*")
-    set(LIB_TARGET ${BOOST_TARGET})
-  elseif ("${LIB}" MATCHES "opencv_.*")
-    set(LIB_TARGET ${OPENCV_TARGET})
-  else ()
-    set(LIB_TARGET ${${ULIB}_TARGET})
-  endif ()
+  set(LIB_TARGET ${LIB}_target)
   add_dependencies(${TARGET} ${LIB_TARGET})
 endfunction(link_third_party_with_full_targets_python)
 
@@ -582,3 +579,15 @@ function(r_binary TARGET SRC)
     DEPENDS ${exe}
     VERBATIM)
 endfunction(r_binary)
+
+# Src: https://github.com/maidsafe/MaidSafe/blob/master/cmake_modules/utils.cmake
+function(underscores_to_camel_case IN OUT)
+  string(REPLACE "_" ";" PIECES ${IN})
+  foreach(PART ${PIECES})
+    string(SUBSTRING ${PART} 0 1 INITIAL)
+    string(SUBSTRING ${PART} 1 -1 PART)
+    string(TOUPPER ${INITIAL} INITIAL)
+    set(CAMELCASE ${CAMELCASE}${INITIAL}${PART})
+  endforeach()
+  set(${OUT} ${CAMELCASE} PARENT_SCOPE)
+endfunction()
