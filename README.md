@@ -3,6 +3,12 @@ GooglifyCMake
 
 A project that allows using CMake like Blaze (Google's build system) for C++, Java, Python and R.
 
+TODO
+----
+
+- [ ] Create a Wiki to explain the use of each target and rule.
+- [ ] Build in the Wiki a list of all included third-party libraries along with their portability status (Mac OS X, Linux, Windows, iOS, iOS simulator, ...).
+
 Warning
 -------
 
