@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 ## @file A script to convert install name tools to absolute paths in dynamic
 ## libraries.
 ## @param[in] $1 install_name_tool path.

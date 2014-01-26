@@ -20,11 +20,10 @@ std::unordered_set<std::string> Command::create_target_commands_(
     {"cc_binary", "cc_library", "cc_test", "j2e_binary", "java_binary",
      "java_library", "mysql_udf_cc_library", "py_binary", "py_library",
      "r_binary"}),
-    Command::generate_files_commands_({"bison_generate_parser",
-                                       "flex_generate_scanner",
-                                       "protobuf_generate_cc",
-                                       "protobuf_generate_java",
-                                       "protobuf_generate_py"}),
+    Command::generate_files_commands_(
+        {"bison_generate_parser", "configure_file", "flex_generate_scanner",
+         "protobuf_generate_cc", "protobuf_generate_java",
+         "protobuf_generate_py"}),
     Command::link_commands_({"link"}),
     Command::link_local_commands_({"link_local"});
 
@@ -32,6 +31,7 @@ Command::Type Command::GetType() const { return GetTypeForCommandName(name_); }
 
 Command::Type Command::GetTypeForCommandName(const std::string &command_name) {
   if (command_name == "add_subdirectory") return kAddSubdirectory;
+  if (command_name == "add_subdirectory_if") return kAddSubdirectoryIf;
   if (command_name == "set") return kSetGlobalProperty;
   if (create_target_commands_.find(command_name) !=
       create_target_commands_.end())

@@ -53,7 +53,7 @@ static int yylex(
 %destructor { if($$) { delete $$; $$ = NULL; } } <string_value>
 %destructor { if($$) { delete $$; $$ = NULL; } } <string_vector_value>
 
-%token LPAREN RPAREN NEWLINE DOLLAR LBRACKET RBRACKET
+%token LPAREN RPAREN NEWLINE DOLLAR IF LBRACKET RBRACKET
 %token <string_value> STRING
 %type <string_value> command argument cmake_var cmake_var_name
 %type <string_vector_value> arguments stripped_arguments

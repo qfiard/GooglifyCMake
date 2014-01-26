@@ -23,7 +23,8 @@ class Command {
     kNonTargetCommand = 1000,
     kSetGlobalProperty = 1001,
     kAddSubdirectory = 1002,
-    kGenerateFiles = 1003,
+    kAddSubdirectoryIf = 1003,
+    kGenerateFiles = 1004,
   };
   template <class StringIterator>
   Command(const std::string &name, const StringIterator &args_begin,

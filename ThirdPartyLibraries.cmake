@@ -1,9 +1,50 @@
 include(ExternalProject)
 
+# Options and paths to external libraries.
+option(SKIP_PORTABILITY_WARNINGS "Skip portability warnings" OFF)
+# Set the following two values to use external Boost libraries.
+set(BOOST_ROOT "" CACHE STRING "Boost install directory")
+set(BOOST_TIME_ZONE_CSV "" CACHE STRING "Boost time zone csv datafile")
+
+
 set(THIRD_PARTY_BINARY_DIR ${PROJECT_BINARY_DIR}/third_party)
 set(THIRD_PARTY_SOURCE_DIR ${PROJECT_SOURCE_DIR}/third_party)
 
-option(SKIP_PORTABILITY_WARNINGS "Skip portability warnings" OFF)
+
+# Escaping architectures.
+string(REPLACE ";" "$<SEMICOLON>" ARCHS "${CMAKE_OSX_ARCHITECTURES}")
+string(REPLACE ";" " -arch " ARCHS_AS_FLAGS "${CMAKE_OSX_ARCHITECTURES}")
+if (NOT "${ARCHS_AS_FLAGS}" STREQUAL "")
+  set(ARCHS_AS_FLAGS "-arch ${ARCHS_AS_FLAGS}")
+endif ()
+set(CMAKE_C_FLAGS_WITH_ARCHS "${ARCHS_AS_FLAGS} ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS_WITH_ARCHS "${ARCHS_AS_FLAGS} ${CMAKE_CXX_FLAGS}")
+set(LDFLAGS_WITH_ARCHS "${ARCHS_AS_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
+
+# Sets the --host flag to the appropriate value if necessary.
+if (IOS_BUILD)
+  set(HOST "--host=arm")
+endif ()
+
+# Generic configure flags to select static or shared library compilation.
+if (${BUILD_SHARED_LIBS})
+  set(CONFIGURE_LIB_TYPE --enable-shared --disable-static)
+else ()
+  set(CONFIGURE_LIB_TYPE --disable-shared --enable-static)
+endif ()
+
+# The build systems used by some libraries do not allow the use of linker flags.
+# In this case, we pass the linker flags directly to the compiler, with the
+# "-Wl," prefix.
+set(LINKER_AS_COMPILER_FLAGS)
+set(FIRST TRUE)
+foreach (FLAG ${CMAKE_SHARED_LINKER_FLAGS})
+  if (FIRST)
+    set(LINKER_AS_COMPILER_FLAGS "-Wl,${FLAG}")
+  else ()
+    set(LINKER_AS_COMPILER_FLAGS "${LINKER_AS_COMPILER_FLAGS} -Wl,${FLAG}")
+  endif ()
+endforeach ()
 
 # Required executables.
 find_program(ANT ant)
@@ -24,6 +65,7 @@ if (${SVN} STREQUAL SVN-NOTFOUND)
 endif ()
 
 set(SET_INSTALL_NAMES "${PROJECT_SOURCE_DIR}/support/set_install_names.sh")
+set(CREATE_FAT_LIBS "${PROJECT_SOURCE_DIR}/support/create_fat_libs.sh")
 
 # A few convenient functions to define third-party libraries.
 function(set_prefix OUT PREFIX)
@@ -39,12 +81,29 @@ macro(set_header_only NAME)
   set(third_party.${NAME} ";")
 endmacro()
 
-macro(set_library NAME)
-  set(third_party.${NAME} "" ${ARGN})
+macro(set_library NAME DIR)
+  set(third_party.${NAME} ";")
+  if (BUILD_SHARED_LIBS AND NOT "${DIR}" STREQUAL "")
+    list(APPEND third_party.${NAME} -L${DIR})
+  endif ()
+  foreach (LIB ${ARGN})
+    if (BUILD_SHARED_LIBS)
+      list(APPEND third_party.${NAME} -l${LIB})
+    else ()
+      list(APPEND third_party.${NAME} ${DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}${LIB}${CMAKE_STATIC_LIBRARY_SUFFIX})
+    endif ()
+  endforeach ()
 endmacro()
 
-macro(append_library NAME)
-  list(APPEND third_party.${NAME} ${ARGN})
+macro(add_library_dependency NAME)
+  foreach (LIB ${ARGN})
+    if (NOT DEFINED ${LIB})
+      # We assume that LIB is a system library.
+      list(APPEND third_party.${NAME} -l${LIB})
+    else ()
+      list(APPEND third_party.${NAME} ${${LIB}})
+    endif ()
+  endforeach ()
 endmacro()
 
 function(add_external_project NAME)
@@ -66,7 +125,7 @@ function(add_link_directory DIR)
   link_directories(${DIR})
 endfunction()
 
-# Forward declaration.
+# Forward declarations.
 add_target(APR apr)
 add_target(APR_UTIL apr-util)
 add_target(ARABICA arabica)
@@ -123,6 +182,7 @@ add_target(OPENSSL openssl)
 add_target(PCRE pcre)
 add_target(PHP php)
 add_target(PROTOBUF protobuf)
+add_target(PROTOC protoc)
 add_target(RAPIDXML rapidxml)
 add_target(READLINE readline)
 add_target(SHARK shark)
@@ -130,6 +190,111 @@ add_target(TBB tbb)
 add_target(VIRTUALENV virtualenv)
 add_target(XZ xz)
 add_target(ZLIB zlib)
+
+set_library(arabica ${ARABICA_PREFIX}/lib arabica)
+if ("${BOOST_ROOT}" STREQUAL "")
+  set(BOOST_LIB_DIR ${BOOST_PREFIX}/lib)
+else ()
+  set(BOOST_LIB_DIR ${BOOST_ROOT}/lib)
+endif ()
+set_library(boost_atomic ${BOOST_LIB_DIR} boost_atomic)
+set_library(boost_chrono ${BOOST_LIB_DIR} boost_chrono)
+set_library(boost_context ${BOOST_LIB_DIR} boost_context)
+set_library(boost_coroutine ${BOOST_LIB_DIR} boost_coroutine)
+set_library(boost_date_time ${BOOST_LIB_DIR} boost_date_time)
+set_library(boost_exception ${BOOST_LIB_DIR} boost_exception)
+set_library(boost_filesystem ${BOOST_LIB_DIR} boost_filesystem)
+set_library(boost_graph ${BOOST_LIB_DIR} boost_graph)
+set_library(boost_graph_parallel ${BOOST_LIB_DIR} boost_graph_parallel)
+set_header_only(boost_headers)
+set_library(boost_iostreams ${BOOST_LIB_DIR} boost_iostreams)
+set_library(boost_locale ${BOOST_LIB_DIR} boost_locale)
+set_library(boost_log ${BOOST_LIB_DIR} boost_log)
+set_library(boost_math ${BOOST_LIB_DIR} boost_math)
+set_library(boost_mpi ${BOOST_LIB_DIR} boost_mpi)
+set_library(boost_program_options ${BOOST_LIB_DIR} boost_program_options)
+set_library(boost_python ${BOOST_LIB_DIR} boost_python)
+set_library(boost_random ${BOOST_LIB_DIR} boost_random)
+set_library(boost_regex ${BOOST_LIB_DIR} boost_regex)
+set_library(boost_serialization ${BOOST_LIB_DIR} boost_serialization)
+set_library(boost_signals ${BOOST_LIB_DIR} boost_signals)
+set_library(boost_system ${BOOST_LIB_DIR} boost_system)
+set_library(boost_test ${BOOST_LIB_DIR} boost_test)
+set_library(boost_thread ${BOOST_LIB_DIR} boost_thread)
+set_library(boost_timer ${BOOST_LIB_DIR} boost_timer)
+set_library(boost_wave ${BOOST_LIB_DIR} boost_wave)
+set_library(curl-asio ${CURL_ASIO_PREFIX}/lib curlasio)
+set_library(dlib ${DLIB_PREFIX}/lib dlib)
+set_library(eigen "")  # Eigen is header only.
+set_library(flex ${FLEX_PREFIX}/lib fl)
+set_library(g2log ${G2LOG_PREFIX}/lib lib_activeobject lib_g2logger)
+set_library(gflags ${GFLAGS_PREFIX}/lib gflags)
+set_library(gmock ${GMOCK_PREFIX}/lib gmock gmock_main)
+set_library(gmp ${GMP_PREFIX}/lib gmp)
+set_library(gtest ${GTEST_PREFIX}/lib gtest gtest_main)
+set_library(jsoncpp ${JSONCPP_PREFIX}/lib jsoncpp)
+set_library(libcurl ${LIBCURL_PREFIX}/lib curl)
+set_library(libcxx ${LIBCXX_PREFIX}/lib c++)
+set_library(libcxxabi ${LIBCXXABI_PREFIX}/lib c++abi)
+set_library(libxml ${LIBXML_PREFIX}/lib xml2)
+set_library(marisa_trie ${MARISA_TRIE_PREFIX}/lib marisa)
+set_library(mpc ${MPC_PREFIX}/lib mpc)
+set_library(mpfr ${MPFR_PREFIX}/lib mpfr)
+set_library(mysqlcppconn ${MYSQLCPPCONN_PREFIX}/lib mysqlcppconn)
+set(OPENCV_LIB_DIR ${OPENCV_PREFIX}/lib)
+set_library(opencv_bioinspired ${OPENCV_LIB_DIR} opencv_bioinspired)
+set_library(opencv_calib3d ${OPENCV_LIB_DIR} opencv_calib3d)
+set_library(opencv_contrib ${OPENCV_LIB_DIR} opencv_contrib)
+set_library(opencv_core ${OPENCV_LIB_DIR} opencv_core)
+set_library(opencv_cuda ${OPENCV_LIB_DIR} opencv_cuda)
+set_library(opencv_cudaarithm ${OPENCV_LIB_DIR} opencv_cudaarithm)
+set_library(opencv_cudabgsegm ${OPENCV_LIB_DIR} opencv_cudabgsegm)
+set_library(opencv_cudafeatures2d ${OPENCV_LIB_DIR} opencv_cudafeatures2d)
+set_library(opencv_cudafilters ${OPENCV_LIB_DIR} opencv_cudafilters)
+set_library(opencv_cudaimgproc ${OPENCV_LIB_DIR} opencv_cudaimgproc)
+set_library(opencv_cudaoptflow ${OPENCV_LIB_DIR} opencv_cudaoptflow)
+set_library(opencv_cudastereo ${OPENCV_LIB_DIR} opencv_cudastereo)
+set_library(opencv_cudawarping ${OPENCV_LIB_DIR} opencv_cudawarping)
+set_library(opencv_features2d ${OPENCV_LIB_DIR} opencv_features2d)
+set_library(opencv_flann ${OPENCV_LIB_DIR} opencv_flann)
+set_library(opencv_highgui ${OPENCV_LIB_DIR} opencv_highgui)
+set_library(opencv_imgproc ${OPENCV_LIB_DIR} opencv_imgproc)
+set_library(opencv_legacy ${OPENCV_LIB_DIR} opencv_legacy)
+set_library(opencv_ml ${OPENCV_LIB_DIR} opencv_ml)
+set_library(opencv_nonfree ${OPENCV_LIB_DIR} opencv_nonfree)
+set_library(opencv_objdetect ${OPENCV_LIB_DIR} opencv_objdetect)
+set_library(opencv_ocl ${OPENCV_LIB_DIR} opencv_ocl)
+set_library(opencv_optim ${OPENCV_LIB_DIR} opencv_optim)
+set_library(opencv_photo ${OPENCV_LIB_DIR} opencv_photo)
+set_library(opencv_shape ${OPENCV_LIB_DIR} opencv_shape)
+set_library(opencv_softcascade ${OPENCV_LIB_DIR} opencv_softcascade)
+set_library(opencv_stitching ${OPENCV_LIB_DIR} opencv_stitching)
+set_library(opencv_superres ${OPENCV_LIB_DIR} opencv_superres)
+set_library(opencv_ts ${OPENCV_LIB_DIR} opencv_ts)
+set_library(opencv_video ${OPENCV_LIB_DIR} opencv_video)
+set_library(opencv_videostab ${OPENCV_LIB_DIR} opencv_videostab)
+set_library(openmp ${OPENMP_PREFIX}/lib iomp5)
+set_library(openssl ${OPENSSL_PREFIX}/lib crypto ssl)
+set_library(protobuf ${PROTOBUF_PREFIX}/lib protobuf)
+set_library(readline ${READLINE_PREFIX}/lib readline history)
+set_library(shark ${SHARK_PREFIX}/lib shark)
+set_library(tbb ${TBB_PREFIX}/lib tbb)
+set_library(zlib ${ZLIB_PREFIX}/lib z)
+
+# Dependencies. We must be careful to define a DAG.
+add_library_dependency(boost_filesystem third_party.boost_system)
+add_library_dependency(openssl third_party.gmp)
+add_library_dependency(libcurl third_party.openssl third_party.zlib)
+add_library_dependency(curl-asio third_party.boost_system third_party.libcurl)
+add_library_dependency(readline ncurses)
+add_library_dependency(shark third_party.boost_serialization)
+
+# Aliases.
+add_library_dependency(boost_asio third_party.boost_system)
+
+
+set(EIGEN_INCLUDE_PATH ${EIGEN_PREFIX}/include/eigen3)
+
 
 set(GNUGREP ${GNUGREP_PREFIX}/bin/grep)
 set(GNUTAR ${GNUTAR_PREFIX}/bin/tar)
@@ -155,7 +320,7 @@ add_external_project(
       tar --strip-components 1 -xvf
           ${APR_PREFIX}/download/apr-1.5.0.tar.bz2
   CONFIGURE_COMMAND
-      <SOURCE_DIR>/configure --prefix=${APR_PREFIX} --enable-threads
+      <SOURCE_DIR>/configure --prefix=${APR_PREFIX} ${HOST} --enable-threads
   BUILD_IN_SOURCE 1)
 
 ################################################################################
@@ -172,7 +337,7 @@ add_external_project(
       tar --strip-components 1 -xvf
           ${APR_UTIL_PREFIX}/download/apr-util-1.5.3.tar.bz2
   CONFIGURE_COMMAND
-      <SOURCE_DIR>/configure --prefix=${APR_PREFIX}
+      <SOURCE_DIR>/configure --prefix=${APR_PREFIX} ${HOST}
       --with-apr=${APR_PREFIX}
       --with-berkeley-db=${BERKELEY_DB_PREFIX}
   BUILD_IN_SOURCE 1)
@@ -189,17 +354,21 @@ add_external_project(
   DOWNLOAD_COMMAND
       ${GIT} clone --depth 1 https://github.com/QuentinFiard/arabica.git
           ${ARABICA_TARGET}
-  CONFIGURE_COMMAND
-      BOOST_ROOT=${BOOST_PREFIX} cmake <SOURCE_DIR>
-          -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-          -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-          -DCMAKE_BUILD_TYPE=RELEASE
-          -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-          -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
-          -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
-          -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-          -DCMAKE_INSTALL_PREFIX=${ARABICA_PREFIX}
-          -DBUILD_ARABICA_EXAMPLES=OFF)
+  CMAKE_ARGS
+      -DBOOST_ROOT=${BOOST_PREFIX}
+      -DCMAKE_INCLUDE_PATH=${LIBXML_PREFIX}/include
+      -DCMAKE_LIBRARY_PATH=${LIBXML_PREFIX}/lib
+
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_BUILD_TYPE=RELEASE
+      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+      -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_INSTALL_PREFIX=${ARABICA_PREFIX}
+      -DBUILD_ARABICA_EXAMPLES=OFF)
 add_external_project_step(${ARABICA_TARGET} set_install_names
   COMMAND
       ${SET_INSTALL_NAMES} ${CMAKE_INSTALL_NAME_TOOL}
@@ -207,11 +376,10 @@ add_external_project_step(${ARABICA_TARGET} set_install_names
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${ARABICA_PREFIX}/lib)
-set(ARABICA arabica)
-add_dependencies(${ARABICA_TARGET} ${LIBXML_TARGET})
 add_include_directory(${ARABICA_PREFIX}/include)
 add_include_directory(${ARABICA_PREFIX}/include/arabica)
-add_link_directory(${ARABICA_PREFIX}/lib)
+add_dependencies(${ARABICA_TARGET} ${BOOST_TARGET})
+add_dependencies(${ARABICA_TARGET} ${LIBXML_TARGET})
 
 ################################################################################
 # BerkeleyDB.
@@ -227,10 +395,11 @@ add_external_project(
       tar --strip-components 1 -xvf
           ${BERKELEY_DB_PREFIX}/download/db-6.0.20.tar.gz
   CONFIGURE_COMMAND
-      <SOURCE_DIR>/dist/configure --prefix=${BERKELEY_DB_PREFIX}
+      <SOURCE_DIR>/dist/configure --prefix=${BERKELEY_DB_PREFIX} ${HOST}
       --enable-compat185
       --enable-cxx
-      --enable-dbm)
+      --enable-dbm
+      ${CONFIGURE_LIB_TYPE})
 
 ################################################################################
 # Bison.
@@ -245,23 +414,47 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${BISON_PREFIX}/download/bison-3.0.tar.gz
-  CONFIGURE_COMMAND ./configure --prefix=${BISON_PREFIX}
-  BUILD_COMMAND make
-  INSTALL_COMMAND make install
+  CONFIGURE_COMMAND ./configure --prefix=${BISON_PREFIX} ${HOST}
   BUILD_IN_SOURCE 1)
 set(BISON_EXECUTABLE ${BISON_PREFIX}/bin/bison)
 
 ################################################################################
 # Boost.
-set(BOOST_ROOT "" CACHE STRING "Boost install directory")
-set(BOOST_TIME_ZONE_CSV "" CACHE STRING "Boost time zone csv datafile")
 if ("${BOOST_ROOT}" STREQUAL "")
   set(BOOST_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth-1024")
-  set(BUILD_COMMAND
-      b2 release toolset=clang-darwin cxxflags=${BOOST_CXX_FLAGS}
-          linkflags=${CMAKE_SHARED_LINKER_FLAGS}
-          define=BOOST_NO_CXX11_NUMERIC_LIMITS
-          define=BOOST_SYSTEM_NO_DEPRECATED install)
+  if (IOS_BUILD)
+    set(BOOST_CXX_FLAGS "${ARCHS_AS_FLAGS} ${BOOST_CXX_FLAGS}")
+    set(BUILD_COMMAND
+        b2 release toolset=clang-darwin
+            architecture=arm
+            target-os=iphone
+            cxxflags=${BOOST_CXX_FLAGS}
+            linkflags=${CMAKE_SHARED_LINKER_FLAGS}
+            define=BOOST_NO_CXX11_NUMERIC_LIMITS
+            define=BOOST_SYSTEM_NO_DEPRECATED
+            --without-context
+            --without-coroutine
+            link=static install)
+  elseif (IOS_SIMULATOR_BUILD)
+    set(BOOST_CXX_FLAGS "${ARCHS_AS_FLAGS} ${BOOST_CXX_FLAGS}")
+    set(BUILD_COMMAND
+        b2 release toolset=clang-darwin
+            architecture=x86
+            target-os=iphone
+            cxxflags=${BOOST_CXX_FLAGS}
+            linkflags=${CMAKE_SHARED_LINKER_FLAGS}
+            define=BOOST_NO_CXX11_NUMERIC_LIMITS
+            define=BOOST_SYSTEM_NO_DEPRECATED
+            --without-context
+            --without-coroutine
+            link=static install)
+  else ()
+    set(BUILD_COMMAND
+        b2 release toolset=clang-darwin cxxflags=${BOOST_CXX_FLAGS}
+            linkflags=${CMAKE_SHARED_LINKER_FLAGS}
+            define=BOOST_NO_CXX11_NUMERIC_LIMITS
+            define=BOOST_SYSTEM_NO_DEPRECATED install)
+  endif ()
   add_external_project(
     ${BOOST_TARGET}
     PREFIX ${BOOST_PREFIX}
@@ -273,8 +466,7 @@ if ("${BOOST_ROOT}" STREQUAL "")
         cd <SOURCE_DIR> &&
         tar --strip-components 1 -xvf
             ${BOOST_PREFIX}/download/boost_1_54_0.tar.bz2
-    CONFIGURE_COMMAND
-        ./bootstrap.sh --prefix=${BOOST_PREFIX}
+    CONFIGURE_COMMAND ./bootstrap.sh --prefix=${BOOST_PREFIX}
     BUILD_COMMAND ${BUILD_COMMAND}
     PATCH_COMMAND
         patch -Np0 < ${THIRD_PARTY_SOURCE_DIR}/boost.patch
@@ -291,39 +483,6 @@ else ()
   add_custom_target(${BOOST_TARGET})
 endif ()
 add_include_directory(${BOOST_PREFIX}/include)
-add_link_directory(${BOOST_PREFIX}/lib)
-set_library(boost_atomic boost_atomic)
-set_library(boost_chrono boost_chrono)
-set_library(boost_context boost_context)
-set_library(boost_coroutine boost_coroutine)
-set_library(boost_date_time boost_date_time)
-set_library(boost_exception boost_exception)
-set_library(boost_filesystem boost_filesystem)
-set_library(boost_graph boost_graph)
-set_library(boost_graph_parallel boost_graph_parallel)
-set_header_only(boost_headers)
-set_library(boost_iostreams boost_iostreams)
-set_library(boost_locale boost_locale)
-set_library(boost_log boost_log)
-set_library(boost_math boost_math)
-set_library(boost_mpi boost_mpi)
-set_library(boost_program_options boost_program_options)
-set_library(boost_python boost_python)
-set_library(boost_random boost_random)
-set_library(boost_regex boost_regex)
-set_library(boost_serialization boost_serialization)
-set_library(boost_signals boost_signals)
-set_library(boost_system boost_system)
-set_library(boost_test boost_test)
-set_library(boost_thread boost_thread)
-set_library(boost_timer boost_timer)
-set_library(boost_wave boost_wave)
-
-# Dependencies.
-append_library(boost_filesystem boost_system)
-
-# Aliases.
-set_library(boost_asio boost_system)
 
 ################################################################################
 # bsdiff.
@@ -340,8 +499,9 @@ add_external_project(
       -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
   INSTALL_COMMAND
-      mkdir -p ${BSDIFF_PREFIX}/bin &&
+      ${CMAKE_COMMAND} -E make_directory ${BSDIFF_PREFIX}/bin &&
       cp -f bsdiff bspatch ${BSDIFF_PREFIX}/bin)
 
 ################################################################################
@@ -368,9 +528,13 @@ add_external_project(
   ${CLANG_TARGET}
   PREFIX ${CLANG_PREFIX}
   DOWNLOAD_COMMAND
-      ${SVN} export --force http://llvm.org/svn/llvm-project/llvm/trunk ${CLANG_TARGET} &&
+      # Patch file is specific to revision 199104, a missing header leads to an
+      # undefined symbol without it. Might be unnecessary in the near future.
+      ${SVN} export --force -r 199104 http://llvm.org/svn/llvm-project/llvm/trunk ${CLANG_TARGET} &&
       ${SVN} export --force http://llvm.org/svn/llvm-project/compiler-rt/trunk ${CLANG_TARGET}/projects/compiler-rt &&
       ${SVN} export --force http://llvm.org/svn/llvm-project/cfe/trunk ${CLANG_TARGET}/tools/clang
+  PATCH_COMMAND
+      patch -p0 < ${THIRD_PARTY_SOURCE_DIR}/clang.patch
   CMAKE_ARGS
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
@@ -378,6 +542,7 @@ add_external_project(
       -DCMAKE_C_FLAGS=${RELEASE_FLAGS}
       -DCMAKE_CXX_FLAGS=${RELEASE_FLAGS}
       -DBUILD_SHARED_LIBS=ON
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${CLANG_PREFIX})
 
 ################################################################################
@@ -398,6 +563,7 @@ add_external_project(
       -DCMAKE_C_FLAGS=${RELEASE_FLAGS}
       -DCMAKE_CXX_FLAGS=${RELEASE_FLAGS}
       -DBUILD_SHARED_LIBS=ON
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
   INSTALL_COMMAND
       echo "This will replace your clang compiler with Clang/OpenMP." &&
       sudo make install)
@@ -407,15 +573,17 @@ add_external_project(
 # See https://github.com/mologie/curl-asio.
 set(CURL_ASIO_C_FLAGS "-I${LIBCURL_PREFIX}/include ${CMAKE_C_FLAGS}")
 set(CURL_ASIO_CXX_FLAGS "-I${LIBCURL_PREFIX}/include ${CMAKE_CXX_FLAGS}")
-set(CURL_ASIO_LINKER_FLAGS "-L${LIBCURL_PREFIX}/lib ${LINKER_FLAGS}")
+set(CURL_ASIO_LINKER_FLAGS "${third_party.libcurl} ${LINKER_FLAGS}")
 add_external_project(
   ${CURL_ASIO_TARGET}
   PREFIX ${CURL_ASIO_PREFIX}
   DOWNLOAD_COMMAND
       ${GIT} clone --depth 1 https://github.com/QuentinFiard/curl-asio.git
           ${CURL_ASIO_TARGET}
-  CONFIGURE_COMMAND
-      BOOST_ROOT=${BOOST_PREFIX} cmake <SOURCE_DIR>
+  CMAKE_ARGS
+      -DBOOST_ROOT=${BOOST_PREFIX}
+      -DBUILD_EXAMPLES=OFF
+
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
       -DCMAKE_BUILD_TYPE=RELEASE
@@ -423,6 +591,7 @@ add_external_project(
       -DCMAKE_CXX_FLAGS=${CURL_ASIO_CXX_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${CURL_ASIO_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${CURL_ASIO_PREFIX}
       -DCURL_ROOT=${LIBCURL_PREFIX})
 add_external_project_step(
@@ -433,8 +602,6 @@ add_external_project_step(
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${CURL_ASIO_PREFIX}/lib)
 add_include_directory(${CURL_ASIO_PREFIX}/include)
-add_link_directory(${CURL_ASIO_PREFIX}/lib)
-set_library(curl-asio libcurlasio boost_system curl)
 add_dependencies(${CURL_ASIO_TARGET} ${BOOST_TARGET})
 add_dependencies(${CURL_ASIO_TARGET} ${LIBCURL_TARGET})
 
@@ -460,17 +627,16 @@ add_external_project(
       -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${DLIB_PREFIX}
   INSTALL_COMMAND
-      mkdir -p ${DLIB_PREFIX}/lib &&
+      ${CMAKE_COMMAND} -E make_directory ${DLIB_PREFIX}/lib &&
       cp -f libdlib.a ${DLIB_PREFIX}/lib &&
-      mkdir -p ${DLIB_PREFIX}/include/dlib &&
+      ${CMAKE_COMMAND} -E make_directory ${DLIB_PREFIX}/include/dlib &&
       cd <SOURCE_DIR> &&
       find . -name "*.h" |
       cpio -dp <INSTALL_DIR>/include/dlib)
 add_include_directory(${DLIB_PREFIX}/include)
-add_link_directory(${DLIB_PREFIX}/lib)
-set_library(dlib dlib)
 
 ################################################################################
 # Eigen.
@@ -478,7 +644,7 @@ add_external_project(
   ${EIGEN_TARGET}
   PREFIX ${EIGEN_PREFIX}
   DOWNLOAD_COMMAND
-      ${HG} clone https://bitbucket.org/eigen/eigen eigen_target
+      ${HG} clone https://bitbucket.org/eigen/eigen ${EIGEN_TARGET}
   CMAKE_ARGS
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
@@ -487,6 +653,7 @@ add_external_project(
       -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${EIGEN_PREFIX}
       # Do not add register for pkg-config as it would require root permissions.
       -DEIGEN_BUILD_PKGCONFIG=OFF
@@ -494,10 +661,7 @@ add_external_project(
       -DGMP_LIBRARIES=${GMP_PREFIX}/lib
       -DMPFR_INCLUDES=${MPFR_PREFIX}/include
       -DMPFR_LIBRARIES=${MPFR_PREFIX}/lib)
-set_library(eigen "")  # Eigen is header only.
-set(EIGEN_INCLUDE_PATH ${EIGEN_PREFIX}/include/eigen3)
 add_include_directory(${EIGEN_INCLUDE_PATH})
-add_link_directory(${EIGEN_PREFIX}/lib)
 add_dependencies(${EIGEN_TARGET} ${GMP_TARGET})
 add_dependencies(${EIGEN_TARGET} ${MPFR_TARGET})
 
@@ -514,13 +678,9 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${FLEX_PREFIX}/download/flex-2.5.37.tar.bz2
-  CONFIGURE_COMMAND ./configure --prefix=${FLEX_PREFIX}
-  BUILD_COMMAND make
-  INSTALL_COMMAND make install
+  CONFIGURE_COMMAND ./configure --prefix=${FLEX_PREFIX} ${HOST}
   BUILD_IN_SOURCE 1)
 add_include_directory(${FLEX_PREFIX}/include)
-add_link_directory(${FLEX_PREFIX}/lib)
-set_library(flex fl)
 set(FLEX_EXECUTABLE ${FLEX_PREFIX}/bin/flex++)
 
 ################################################################################
@@ -536,7 +696,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${FREETYPE_PREFIX}/download/freetype-2.5.1.tar.bz2
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${FREETYPE_PREFIX}
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${FREETYPE_PREFIX} ${HOST}
   BUILD_COMMAND make
   INSTALL_COMMAND
       make install &&
@@ -561,17 +721,17 @@ add_external_project(
       -DCMAKE_BUILD_TYPE=RELEASE
       -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
       -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+      -DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DLIBRARY_OUTPUT_PATH=<INSTALL_DIR>/lib
   INSTALL_COMMAND
-      mkdir -p <INSTALL_DIR>/include/g2log &&
+      ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/include/g2log &&
       cd <SOURCE_DIR>/src &&
       find . -name "*.h" |
       cpio -dp <INSTALL_DIR>/include/g2log)
 add_include_directory(${G2LOG_PREFIX}/include)
-add_link_directory(${G2LOG_PREFIX}/lib)
-set_library(g2log lib_g2logger)
 
 ################################################################################
 # GNU GCC compiler.
@@ -594,7 +754,7 @@ add_external_project(
       ${GNUTAR} --strip-components 1 -xvf
           ${GCC_PREFIX}/download/gcc-4.8.2.tar.bz2
   CONFIGURE_COMMAND
-      ./configure --prefix=${GCC_PREFIX} --with-gmp=${GMP_PREFIX}
+      ./configure --prefix=${GCC_PREFIX} ${HOST} --with-gmp=${GMP_PREFIX}
           --with-mpfr=${MPFR_PREFIX} --with-mpc=${MPC_PREFIX}
           --with-sysroot=${SYSROOT} --with-build-sysroot=${SYSROOT}
           CFLAGS=-O4 CXXFLAGS=-O4
@@ -613,12 +773,13 @@ add_external_project(
   DOWNLOAD_COMMAND
       ${SVN} export --force http://gflags.googlecode.com/svn/trunk/ ${GFLAGS_TARGET}
   CONFIGURE_COMMAND
-      <SOURCE_DIR>/configure --prefix=${GFLAGS_PREFIX} CC=${CMAKE_C_COMPILER}
-          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS}
-          CXXFLAGS=${CMAKE_CXX_FLAGS} LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS})
+      <SOURCE_DIR>/configure --prefix=${GFLAGS_PREFIX} ${HOST}
+          CC=${CMAKE_C_COMPILER}
+          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+          CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+          LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+          ${CONFIGURE_LIB_TYPE})
 add_include_directory(${GFLAGS_PREFIX}/include)
-add_link_directory(${GFLAGS_PREFIX}/lib)
-set_library(gflags gflags)
 
 ################################################################################
 # gmock.
@@ -635,18 +796,29 @@ add_external_project(
       -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
   INSTALL_COMMAND
-      mkdir -p <INSTALL_DIR>/include <INSTALL_DIR>/lib &&
+      ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/include &&
+      ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/lib &&
       cd <BINARY_DIR> &&
-      find . -name "*.dylib" | cpio -dp <INSTALL_DIR>/lib &&
+      find . -name "*${CMAKE_SHARED_LIBRARY_SUFFIX}" | cpio -dp <INSTALL_DIR>/lib &&
+      find . -name "*${CMAKE_STATIC_LIBRARY_SUFFIX}" | cpio -dp <INSTALL_DIR>/lib &&
       cd <SOURCE_DIR>/include &&
       find . -name "*.h" | cpio -dp <INSTALL_DIR>/include)
 add_include_directory(${GMOCK_PREFIX}/include)
-add_link_directory(${GMOCK_PREFIX}/lib)
-set_library(gmock gmock gmock_main)
 
 ################################################################################
 # GMP.
+set(GMP_C_FLAGS "${CMAKE_C_FLAGS_WITH_ARCHS} -Wl,${CMAKE_SHARED_LINKER_FLAGS}")
+set(GMP_CXX_FLAGS "${CMAKE_CXX_FLAGS_WITH_ARCHS} -Wl,${CMAKE_SHARED_LINKER_FLAGS}")
+set(CONFIGURE_COMMAND ./configure --prefix=${GMP_PREFIX} ${HOST} --enable-cxx
+        CC=${CMAKE_C_COMPILER}
+        CXX=${CMAKE_CXX_COMPILER} CFLAGS=${GMP_C_FLAGS}
+        CXXFLAGS=${GMP_CXX_FLAGS}
+        ${CONFIGURE_LIB_TYPE})
+if (IOS_BUILD OR IOS_SIMULATOR_BUILD)
+  set(CONFIGURE_COMMAND ${CONFIGURE_COMMAND} --disable-assembly)
+endif ()
 add_external_project(
   ${GMP_TARGET}
   PREFIX ${GMP_PREFIX}
@@ -658,15 +830,10 @@ add_external_project(
       cd <SOURCE_DIR> &&
       ${GNUTAR} --strip-components 1 -xvf
           ${GMP_PREFIX}/download/gmp-5.1.3.tar.bz2
-  CONFIGURE_COMMAND
-      ./configure --prefix=${GMP_PREFIX} --enable-cxx CC=${CMAKE_C_COMPILER}
-          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS}
-          CXXFLAGS=${CMAKE_CXX_FLAGS} LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+  CONFIGURE_COMMAND ${CONFIGURE_COMMAND}
   BUILD_IN_SOURCE 1)
-add_dependencies(${GMP_TARGET} ${GNUTAR_TARGET})
-set_library(gmp gmp)
 add_include_directory(${GMP_PREFIX}/include)
-add_link_directory(${GMP_PREFIX}/lib)
+add_dependencies(${GMP_TARGET} ${GNUTAR_TARGET})
 
 ################################################################################
 # GNU bash.
@@ -703,7 +870,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       ${GNUTAR} --strip-components 1 -xvJf
           ${GNUGREP_PREFIX}/download/grep-2.15.tar.xz
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${GNUGREP_PREFIX}
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${GNUGREP_PREFIX} ${HOST}
       --with-libiconv-prefix=${LIBICONV_PREFIX}
       LDFLAGS=${GNUGREP_LD_FLAGS})
 add_dependencies(${GNUGREP_TARGET} ${GNUTAR_TARGET})
@@ -723,7 +890,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${GNUTAR_PREFIX}/download/tar-1.27.1.tar.bz2
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${GNUTAR_PREFIX}
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${GNUTAR_PREFIX} ${HOST}
       --with-xz=${XZ})
 add_dependencies(${GNUTAR_TARGET} ${XZ_TARGET})
 
@@ -742,15 +909,16 @@ add_external_project(
       -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
   INSTALL_COMMAND
-    mkdir -p <INSTALL_DIR>/include <INSTALL_DIR>/lib &&
+    ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/include &&
+    ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/lib &&
     cd <BINARY_DIR> &&
-    find . -name "*.dylib" | cpio -dp <INSTALL_DIR>/lib &&
+    find . -name "*${CMAKE_SHARED_LIBRARY_SUFFIX}" | cpio -dp <INSTALL_DIR>/lib &&
+    find . -name "*${CMAKE_STATIC_LIBRARY_SUFFIX}" | cpio -dp <INSTALL_DIR>/lib &&
     cd <SOURCE_DIR>/include &&
     find . -name "*.h" | cpio -dp <INSTALL_DIR>/include)
 add_include_directory(${GTEST_PREFIX}/include)
-add_link_directory(${GTEST_PREFIX}/lib)
-set_library(gtest gtest gtest_main)
 
 ################################################################################
 # HAProxy. TODO(qfiard): Make portable.
@@ -771,12 +939,12 @@ add_external_project(
   INSTALL_COMMAND
       echo "This will install haproxy in /usr/local/haproxy." &&
       sudo make install DESTDIR=${HAPROXY_PREFIX} &&
-      sudo mkdir -p /usr/local/haproxy &&
+      sudo ${CMAKE_COMMAND} -E make_directory /usr/local/haproxy &&
       sudo mv ${HAPROXY_PREFIX}/usr/local/doc /usr/local/haproxy &&
       sudo mv ${HAPROXY_PREFIX}/usr/local/sbin /usr/local/haproxy &&
       sudo mv ${HAPROXY_PREFIX}/usr/local/share /usr/local/haproxy &&
       sudo rm -rf ${HAPROXY_PREFIX}/usr &&
-      sudo mkdir -p /usr/local/haproxy/logs
+      sudo ${CMAKE_COMMAND} -E make_directory /usr/local/haproxy/logs
   BUILD_IN_SOURCE 1)
 
 ################################################################################
@@ -820,7 +988,8 @@ add_external_project(
   BUILD_COMMAND make osx SSLTYPE=unix.nopwd EXTRACFLAGS=-fPIC
   INSTALL_COMMAND
       cd <SOURCE_DIR> &&
-      mkdir -p ${IMAP_2007F_PREFIX}/lib ${IMAP_2007F_PREFIX}/include &&
+      ${CMAKE_COMMAND} -E make_directory ${IMAP_2007F_PREFIX}/lib &&
+      ${CMAKE_COMMAND} -E make_directory ${IMAP_2007F_PREFIX}/include &&
       cp c-client/c-client.a ${IMAP_2007F_PREFIX}/lib &&
       cd c-client &&
       find . -name "*.h" | cpio -dp ${IMAP_2007F_PREFIX}/include/
@@ -852,17 +1021,19 @@ add_external_project(
   PATCH_COMMAND
       patch -Np0 < ${THIRD_PARTY_SOURCE_DIR}/jsoncpp.patch
   CMAKE_ARGS
+      -DJSONCPP_WITH_TESTS=OFF
+
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
       -DCMAKE_BUILD_TYPE=RELEASE
       -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
       -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+      -DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${JSONCPP_PREFIX})
 add_include_directory(${JSONCPP_PREFIX}/include)
-add_link_directory(${JSONCPP_PREFIX}/lib)
-set_library(jsoncpp jsoncpp)
 
 ################################################################################
 # LDAP.
@@ -880,7 +1051,7 @@ add_external_project(
       tar --strip-components 1 -xvf
           ${LDAP_PREFIX}/download/openldap-2.4.38.tgz
   CONFIGURE_COMMAND LDFLAGS=${LDAP_LDFLAGS} CPPFLAGS=${LDAP_CPPFLAGS}
-      <SOURCE_DIR>/configure --prefix=${LDAP_PREFIX}
+      <SOURCE_DIR>/configure --prefix=${LDAP_PREFIX} ${HOST}
   BUILD_COMMAND make
   INSTALL_COMMAND make install)
 add_dependencies(${LDAP_TARGET} ${BERKELEY_DB_TARGET})
@@ -902,7 +1073,7 @@ add_external_project(
       patch -Np0 < ${THIRD_PARTY_SOURCE_DIR}/ldap_sasl.patch
   CONFIGURE_COMMAND
       LDFLAGS=${LDAP_LDFLAGS} CPPFLAGS=${LDAP_CPPFLAGS}
-      <SOURCE_DIR>/configure --prefix=${LDAP_SASL_PREFIX}
+      <SOURCE_DIR>/configure --prefix=${LDAP_SASL_PREFIX} ${HOST}
       --with-dblib=berkeley
       --with-bdb-incdir=${BERKELEY_DB_PREFIX}/include
       --with-bdb-libdir=${BERKELEY_DB_PREFIX}/lib
@@ -917,6 +1088,7 @@ add_dependencies(${LDAP_SASL_TARGET} ${OPENSSL_TARGET})
 
 ################################################################################
 # libcurl. TODO(qfiard): Make portable.
+set(LIBCURL_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L${ZLIB_PREFIX}/lib")
 add_external_project(
   ${LIBCURL_TARGET}
   PREFIX ${LIBCURL_PREFIX}
@@ -928,11 +1100,14 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${LIBCURL_PREFIX}/download/curl-7.33.0.tar.bz2
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBCURL_PREFIX}
-      --with-darwinssl --with-zlib=${ZLIB_PREFIX})
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBCURL_PREFIX} ${HOST}
+      --with-zlib=${ZLIB_PREFIX} --with-ssl=${OPENSSL_PREFIX}
+      CC=${CMAKE_C_COMPILER}
+      CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+      CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+      LDFLAGS=${LIBCURL_LINKER_FLAGS}
+      ${CONFIGURE_LIB_TYPE})
 add_include_directory(${LIBCURL_PREFIX}/include)
-add_link_directory(${LIBCURL_PREFIX}/lib)
-set_library(libcurl curl)
 add_dependencies(${LIBCURL_TARGET} ${OPENSSL_TARGET})
 add_dependencies(${LIBCURL_TARGET} ${ZLIB_TARGET})
 
@@ -962,6 +1137,7 @@ add_external_project(
       -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${LIBCXX_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${LIBCXX_PREFIX}
       -DLIBCXX_CXX_ABI=libcxxabi
       -DLIBCXX_LIBCXXABI_INCLUDE_PATHS=${LIBCXXABI_PREFIX}/include)
@@ -972,8 +1148,6 @@ add_external_project_step(${LIBCXX_TARGET} set_install_names
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${LIBCXX_PREFIX}/lib)
-add_link_directory(${LIBCXX_PREFIX}/lib)
-set_library(libcxx c++)
 add_dependencies(${LIBCXX_TARGET} ${LIBCXX_HEADERS_TARGET})
 add_dependencies(${LIBCXX_TARGET} ${LIBCXXABI_TARGET})
 
@@ -999,8 +1173,6 @@ add_external_project_step(${LIBCXXABI_TARGET} set_install_names
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${LIBCXXABI_PREFIX}/lib)
-set_library(libcxxabi c++abi)
-add_link_directory(${LIBCXXABI_PREFIX}/lib)
 add_dependencies(${LIBCXXABI_TARGET} ${LIBCXX_TARGET}_headers)
 
 ################################################################################
@@ -1016,7 +1188,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${LIBICONV_PREFIX}/download/libiconv-1.14.tar.gz
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBICONV_PREFIX})
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBICONV_PREFIX} ${HOST})
 
 ################################################################################
 # LibJPG.
@@ -1031,7 +1203,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${LIBJPG_PREFIX}/download/jpegsrc.v9.tar.gz
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBJPG_PREFIX})
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBJPG_PREFIX} ${HOST})
 
 ################################################################################
 # libmcrypt.
@@ -1051,7 +1223,7 @@ add_external_project(
       cd libltdl &&
       autoconf &&
       cd <SOURCE_DIR> &&
-      <SOURCE_DIR>/configure --prefix=${LIBMCRYPT_PREFIX}
+      <SOURCE_DIR>/configure --prefix=${LIBMCRYPT_PREFIX} ${HOST}
           --disable-posix-threads --enable-dynamic-loading
   BUILD_IN_SOURCE 1)
 
@@ -1068,7 +1240,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${LIBMHASH_PREFIX}/download/mhash-0.9.9.9.tar.bz2
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBMHASH_PREFIX}
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBMHASH_PREFIX} ${HOST}
   BUILD_IN_SOURCE 1)
 
 ################################################################################
@@ -1084,26 +1256,30 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${LIBPNG_PREFIX}/download/libpng-1.6.7.tar.gz
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBPNG_PREFIX})
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBPNG_PREFIX} ${HOST})
 
 ################################################################################
 # libxml.
+if (IOS_BUILD OR IOS_SIMULATOR_BUILD)
+  set(WITH_PYTHON "--with-python=no")
+endif ()
 add_external_project(
   ${LIBXML_TARGET}
   PREFIX ${LIBXML_PREFIX}
   DOWNLOAD_COMMAND
       ${GIT} clone --depth 1 git://git.gnome.org/libxml2 ${LIBXML_TARGET}
   CONFIGURE_COMMAND
-      <SOURCE_DIR>/autogen.sh --prefix=${LIBXML_PREFIX}
+      <SOURCE_DIR>/autogen.sh --prefix=${LIBXML_PREFIX} ${HOST}
           --with-lzma=${XZ_PREFIX}
           --with-zlib=${ZLIB_PREFIX}
           CC=${CMAKE_C_COMPILER}
-          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS}
-          CXXFLAGS=${CMAKE_CXX_FLAGS} LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS})
+          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+          CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+          LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+          ${WITH_PYTHON}
+          ${CONFIGURE_LIB_TYPE})
 add_include_directory(${LIBXML_PREFIX}/include)
 add_include_directory(${LIBXML_PREFIX}/include/libxml2)
-add_link_directory(${LIBXML_PREFIX}/lib)
-set_library(libxml xml2)
 add_dependencies(${LIBXML_TARGET} ${XZ_TARGET})
 add_dependencies(${LIBXML_TARGET} ${ZLIB_TARGET})
 
@@ -1121,12 +1297,13 @@ add_external_project(
       tar --strip-components 1 -xvf
           ${MARISA_TRIE_PREFIX}/download/marisa-0.2.4.tar.gz
   CONFIGURE_COMMAND
-      <SOURCE_DIR>/configure --prefix=${MARISA_TRIE_PREFIX} CC=${CMAKE_C_COMPILER}
-          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS}
-          CXXFLAGS=${CMAKE_CXX_FLAGS} LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS})
+      <SOURCE_DIR>/configure --prefix=${MARISA_TRIE_PREFIX} ${HOST}
+          CC=${CMAKE_C_COMPILER}
+          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+          CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+          LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+          ${CONFIGURE_LIB_TYPE})
 add_include_directory(${MARISA_TRIE_PREFIX}/include)
-add_link_directory(${MARISA_TRIE_PREFIX}/lib)
-set_library(marisa_trie marisa)
 
 ################################################################################
 # Maven.
@@ -1190,7 +1367,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${MCRYPT_PREFIX}/download/mcrypt-2.6.8.tar.gz
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${MCRYPT_PREFIX}
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${MCRYPT_PREFIX} ${HOST}
       --with-libiconv-prefix=${LIBICONV_PREFIX}
       --with-libmcrypt-prefix=${LIBMCRYPT_PREFIX}
       --with-libmhash-prefix=${LIBMHASH_PREFIX}
@@ -1215,14 +1392,15 @@ add_external_project(
       tar --strip-components 1 -xvf
           ${MPC_PREFIX}/download/mpc-1.0.1.tar.gz
   CONFIGURE_COMMAND
-      <SOURCE_DIR>/configure --prefix=${MPC_PREFIX} --with-gmp=${GMP_PREFIX}
+      <SOURCE_DIR>/configure --prefix=${MPC_PREFIX} ${HOST}
+          --with-gmp=${GMP_PREFIX}
           --with-mpfr=${MPFR_PREFIX}
           CC=${CMAKE_C_COMPILER}
-          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS}
-          CXXFLAGS=${CMAKE_CXX_FLAGS} LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS})
+          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+          CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+          LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+          ${CONFIGURE_LIB_TYPE})
 add_include_directory(${MPC_PREFIX}/include)
-add_link_directory(${MPC_PREFIX}/lib)
-set_library(mpc mpc)
 add_dependencies(${MPC_TARGET} ${GMP_TARGET})
 add_dependencies(${MPC_TARGET} ${MPFR_TARGET})
 
@@ -1240,13 +1418,14 @@ add_external_project(
       tar --strip-components 1 -xvf
           ${MPFR_PREFIX}/download/mpfr-3.1.2.tar.bz2
   CONFIGURE_COMMAND
-      <SOURCE_DIR>/configure --prefix=${MPFR_PREFIX} --with-gmp=${GMP_PREFIX}
+      <SOURCE_DIR>/configure --prefix=${MPFR_PREFIX} ${HOST}
+          --with-gmp=${GMP_PREFIX}
           CC=${CMAKE_C_COMPILER}
-          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS}
-          CXXFLAGS=${CMAKE_CXX_FLAGS} LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS})
+          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+          CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+          LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+          ${CONFIGURE_LIB_TYPE})
 add_include_directory(${MPFR_PREFIX}/include)
-add_link_directory(${MPFR_PREFIX}/lib)
-set_library(mpfr mpfr)
 add_dependencies(${MPFR_TARGET} ${GMP_TARGET})
 
 ################################################################################
@@ -1273,46 +1452,50 @@ add_external_project(
       -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
       # Do not use, leads to undefined symbols errors.
       # -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${MYSQL_PREFIX}
       -DWITH_ZLIB=test
       -DZLIB_ROOT=${ZLIB_PREFIX}
       -DWITH_SSL_PATH=${OPENSSL_PREFIX})
 add_include_directory(${MYSQL_PREFIX}/include)
-add_link_directory(${MYSQL_PREFIX}/lib)
 add_dependencies(${MYSQL_TARGET} ${OPENSSL_TARGET})
 add_dependencies(${MYSQL_TARGET} ${ZLIB_TARGET})
 
 ################################################################################
 # Mysql C++/Connector.
-add_external_project(
-  ${MYSQLCPPCONN_TARGET}
-  PREFIX ${MYSQLCPPCONN_PREFIX}
-  DOWNLOAD_DIR ${MYSQLCPPCONN_PREFIX}/download
-  DOWNLOAD_COMMAND
-      wget -O mysqlcppconn.tar.gz http://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-1.1.3.tar.gz/from/http://cdn.mysql.com/ &&
-      cd <SOURCE_DIR> &&
-      tar --strip-components 1 -xvf ${MYSQLCPPCONN_PREFIX}/download/mysqlcppconn.tar.gz
-  CMAKE_ARGS
-      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-      -DCMAKE_BUILD_TYPE=RELEASE
-      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
-      -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
-      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-      -DCMAKE_INSTALL_PREFIX=${MYSQLCPPCONN_PREFIX}
-  BUILD_IN_SOURCE 1  # Needed for config header file.
-  )
-add_external_project_step(${MYSQLCPPCONN_TARGET} set_install_names
-  COMMAND
-      ${SET_INSTALL_NAMES} ${CMAKE_INSTALL_NAME_TOOL}
-          ${CMAKE_SHARED_LIBRARY_SUFFIX}
-  DEPENDEES install
-  DEPENDS ${SET_INSTALL_NAMES}
-  WORKING_DIRECTORY ${MYSQLCPPCONN_PREFIX}/lib)
-add_include_directory(${MYSQLCPPCONN_PREFIX}/include)
-add_link_directory(${MYSQLCPPCONN_PREFIX}/lib)
-set_library(mysqlcppconn mysqlcppconn)
+if (IOS_BUILD OR IOS_SIMULATOR_BUILD)
+  add_custom_target(${MYSQLCPPCONN_TARGET})
+  set_library(mysqlcppconn "")
+else ()
+  add_external_project(
+    ${MYSQLCPPCONN_TARGET}
+    PREFIX ${MYSQLCPPCONN_PREFIX}
+    DOWNLOAD_DIR ${MYSQLCPPCONN_PREFIX}/download
+    DOWNLOAD_COMMAND
+        wget -O mysqlcppconn.tar.gz http://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-1.1.3.tar.gz/from/http://cdn.mysql.com/ &&
+        cd <SOURCE_DIR> &&
+        tar --strip-components 1 -xvf ${MYSQLCPPCONN_PREFIX}/download/mysqlcppconn.tar.gz
+    CMAKE_ARGS
+        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+        -DCMAKE_BUILD_TYPE=RELEASE
+        -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+        -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+        -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+        -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+        -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+        -DCMAKE_INSTALL_PREFIX=${MYSQLCPPCONN_PREFIX}
+    BUILD_IN_SOURCE 1  # Needed for config header file.
+    )
+  add_external_project_step(${MYSQLCPPCONN_TARGET} set_install_names
+    COMMAND
+        ${SET_INSTALL_NAMES} ${CMAKE_INSTALL_NAME_TOOL}
+            ${CMAKE_SHARED_LIBRARY_SUFFIX}
+    DEPENDEES install
+    DEPENDS ${SET_INSTALL_NAMES}
+    WORKING_DIRECTORY ${MYSQLCPPCONN_PREFIX}/lib)
+  add_include_directory(${MYSQLCPPCONN_PREFIX}/include)
+endif ()
 
 ################################################################################
 # Nginx.
@@ -1335,7 +1518,7 @@ add_external_project(
   INSTALL_COMMAND
       echo "This will install nginx in /usr/local/nginx." &&
       sudo make install &&
-      sudo mkdir -p /usr/local/nginx/logs
+      sudo ${CMAKE_COMMAND} -E make_directory /usr/local/nginx/logs
   BUILD_IN_SOURCE 1)
 
 ################################################################################
@@ -1356,14 +1539,16 @@ add_external_project(
   INSTALL_COMMAND
       echo "This will install NTP in /usr/local/ntp on you server." &&
       sudo make install &&
-      sudo mkdir -p /usr/local/ntp/logs)
+      sudo ${CMAKE_COMMAND} -E make_directory /usr/local/ntp/logs)
 
 ################################################################################
 # OpenCV.
 set(OPENCV_SHARED_LINKER_FLAGS
     "-L${OPENCV_PREFIX}/src/${OPENCV_TARGET}-build/lib\
      ${CMAKE_SHARED_LINKER_FLAGS}")
-set_library(opencv_exe_linker_flags "${OPENCV_SHARED_LINKER_FLAGS}")
+set(OPENCV_EXE_LINKER_FLAGS
+    "-L${OPENCV_PREFIX}/src/${OPENCV_TARGET}-build/lib\
+     ${CMAKE_EXE_LINKER_FLAGS}")
 set(OPENCV_CXX_FLAGS
     "-D TBB_IMPLEMENT_CPP0X=0 -I${TBB_PREFIX}/include ${CMAKE_CXX_FLAGS}")
 add_external_project(
@@ -1377,8 +1562,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${OPENCV_PREFIX}/download/opencv_2.4.7.2.tar.gz
-  CONFIGURE_COMMAND
-      cmake <SOURCE_DIR>
+  CMAKE_ARGS
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
       -DCMAKE_BUILD_TYPE=RELEASE
@@ -1404,6 +1588,7 @@ add_external_project(
       -DCMAKE_SHARED_LINKER_FLAGS=${OPENCV_SHARED_LINKER_FLAGS}
       -DCMAKE_EXE_LINKER_FLAGS=${OPENCV_EXE_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${OPENCV_PREFIX})
 add_external_project_step(${OPENCV_TARGET} set_install_names
   COMMAND
@@ -1413,40 +1598,8 @@ add_external_project_step(${OPENCV_TARGET} set_install_names
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${OPENCV_PREFIX}/lib)
 add_include_directory(${OPENCV_PREFIX}/include)
-add_link_directory(${OPENCV_PREFIX}/lib)
-set_library(opencv_bioinspired opencv_bioinspired)
-set_library(opencv_calib3d opencv_calib3d)
-set_library(opencv_contrib opencv_contrib)
-set_library(opencv_core opencv_core)
-set_library(opencv_cuda opencv_cuda)
-set_library(opencv_cudaarithm opencv_cudaarithm)
-set_library(opencv_cudabgsegm opencv_cudabgsegm)
-set_library(opencv_cudafeatures2d opencv_cudafeatures2d)
-set_library(opencv_cudafilters opencv_cudafilters)
-set_library(opencv_cudaimgproc opencv_cudaimgproc)
-set_library(opencv_cudaoptflow opencv_cudaoptflow)
-set_library(opencv_cudastereo opencv_cudastereo)
-set_library(opencv_cudawarping opencv_cudawarping)
-set_library(opencv_features2d opencv_features2d)
-set_library(opencv_flann opencv_flann)
-set_library(opencv_highgui opencv_highgui)
-set_library(opencv_imgproc opencv_imgproc)
-set_library(opencv_legacy opencv_legacy)
-set_library(opencv_ml opencv_ml)
-set_library(opencv_nonfree opencv_nonfree)
-set_library(opencv_objdetect opencv_objdetect)
-set_library(opencv_ocl opencv_ocl)
-set_library(opencv_optim opencv_optim)
-set_library(opencv_photo opencv_photo)
-set_library(opencv_shape opencv_shape)
-set_library(opencv_softcascade opencv_softcascade)
-set_library(opencv_stitching opencv_stitching)
-set_library(opencv_superres opencv_superres)
-set_library(opencv_ts opencv_ts)
-set_library(opencv_video opencv_video)
-set_library(opencv_videostab opencv_videostab)
 add_dependencies(${OPENCV_TARGET} ${EIGEN_TARGET})
-add_dependencies(${OPENCV_TARGET} ${GCC_TARGET})
+# add_dependencies(${OPENCV_TARGET} ${GCC_TARGET})
 add_dependencies(${OPENCV_TARGET} ${TBB_PREFIX})
 
 ################################################################################
@@ -1459,13 +1612,13 @@ add_external_project(
       ${SVN} export --force http://llvm.org/svn/llvm-project/openmp/trunk openmp &&
       rm -rf <SOURCE_DIR> &&
       mv openmp/runtime <SOURCE_DIR>
-  CONFIGURE_COMMAND ""
+  CONFIGURE_COMMAND echo ""
   BUILD_COMMAND
       PATH=${GCC_PREFIX}/bin:$ENV{PATH}
           LIB_GCC=${GCC_PREFIX}/lib/libgcc_s.1${CMAKE_SHARED_LIBRARY_SUFFIX}
           make compiler=gcc
   INSTALL_COMMAND
-      mkdir -p ${OPENMP_PREFIX}/lib &&
+      ${CMAKE_COMMAND} -E make_directory ${OPENMP_PREFIX}/lib &&
       cp -rf exports/common/include ${OPENMP_PREFIX} &&
       find exports -name "*${CMAKE_SHARED_LIBRARY_SUFFIX}" |
       xargs -I{} cp "{}" ${OPENMP_PREFIX}/lib
@@ -1479,33 +1632,113 @@ add_external_project_step(${OPENMP_TARGET} set_install_names
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${OPENMP_PREFIX}/lib)
-add_link_directory(${OPENMP_PREFIX}/lib)
 add_include_directory(${OPENMP_PREFIX}/include)
-set_library(openmp iomp5)
 set(OPENMP_COMPILE_FLAG "-fopenmp")
 add_dependencies(${OPENMP_TARGET} ${GCC_TARGET})
-add_dependencies(${OPENMP_TARGET} ${CLANG_OMP_TARGET})
+# add_dependencies(${OPENMP_TARGET} ${CLANG_OMP_TARGET})
 
 ################################################################################
 # OpenSSL.
-add_external_project(
-  ${OPENSSL_TARGET}
-  PREFIX ${OPENSSL_PREFIX}
-  DOWNLOAD_DIR ${OPENSSL_PREFIX}/download
-  DOWNLOAD_COMMAND
-      wget -O openssl-1.0.1e.tar.gz http://www.openssl.org/source/openssl-1.0.1e.tar.gz &&
-      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/openssl-1.0.1e.tar.gz.asc
-          openssl-1.0.1e.tar.gz &&
-      cd <SOURCE_DIR> &&
-      tar --strip-components 1 -xvf
-          ${OPENSSL_PREFIX}/download/openssl-1.0.1e.tar.gz
-  CONFIGURE_COMMAND
-      ./Configure darwin64-x86_64-cc --prefix=${OPENSSL_PREFIX} shared
-          zlib-dynamic
-  BUILD_IN_SOURCE 1)
+set(OPENSSL_FLAGS enable-gmp -DOPENSSL_USE_GMP -I${GMP_PREFIX}/include)
+foreach (FLAG ${third_party.gmp})
+  set(OPENSSL_FLAGS "${OPENSSL_FLAGS} -Wl,${FLAG}")
+endforeach ()
+if (IOS_BUILD)
+  set(DEFAULT_CONFIGURE_COMMAND
+          <SOURCE_DIR>/Configure iphoneos-cross
+          ${CMAKE_C_FLAGS} ${LINKER_AS_COMPILER_FLAGS} ${OPENSSL_FLAGS})
+
+  list(GET CMAKE_OSX_ARCHITECTURES 0 FIRST_ARCH)
+  # No build command in target, see below for build steps by architecture.
+  add_external_project(
+    ${OPENSSL_TARGET}
+    PREFIX ${OPENSSL_PREFIX}
+    DOWNLOAD_DIR ${OPENSSL_PREFIX}/download
+    DOWNLOAD_COMMAND
+        wget -O openssl-1.0.1e.tar.gz http://www.openssl.org/source/openssl-1.0.1e.tar.gz &&
+        gpg --verify ${THIRD_PARTY_SOURCE_DIR}/openssl-1.0.1e.tar.gz.asc
+            openssl-1.0.1e.tar.gz &&
+        cd <SOURCE_DIR> &&
+        tar --strip-components 1 -xvf
+            ${OPENSSL_PREFIX}/download/openssl-1.0.1e.tar.gz
+    CONFIGURE_COMMAND echo ""
+    BUILD_COMMAND echo ""
+    INSTALL_COMMAND
+        ln -sf ${OPENSSL_PREFIX}/${FIRST_ARCH}/include
+            ${OPENSSL_PREFIX}/${FIRST_ARCH}/ssl ${OPENSSL_PREFIX})
+
+  set(LAST_STEP configure)
+  foreach(ARCH ${CMAKE_OSX_ARCHITECTURES})
+    set(STEP "${ARCH}_create_dirs")
+    set(SOURCE_DIR ${OPENSSL_PREFIX}/${ARCH}/src)
+    add_external_project_step(${OPENSSL_TARGET} ${STEP}
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${OPENSSL_PREFIX}/${ARCH} &&
+          cp -rf <SOURCE_DIR> ${SOURCE_DIR}
+      DEPENDEES ${LAST_STEP})
+    set(LAST_STEP ${STEP})
+    set(CONFIGURE_COMMAND ${DEFAULT_CONFIGURE_COMMAND}
+            --prefix=${OPENSSL_PREFIX}/${ARCH} "-arch ${ARCH}")
+    set(STEP "${ARCH}_configure")
+    add_external_project_step(${OPENSSL_TARGET} ${STEP}
+      COMMAND ${CONFIGURE_COMMAND}
+      DEPENDEES ${LAST_STEP}
+      WORKING_DIRECTORY ${SOURCE_DIR})
+    set(LAST_STEP ${STEP})
+    set(STEP "${ARCH}_build")
+    add_external_project_step(${OPENSSL_TARGET} ${STEP}
+      COMMAND make
+      DEPENDEES ${LAST_STEP}
+      WORKING_DIRECTORY ${SOURCE_DIR})
+    set(LAST_STEP ${STEP})
+    set(STEP "${ARCH}_install")
+    add_external_project_step(${OPENSSL_TARGET} ${STEP}
+      COMMAND make install
+      DEPENDEES ${LAST_STEP}
+      DEPENDERS install
+      WORKING_DIRECTORY ${SOURCE_DIR})
+    set(LAST_STEP ${STEP})
+  endforeach ()
+  set(MERGE_COMMAND ${CREATE_FAT_LIBS} ${CMAKE_SHARED_LIBRARY_SUFFIX}
+          ${CMAKE_STATIC_LIBRARY_SUFFIX} ${OPENSSL_PREFIX}/lib)
+  foreach(ARCH ${CMAKE_OSX_ARCHITECTURES})
+    set(MERGE_COMMAND ${MERGE_COMMAND} ${OPENSSL_PREFIX}/${ARCH}/lib)
+  endforeach ()
+  set(STEP "create_fat_libs")
+  add_external_project_step(${OPENSSL_TARGET} ${STEP}
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${OPENSSL_PREFIX}/lib &&
+        ${MERGE_COMMAND}
+    DEPENDEES ${LAST_STEP}
+    DEPENDS ${CREATE_FAT_LIBS})
+else ()
+  if (IOS_SIMULATOR_BUILD)
+    set(CONFIGURE_COMMAND
+            <SOURCE_DIR>/Configure BSD-generic32 --prefix=${OPENSSL_PREFIX}
+            ${CMAKE_C_FLAGS_WITH_ARCHS} "-Wl,${CMAKE_SHARED_LINKER_FLAGS}"
+            ${OPENSSL_FLAGS})
+  else ()
+    set(CONFIGURE_COMMAND <SOURCE_DIR>/Configure darwin64-x86_64-cc
+            ${CMAKE_C_FLAGS} --prefix=${OPENSSL_PREFIX} zlib-dynamic
+            ${OPENSSL_FLAGS})
+  endif ()
+  if (BUILD_SHARED_LIBS)
+    set(CONFIGURE_COMMAND ${CONFIGURE_COMMAND} shared)
+  endif ()
+  add_external_project(
+    ${OPENSSL_TARGET}
+    PREFIX ${OPENSSL_PREFIX}
+    DOWNLOAD_DIR ${OPENSSL_PREFIX}/download
+    DOWNLOAD_COMMAND
+        wget -O openssl-1.0.1e.tar.gz http://www.openssl.org/source/openssl-1.0.1e.tar.gz &&
+        gpg --verify ${THIRD_PARTY_SOURCE_DIR}/openssl-1.0.1e.tar.gz.asc
+            openssl-1.0.1e.tar.gz &&
+        cd <SOURCE_DIR> &&
+        tar --strip-components 1 -xvf
+            ${OPENSSL_PREFIX}/download/openssl-1.0.1e.tar.gz
+    CONFIGURE_COMMAND ${CONFIGURE_COMMAND}
+    BUILD_IN_SOURCE 1)
+endif ()
 add_include_directory(${OPENSSL_PREFIX}/include)
-add_link_directory(${OPENSSL_PREFIX}/lib)
-set_library(openssl crypto ssl)
+add_dependencies(${OPENSSL_TARGET} ${GMP_TARGET})
 
 ################################################################################
 # pcre.
@@ -1615,7 +1848,7 @@ add_dependencies(${PHP_TARGET} ${READLINE_TARGET})
 add_dependencies(${PHP_TARGET} ${ZLIB_TARGET})
 
 ################################################################################
-# protobuf - Google's Protocol Buffers.
+# protobuf - Google's Protocol Buffers library.
 add_external_project(
   ${PROTOBUF_TARGET}
   PREFIX ${PROTOBUF_PREFIX}
@@ -1623,25 +1856,42 @@ add_external_project(
       ${SVN} export --force http://protobuf.googlecode.com/svn/trunk/ ${PROTOBUF_TARGET}
   CONFIGURE_COMMAND
       ./autogen.sh &&
-      ./configure --prefix=${PROTOBUF_PREFIX} CC=${CMAKE_C_COMPILER}
-          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS}
-          CXXFLAGS=${CMAKE_CXX_FLAGS} LDFLAGS=-Wc,${CMAKE_SHARED_LINKER_FLAGS}
+      ./configure --prefix=${PROTOBUF_PREFIX} ${HOST}
+          CC=${CMAKE_C_COMPILER}
+          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+          CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+          LDFLAGS=-Wc,${CMAKE_SHARED_LINKER_FLAGS}
+          --with-protoc=${PROTOBUF_PROTOC_EXECUTABLE}
+          ${CONFIGURE_LIB_TYPE}
   BUILD_IN_SOURCE 1)
-add_external_project_step(${PROTOBUF_TARGET} build_python_runtime
-  COMMAND /usr/bin/env python setup.py build
-  DEPENDEES build
-  DEPENDERS install
-  WORKING_DIRECTORY <SOURCE_DIR>/python)
-add_external_project_step(${PROTOBUF_TARGET} install_python_runtime
-  COMMAND /usr/bin/env python setup.py install
-  DEPENDEES install
-  WORKING_DIRECTORY <SOURCE_DIR>/python)
+  add_dependencies(${PROTOBUF_TARGET} ${PROTOC_TARGET})
+if (PYTHON_SUPPORTED)
+  add_external_project_step(${PROTOBUF_TARGET} build_python_runtime
+    COMMAND /usr/bin/env python setup.py build
+    DEPENDEES build
+    DEPENDERS install
+    WORKING_DIRECTORY <SOURCE_DIR>/python)
+  add_external_project_step(${PROTOBUF_TARGET} install_python_runtime
+    COMMAND /usr/bin/env python setup.py install
+    DEPENDEES install
+    WORKING_DIRECTORY <SOURCE_DIR>/python)
+  add_dependencies(${PROTOBUF_TARGET} ${VIRTUALENV_TARGET})
+endif ()
 add_include_directory(${PROTOBUF_PREFIX}/include)
-add_link_directory(${PROTOBUF_PREFIX}/lib)
-add_dependencies(${PROTOBUF_TARGET} ${VIRTUALENV_TARGET})
-set_library(protobuf protobuf)
+
+################################################################################
+# protoc - Google's Protocol Buffers compiler.
+add_external_project(
+  ${PROTOC_TARGET}
+  PREFIX ${PROTOC_PREFIX}
+  DOWNLOAD_COMMAND
+      ${SVN} export --force http://protobuf.googlecode.com/svn/trunk/ ${PROTOC_TARGET}
+  CONFIGURE_COMMAND
+      ./autogen.sh &&
+      ./configure --prefix=${PROTOC_PREFIX}
+  BUILD_IN_SOURCE 1)
 # This is required for protobuf_generate_* rules.
-set(PROTOBUF_PROTOC_EXECUTABLE ${PROTOBUF_PREFIX}/bin/protoc)
+set(PROTOBUF_PROTOC_EXECUTABLE ${PROTOC_PREFIX}/bin/protoc)
 
 ################################################################################
 # Readline.
@@ -1659,16 +1909,13 @@ add_external_project(
   PATCH_COMMAND
       patch -Np0 < ${THIRD_PARTY_SOURCE_DIR}/readline.patch
   CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${READLINE_PREFIX}
-      --enable-shared
       CC=${CMAKE_C_COMPILER}
       CXX=${CMAKE_CXX_COMPILER}
-      CFLAGS=${CMAKE_C_FLAGS}
-      CXXFLAGS=${CMAKE_CXX_FLAGS}
-  BUILD_COMMAND make shared
-  INSTALL_COMMAND make install)
+      CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+      CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+      LDFLAGS=${LDFLAGS_WITH_ARCHS}
+      ${CONFIGURE_LIB_TYPE})
 add_include_directory(${READLINE_PREFIX}/include)
-add_link_directory(${READLINE_PREFIX}/lib)
-set_library(readline readline)
 
 ################################################################################
 # Shark.
@@ -1682,7 +1929,7 @@ add_external_project(
   DOWNLOAD_COMMAND
       ${GIT} clone --depth 1 https://github.com/QuentinFiard/shark.git ${SHARK_TARGET}
   CONFIGURE_COMMAND
-      BOOST_ROOT=${BOOST_PREFIX} cmake <SOURCE_DIR>
+      BOOST_ROOT=${BOOST_PREFIX} ${CMAKE_COMMAND} <SOURCE_DIR>
           -DOPT_MAKE_TESTS=OFF
           -DOPT_DYNAMIC_LIBRARY=${BUILD_SHARED_LIBS}
           -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
@@ -1693,6 +1940,7 @@ add_external_project(
           -DCMAKE_EXE_LINKER_FLAGS=${SHARK_EXE_LINKER_FLAGS}
           -DCMAKE_SHARED_LINKER_FLAGS=${SHARK_SHARED_LINKER_FLAGS}
           -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+          -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
           -DCMAKE_INSTALL_PREFIX=${SHARK_PREFIX})
 add_external_project_step(${SHARK_TARGET} set_install_names
   COMMAND
@@ -1703,14 +1951,11 @@ add_external_project_step(${SHARK_TARGET} set_install_names
   WORKING_DIRECTORY ${SHARK_PREFIX}/lib
 )
 add_include_directory(${SHARK_PREFIX}/include)
-add_link_directory(${SHARK_PREFIX}/lib)
-set_library(shark shark)
 add_definitions(-DSHARK_USE_OPENMP)
 
 # Adds dependencies.
 add_dependencies(${SHARK_TARGET} ${BOOST_TARGET})
 add_dependencies(${SHARK_TARGET} ${OPENMP_TARGET})
-append_library(shark boost_serialization)
 
 ################################################################################
 # TBB.
@@ -1737,7 +1982,7 @@ add_external_project(
   BUILD_IN_SOURCE 1)
 add_external_project_step(${TBB_TARGET} install_libs
   COMMAND
-      mkdir -p ${TBB_PREFIX}/lib &&
+      ${CMAKE_COMMAND} -E make_directory ${TBB_PREFIX}/lib &&
       find build -name "*${CMAKE_SHARED_LIBRARY_SUFFIX}" |
       xargs -I{} cp "{}" ${TBB_PREFIX}/lib
   DEPENDEES install
@@ -1750,34 +1995,35 @@ add_external_project_step(${TBB_TARGET} set_install_names
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${TBB_PREFIX}/lib)
 add_include_directory(${TBB_PREFIX}/include)
-add_link_directory(${TBB_PREFIX}/lib)
-set_library(tbb tbb)
 
 ################################################################################
 # virtualenv.
-add_external_project(
-  ${VIRTUALENV_TARGET}
-  PREFIX ${VIRTUALENV_PREFIX}
-  DOWNLOAD_DIR ${VIRTUALENV_PREFIX}/download
-  DOWNLOAD_COMMAND
-      wget -O virtualenv-1.9.1.tar.gz https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz &&
-      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/virtualenv-1.9.1.tar.gz.sig
-          virtualenv-1.9.1.tar.gz &&
-      cd <SOURCE_DIR> &&
-      tar --strip-components 1 -xvf
-          ${VIRTUALENV_PREFIX}/download/virtualenv-1.9.1.tar.gz
-  CONFIGURE_COMMAND mkdir -p ${VIRTUALENV_PREFIX}/lib/python/
-  BUILD_COMMAND python setup.py install --home=${VIRTUALENV_PREFIX}
-  INSTALL_COMMAND
-      cd ${VIRTUALENV_PREFIX} && ./bin/virtualenv env
-  BUILD_IN_SOURCE 1)
-set(LINE "source ${PROJECT_SOURCE_DIR}/.profile")
-add_custom_command(TARGET ${VIRTUALENV_TARGET} POST_BUILD
-  COMMAND
-      grep -q "${LINE}" $ENV{HOME}/.profile && exit 0 ||
-      echo "\\033[31;1m***********************************************************\\nPlease add the following line to your .profile file\\n\\n${LINE}\\n***********************************************************\\n\\033[0m" &&
-      exit 1
-  VERBATIM)
+if (PYTHON_SUPPORTED)
+  add_external_project(
+    ${VIRTUALENV_TARGET}
+    PREFIX ${VIRTUALENV_PREFIX}
+    DOWNLOAD_DIR ${VIRTUALENV_PREFIX}/download
+    DOWNLOAD_COMMAND
+        wget -O virtualenv-1.9.1.tar.gz https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz &&
+        gpg --verify ${THIRD_PARTY_SOURCE_DIR}/virtualenv-1.9.1.tar.gz.sig
+            virtualenv-1.9.1.tar.gz &&
+        cd <SOURCE_DIR> &&
+        tar --strip-components 1 -xvf
+            ${VIRTUALENV_PREFIX}/download/virtualenv-1.9.1.tar.gz
+    CONFIGURE_COMMAND
+        ${CMAKE_COMMAND} -E make_directory ${VIRTUALENV_PREFIX}/lib/python
+    BUILD_COMMAND python setup.py install --home=${VIRTUALENV_PREFIX}
+    INSTALL_COMMAND
+        cd ${VIRTUALENV_PREFIX} && ./bin/virtualenv env
+    BUILD_IN_SOURCE 1)
+  set(LINE "source ${PROJECT_SOURCE_DIR}/.profile")
+  add_custom_command(TARGET ${VIRTUALENV_TARGET} POST_BUILD
+    COMMAND
+        grep -q "${LINE}" $ENV{HOME}/.profile && exit 0 ||
+        echo "\\033[31;1m***********************************************************\\nPlease add the following line to your .profile file\\n\\n${LINE}\\n***********************************************************\\n\\033[0m" &&
+        exit 1
+    VERBATIM)
+endif ()
 
 ################################################################################
 # xz.
@@ -1798,6 +2044,15 @@ add_external_project(
 
 ################################################################################
 # zlib.
+if (NOT BUILD_SHARED_LIBS)
+  set(ZLIB_CONFIGURE_LIB_TYPE "--static")
+endif ()
+set(ZLIB_C_FLAGS "${CMAKE_C_FLAGS_WITH_ARCHS} ${LINKER_AS_COMPILER_FLAGS}")
+set(CONFIGURE_COMMAND
+        export CFLAGS=${ZLIB_C_FLAGS} &&
+        <SOURCE_DIR>/configure
+            --prefix=${ZLIB_PREFIX}
+            --archs=${ARCHS_AS_FLAGS} ${ZLIB_CONFIGURE_LIB_TYPE})
 add_external_project(
   ${ZLIB_TARGET}
   PREFIX ${ZLIB_PREFIX}
@@ -1809,9 +2064,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${ZLIB_PREFIX}/download/zlib-1.2.8.tar.gz
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${ZLIB_PREFIX}
-  BUILD_COMMAND make
-  INSTALL_COMMAND make install
+  CONFIGURE_COMMAND ${CONFIGURE_COMMAND}
   BUILD_IN_SOURCE 1)
 
 
@@ -1840,7 +2093,7 @@ function(protobuf_generate_cc SRCS HDRS)
       COMMAND  ${PROTOBUF_PROTOC_EXECUTABLE}
       ARGS --cpp_out ${PROJECT_BINARY_DIR}/src
           -I${PROJECT_SOURCE_DIR}/src  ${ABS_FIL}
-      DEPENDS ${PROTOBUF_TARGET} ${ABS_FIL}
+      DEPENDS ${PROTOBUF_TARGET} ${PROTOC_TARGET} ${ABS_FIL}
       COMMENT "Running C++ protocol buffer compiler on ${FIL}"
       VERBATIM)
   endforeach()
@@ -1851,6 +2104,9 @@ function(protobuf_generate_cc SRCS HDRS)
 endfunction()
 
 function(protobuf_generate_java SRCS)
+  if (NOT JAVA_SUPPORTED)
+    return()
+  endif ()
   if(NOT ARGN)
     message(SEND_ERROR
             "Error: protobuf_generate_java() called without any proto files")
@@ -1870,7 +2126,7 @@ function(protobuf_generate_java SRCS)
       COMMAND  ${PROTOBUF_PROTOC_EXECUTABLE}
       ARGS --java_out ${PROJECT_BINARY_DIR}/src
           -I${PROJECT_SOURCE_DIR}/src  ${ABS_FIL}
-      DEPENDS ${PROTOBUF_TARGET} ${ABS_FIL}
+      DEPENDS ${PROTOBUF_TARGET} ${PROTOC_TARGET} ${ABS_FIL}
       COMMENT "Running java protocol buffer compiler on ${FIL}"
       VERBATIM)
   endforeach()
@@ -1880,6 +2136,9 @@ function(protobuf_generate_java SRCS)
 endfunction()
 
 function(protobuf_generate_py SRCS)
+  if (NOT PYTHON_SUPPORTED)
+    return()
+  endif ()
   if(NOT ARGN)
     message(SEND_ERROR
             "Error: protobuf_generate_py() called without any proto files")
@@ -1898,7 +2157,7 @@ function(protobuf_generate_py SRCS)
       COMMAND  ${PROTOBUF_PROTOC_EXECUTABLE}
       ARGS --python_out ${PROJECT_BINARY_DIR}/src
           -I${PROJECT_SOURCE_DIR}/src  ${ABS_FIL}
-      DEPENDS ${PROTOBUF_TARGET} ${ABS_FIL}
+      DEPENDS ${PROTOBUF_TARGET} ${PROTOC_TARGET} ${ABS_FIL}
       COMMENT "Running python protocol buffer compiler on ${FIL}"
       VERBATIM)
   endforeach()

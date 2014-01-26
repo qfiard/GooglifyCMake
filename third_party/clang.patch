@@ -1,0 +1,10 @@
+--- include/llvm/IR/Dominators.h	2014-01-24 23:41:32.000000000 +0000
++++ include/llvm/IR/Dominators.h	2014-01-24 23:38:45.000000000 +0000
+@@ -25,6 +25,7 @@
+ #include "llvm/Pass.h"
+ #include "llvm/Support/CFG.h"
+ #include "llvm/Support/GenericDomTree.h"
++#include "llvm/Support/GenericDomTreeConstruction.h"
+ #include "llvm/Support/Compiler.h"
+ #include "llvm/Support/raw_ostream.h"
+ #include <algorithm>

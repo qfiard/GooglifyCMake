@@ -5,6 +5,9 @@ endif ()
 set(THIRD_PARTY_MAVEN_LIBRARIES_CMAKE_ TRUE)
 
 function(maven_library LIB ARTIFACT_ID VERSION)
+  if (NOT JAVA_SUPPORTED)
+    return()
+  endif ()
   set(JAR_FILE
       "${PROJECT_BINARY_DIR}/third_party/java/${ARTIFACT_ID}-${VERSION}.jar")
   set("third_party.${LIB}" ${JAR_FILE} PARENT_SCOPE)
