@@ -19,4 +19,4 @@ cc_test(my_lib_test my_lib_test.cc)
 link(my_lib_test :my_lib third_party.gmock third_party.gtest)
 
 objc_binary(objc_exe main.mm)
-link(objc_exe Foundation)
+link_framework(objc_exe Foundation)

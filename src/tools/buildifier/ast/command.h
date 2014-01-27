@@ -18,7 +18,8 @@ class Command {
   enum Type {
     kCreateTarget = 0,
     kLink = 1,
-    kOther = 2,
+    kLinkFramework = 2,
+    kOther = 3,
     kNonTargetCommand = 1000,
     kSetGlobalProperty = 1001,
     kAddSubdirectory = 1002,
@@ -40,7 +41,7 @@ class Command {
   void WrapToCharactersLimitOnNewLine(std::ostream *output) const;
   friend bool operator<(const Command &c1, const Command &c2);
   static std::unordered_set<std::string> create_target_commands_,
-      link_commands_, link_local_commands_, generate_files_commands_;
+      link_commands_, link_framework_commands_, generate_files_commands_;
   std::vector<std::string> args_;
   std::string name_;
 };

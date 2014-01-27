@@ -3,3 +3,4 @@ link(ast :target base.base tools.buildifier.parser.processor util.algorithm)
 
 cc_library(target target.h target.cc)
 link(target base.base)
+link_framework(target Test)

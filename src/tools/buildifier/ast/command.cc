@@ -24,7 +24,8 @@ std::unordered_set<std::string> Command::create_target_commands_(
         {"bison_generate_parser", "configure_file", "flex_generate_scanner",
          "protobuf_generate_cc", "protobuf_generate_java",
          "protobuf_generate_py"}),
-    Command::link_commands_({"link", "link_framework"});
+    Command::link_commands_({"link"}),
+    Command::link_framework_commands_({"link_framework"});
 
 Command::Type Command::GetType() const { return GetTypeForCommandName(name_); }
 
@@ -39,6 +40,9 @@ Command::Type Command::GetTypeForCommandName(const std::string &command_name) {
       generate_files_commands_.end())
     return kGenerateFiles;
   if (link_commands_.find(command_name) != link_commands_.end()) return kLink;
+  if (link_framework_commands_.find(command_name) !=
+      link_framework_commands_.end())
+    return kLinkFramework;
   return kOther;
 }
 
