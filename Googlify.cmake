@@ -232,7 +232,7 @@ endfunction()
 #! @param ARGN List of C++ sources.
 function(cc_library TARGET)
   get_full_target(${TARGET} FULL_TARGET)
-  string(REGEX MATCHALL "[^;]+\\.cc($|;)" HAS_CC_FILE "${ARGN}")
+  string(REGEX MATCHALL "[^;]+\\.(cc|m|mm)($|;)" HAS_CC_FILE "${ARGN}")
   if ("${HAS_CC_FILE}" STREQUAL "")
     # An empty cc file is required to link a header only library (which
     # although unnecessary is more simple to handle - e.g. if the library was to
