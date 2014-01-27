@@ -9,10 +9,6 @@ set(GOOGLIFY_CMAKE_ TRUE)
 option(IOS_BUILD "Build for iOS" OFF)
 option(IOS_SIMULATOR_BUILD "Build for iOS simulator" OFF)
 
-if (IOS_BUILD OR IOS_SIMULATOR_BUILD)
-  set(IOS TRUE)
-endif ()
-
 if (${IOS_BUILD})
   set(IOS_PLATFORM "OS")
 endif ()
