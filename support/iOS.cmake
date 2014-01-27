@@ -45,7 +45,8 @@ set (CMAKE_OSX_DEPLOYMENT_TARGET "" CACHE STRING "Force unset of the deployment 
 find_program (CMAKE_UNAME uname /bin /usr/bin /usr/local/bin)
 if (CMAKE_UNAME)
   exec_program(uname ARGS -r OUTPUT_VARIABLE CMAKE_HOST_SYSTEM_VERSION)
-  string (REGEX REPLACE "^([0-9]+)\\.([0-9]+).*$" "\\1" DARWIN_MAJOR_VERSION "${CMAKE_HOST_SYSTEM_VERSION}")
+  string (REGEX REPLACE "^([0-9]+)\\.([0-9]+).*$" "\\1" DARWIN_MAJOR_VERSION
+          "${CMAKE_HOST_SYSTEM_VERSION}")
 endif (CMAKE_UNAME)
 
 # Skip the platform compiler checks for cross compiling
@@ -62,24 +63,28 @@ set (CMAKE_DL_LIBS "")
 
 set (CMAKE_C_OSX_COMPATIBILITY_VERSION_FLAG "-compatibility_version ")
 set (CMAKE_C_OSX_CURRENT_VERSION_FLAG "-current_version ")
-set (CMAKE_CXX_OSX_COMPATIBILITY_VERSION_FLAG "${CMAKE_C_OSX_COMPATIBILITY_VERSION_FLAG}")
+set (CMAKE_CXX_OSX_COMPATIBILITY_VERSION_FLAG
+     "${CMAKE_C_OSX_COMPATIBILITY_VERSION_FLAG}")
 set (CMAKE_CXX_OSX_CURRENT_VERSION_FLAG "${CMAKE_C_OSX_CURRENT_VERSION_FLAG}")
 
 # Hidden visibilty is required for cxx on iOS
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-set (CMAKE_CXX_FLAGS "-fvisibility=hidden -fvisibility-inlines-hidden ${CMAKE_CXX_FLAGS}")
+set (CMAKE_CXX_FLAGS
+     "-fvisibility=hidden -fvisibility-inlines-hidden ${CMAKE_CXX_FLAGS}")
 
 set (CMAKE_PLATFORM_HAS_INSTALLNAME 1)
-set (CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "-dynamiclib -headerpad_max_install_names")
+set (CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS
+     "-dynamiclib -headerpad_max_install_names")
 set (CMAKE_SHARED_MODULE_CREATE_C_FLAGS "-bundle -headerpad_max_install_names")
 set (CMAKE_SHARED_MODULE_LOADER_C_FLAG "-Wl,-bundle_loader,")
 set (CMAKE_SHARED_MODULE_LOADER_CXX_FLAG "-Wl,-bundle_loader,")
 set (CMAKE_FIND_LIBRARY_SUFFIXES ".dylib" ".so" ".a")
 
-# hack: if a new cmake (which uses CMAKE_INSTALL_NAME_TOOL) runs on an old build tree
-# (where install_name_tool was hardcoded) and where CMAKE_INSTALL_NAME_TOOL isn't in the cache
-# and still cmake didn't fail in CMakeFindBinUtils.cmake (because it isn't rerun)
-# hardcode CMAKE_INSTALL_NAME_TOOL here to install_name_tool, so it behaves as it did before, Alex
+# hack: if a new cmake (which uses CMAKE_INSTALL_NAME_TOOL) runs on an old build
+# tree (where install_name_tool was hardcoded) and where CMAKE_INSTALL_NAME_TOOL
+# isn't in the cache and still cmake didn't fail in CMakeFindBinUtils.cmake
+# (because it isn't rerun) hardcode CMAKE_INSTALL_NAME_TOOL here to
+# install_name_tool, so it behaves as it did before, Alex
 if (NOT DEFINED CMAKE_INSTALL_NAME_TOOL)
   find_program(CMAKE_INSTALL_NAME_TOOL install_name_tool)
 endif (NOT DEFINED CMAKE_INSTALL_NAME_TOOL)
@@ -130,15 +135,22 @@ if (NOT DEFINED CMAKE_IOS_SDK_ROOT)
   endif (_CMAKE_IOS_SDKS)
   message (STATUS "Toolchain using default iOS SDK: ${CMAKE_IOS_SDK_ROOT}")
 endif (NOT DEFINED CMAKE_IOS_SDK_ROOT)
-set (CMAKE_IOS_SDK_ROOT ${CMAKE_IOS_SDK_ROOT} CACHE PATH "Location of the selected iOS SDK")
+set (CMAKE_IOS_SDK_ROOT
+     ${CMAKE_IOS_SDK_ROOT} CACHE PATH "Location of the selected iOS SDK")
 
-# file(GLOB IOS_CXX_INCLUDE_DIRS ${CMAKE_IOS_SDK_ROOT}/usr/include/c++/*)
-# list(SORT IOS_CXX_INCLUDE_DIRS)
-# list(REVERSE IOS_CXX_INCLUDE_DIRS)
-# list(GET IOS_CXX_INCLUDE_DIRS 0 IOS_CXX_INCLUDE_DIR)
-# if (NOT DEFINED IOS_CXX_INCLUDE_DIR)
-#   message(FATAL_ERROR "No C++ include directory found in SDK.")
-# endif ()
+# Parses the iOS SDK version from the SDK path.
+string(REGEX REPLACE
+       "^${CMAKE_IOS_DEVELOPER_ROOT}/SDKs/[^0-9]*([0-9]+)\\.([0-9]+).*$" "\\1"
+       IOS_SDK_MAJOR_VERSION ${CMAKE_IOS_SDK_ROOT})
+string(REGEX REPLACE
+       "^${CMAKE_IOS_DEVELOPER_ROOT}/SDKs/[^0-9]*([0-9]+)\\.([0-9]+).*$" "\\2"
+       IOS_SDK_MINOR_VERSION ${CMAKE_IOS_SDK_ROOT})
+set(MIN_IOS_VERSION "${IOS_SDK_MAJOR_VERSION}.${IOS_SDK_MINOR_VERSION}"
+    CACHE STRING "Minimum iOS version")
+
+
+
+message(STATUS "iOS: ${IOS_SDK_MAJOR_VERSION}.${IOS_SDK_MINOR_VERSION}")
 
 set(CMAKE_C_FLAGS "-isystem ${CMAKE_IOS_SDK_ROOT}/usr/include ${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "-isystem ${CMAKE_IOS_SDK_ROOT}/usr/include ${CMAKE_CXX_FLAGS}")
@@ -148,12 +160,17 @@ set(LINKER_FLAGS "-L${CMAKE_IOS_SDK_ROOT}/usr/lib \
                   ${LINKER_FLAGS}")
 
 if (${IOS_PLATFORM} STREQUAL "OS")
-  set(CMAKE_C_FLAGS "-miphoneos-version-min=7.0 ${CMAKE_C_FLAGS}")
-  set(CMAKE_CXX_FLAGS "-miphoneos-version-min=7.0 ${CMAKE_CXX_FLAGS}")
+  set(CMAKE_C_FLAGS
+      "-miphoneos-version-min=${MIN_IOS_VERSION} ${CMAKE_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS
+      "-miphoneos-version-min=${MIN_IOS_VERSION} ${CMAKE_CXX_FLAGS}")
 else ()
-  set(CMAKE_C_FLAGS "-mios-simulator-version-min=7.0 ${CMAKE_C_FLAGS}")
-  set(CMAKE_CXX_FLAGS "-mios-simulator-version-min=7.0 ${CMAKE_CXX_FLAGS}")
-  set(LINKER_FLAGS "${LINKER_FLAGS} -L${CMAKE_IOS_SDK_ROOT}/usr/lib/system/host")
+  set(CMAKE_C_FLAGS
+      "-mios-simulator-version-min=${MIN_IOS_VERSION} ${CMAKE_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS
+      "-mios-simulator-version-min=${MIN_IOS_VERSION} ${CMAKE_CXX_FLAGS}")
+  set(LINKER_FLAGS
+      "${LINKER_FLAGS} -L${CMAKE_IOS_SDK_ROOT}/usr/lib/system/host")
 endif ()
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINKER_FLAGS}")
@@ -162,7 +179,8 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAGS}")
 
 
 # Set the sysroot default to the most recent SDK
-set (CMAKE_OSX_SYSROOT ${CMAKE_IOS_SDK_ROOT} CACHE PATH "Sysroot used for iOS support")
+set(CMAKE_OSX_SYSROOT ${CMAKE_IOS_SDK_ROOT} CACHE PATH
+    "Sysroot used for iOS support")
 set(CMAKE_C_FLAGS "-isysroot ${CMAKE_IOS_SDK_ROOT} ${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "-isysroot ${CMAKE_IOS_SDK_ROOT} ${CMAKE_CXX_FLAGS}")
 
@@ -170,13 +188,15 @@ set(CMAKE_CXX_FLAGS "-isysroot ${CMAKE_IOS_SDK_ROOT} ${CMAKE_CXX_FLAGS}")
 if (${IOS_PLATFORM} STREQUAL "OS")
   set(IOS_ARCH armv6 armv7)
 else ()
-  set (IOS_ARCH i386)
+  set(IOS_ARCH i386)
 endif ()
 
-set (CMAKE_OSX_ARCHITECTURES ${IOS_ARCH} CACHE string  "Build architecture for iOS" FORCE)
+set (CMAKE_OSX_ARCHITECTURES ${IOS_ARCH} CACHE string
+     "Build architecture for iOS" FORCE)
 
 # Set the find root to the iOS developer roots and to user defined paths
-set (CMAKE_FIND_ROOT_PATH ${CMAKE_IOS_DEVELOPER_ROOT} ${CMAKE_IOS_SDK_ROOT} ${CMAKE_PREFIX_PATH} CACHE string  "iOS find search path root")
+set (CMAKE_FIND_ROOT_PATH ${CMAKE_IOS_DEVELOPER_ROOT} ${CMAKE_IOS_SDK_ROOT}
+     ${CMAKE_PREFIX_PATH} CACHE string  "iOS find search path root")
 
 # default to searching for frameworks first
 set (CMAKE_FIND_FRAMEWORK FIRST)
@@ -195,7 +215,8 @@ set (CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
 # This little macro lets you set any XCode specific property
 macro (set_xcode_property TARGET XCODE_PROPERTY XCODE_VALUE)
-  set_property (TARGET ${TARGET} PROPERTY XCODE_ATTRIBUTE_${XCODE_PROPERTY} ${XCODE_VALUE})
+  set_property (TARGET ${TARGET} PROPERTY
+                XCODE_ATTRIBUTE_${XCODE_PROPERTY} ${XCODE_VALUE})
 endmacro (set_xcode_property)
 
 
