@@ -1,5 +1,6 @@
 export DEV_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+alias buildify-all='find . -name "CMakeLists.txt" -exec sh -c "buildifier -f {}" \;'
 alias dev="cd $DEV_ROOT"
 alias rfb='dir=`echo \`pwd\`|sed "s@\($DEV_ROOT\)/build\(.*\)@\1\2@"`; cd $dir'
 alias tb='dir=`echo \`pwd\`|sed "s@\($DEV_ROOT\)\(.*\)@\1/build\2@"`; cd $dir'
