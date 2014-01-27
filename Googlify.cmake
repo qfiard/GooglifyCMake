@@ -9,6 +9,10 @@ set(GOOGLIFY_CMAKE_ TRUE)
 option(IOS_BUILD "Build for iOS" OFF)
 option(IOS_SIMULATOR_BUILD "Build for iOS simulator" OFF)
 
+if (IOS_BUILD OR IOS_SIMULATOR_BUILD)
+  set(IOS TRUE)
+endif ()
+
 if (${IOS_BUILD})
   set(IOS_PLATFORM "OS")
 endif ()
@@ -68,10 +72,75 @@ function(add_local_data TARGET DATA)
   add_data(${TARGET} "${CMAKE_CURRENT_SOURCE_DIR}/${DATA}")
 endfunction(add_local_data)
 
+#! @brief Adds a file specified by its absolute path to a J2E archive or an iOS
+#!     app. It can also be the absolute name of a target, in which case we
+#!     include the output file of the given target.
+function(add_file TARGET SRC DEST)
+  get_full_target(${TARGET} FULL_TARGET)
+  get_target_property(IS_J2E ${FULL_TARGET} IS_J2E)
+  if (IS_J2E)
+    add_file_j2e(${TARGET} ${SRC} ${DEST})
+    return()
+  endif ()
+  get_target_property(IS_IOS_APP ${FULL_TARGET} IS_IOS_APP)
+  if (IS_IOS_APP)
+    add_file_ios_app(${TARGET} ${SRC} ${DEST})
+    return()
+  endif ()
+  message(FATAL_ERROR
+          "Target ${FULL_TARGET} has an unsupported target type for add_file")
+endfunction(add_file)
+
+#! @brief Adds a file specified by its absolute path to an iOS app. It can also
+#!     be the absolute name of a target, in which case we include the output
+#!     file of the given target.
+function(add_file_ios_app TARGET SRC DEST)
+  if (NOT IOS_BUILD AND NOT IOS_SIMULATOR_BUILD)
+    return()
+  endif ()
+  get_full_target(${TARGET} FULL_TARGET)
+  get_target_property(IS_IOS_APP ${FULL_TARGET} IS_IOS_APP)
+  if (NOT IS_IOS_APP STREQUAL TRUE)
+    message(FATAL_ERROR "Target ${FULL_TARGET} is not an iOS app")
+  endif ()
+  get_target_property(DIR_PATH ${FULL_TARGET} TARGET_FILE)
+  set(DEST "${DIR_PATH}/${DEST}")
+  set(FULL_SRC "${PROJECT_SOURCE_DIR}/${SRC}")
+  if (DEST MATCHES "/$")
+    set(DEST_DIR ${DEST})
+  else ()
+    get_filename_component(DEST_DIR ${DEST} DIRECTORY)
+  endif ()
+  add_custom_command(
+    TARGET ${FULL_TARGET} PRE_BUILD
+    COMMAND mkdir -p ${DEST_DIR}
+    VERBATIM)
+  if (EXISTS "${FULL_SRC}")
+    add_custom_command(
+      TARGET ${FULL_TARGET} POST_BUILD
+      COMMAND cp -rf ${FULL_SRC} ${DEST}
+      MAIN_DEPENDENCY ${FULL_SRC}
+      VERBATIM)
+  else ()
+    set(TARGET ${SRC})
+    set(TARGET_NAME ${TARGET})  # One level of indirection for MATCHES.
+    if (TARGET_NAME MATCHES "^third_party\\.")
+      set(TARGET ${TARGET}_target)
+    endif ()
+    get_output_file(${TARGET} OUTPUT_FILE)
+    add_custom_command(
+      TARGET ${FULL_TARGET} POST_BUILD
+      COMMAND cp -rf ${OUTPUT_FILE} ${DEST}
+      MAIN_DEPENDENCY ${OUTPUT_FILE}
+      VERBATIM)
+    add_dependencies(${FULL_TARGET} ${SRC})
+  endif ()
+endfunction(add_file_ios_app)
+
 #! @brief Adds a file specified by its absolute path to a J2E archive. It can
 #!     also be the absolute name of a target, in which case we include the
 #!     output file of the given target.
-function(add_file TARGET SRC DEST)
+function(add_file_j2e TARGET SRC DEST)
   if (NOT JAVA_SUPPORTED)
     return()
   endif ()
@@ -84,9 +153,18 @@ function(add_file TARGET SRC DEST)
   get_target_property(TEMP_DIR_TARGET ${FULL_TARGET} TEMP_DIR_TARGET)
   set(DEST "${TEMP_DIR_PATH}/${DEST}")
   set(FULL_SRC "${PROJECT_SOURCE_DIR}/${SRC}")
+  if (DEST MATCHES "/$")
+    set(DEST_DIR ${DEST})
+  else ()
+    get_filename_component(DEST_DIR ${DEST} DIRECTORY)
+  endif ()
+  add_custom_command(
+    TARGET ${FULL_TARGET} PRE_BUILD
+    COMMAND mkdir -p ${DEST_DIR}
+    VERBATIM)
   add_custom_command(
     TARGET ${TEMP_DIR_TARGET} PRE_BUILD
-    COMMAND mkdir -p ${DEST}
+    COMMAND mkdir -p ${DEST_DIR}
     VERBATIM)
   if (EXISTS "${FULL_SRC}")
     add_custom_command(
@@ -100,9 +178,10 @@ function(add_file TARGET SRC DEST)
     if (TARGET_NAME MATCHES "^third_party\\.")
       set(TARGET ${TARGET}_target)
     endif ()
+    get_output_file(${TARGET} OUTPUT_FILE)
     add_custom_command(
       TARGET ${TEMP_DIR_TARGET} POST_BUILD
-      COMMAND cp -rf $<TARGET_PROPERTY:${TARGET},TARGET_FILE> ${DEST}
+      COMMAND cp -rf ${OUTPUT_FILE} ${DEST}
       # We copy the target linked libraries.
       COMMAND eval "\
           classpath=(\
@@ -112,12 +191,12 @@ function(add_file TARGET SRC DEST)
               cp $lib ${TEMP_DIR_PATH}/WEB-INF/lib$<SEMICOLON>\
             fi$<SEMICOLON>\
           done"
-      MAIN_DEPENDENCY $<TARGET_PROPERTY:${TARGET},TARGET_FILE>
+      MAIN_DEPENDENCY
       DEPENDS $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>
       VERBATIM)
     add_dependencies(${TEMP_DIR_TARGET} ${SRC})
   endif ()
-endfunction(add_file)
+endfunction(add_file_j2e)
 
 #! @brief Adds a file specified by its relative path to the current source
 #!     directory to a J2E archive. It can also be the relative name of a target,
@@ -250,11 +329,40 @@ function(get_parent_prefix PREFIX OUT)
   set(${OUT} "${PARENT_PREFIX_WITHOUT_TRAILING_DOT}." PARENT_SCOPE)
 endfunction(get_parent_prefix)
 
+function(get_output_file TARGET OUT)
+  set(TARGET_TYPE "$<TARGET_PROPERTY:${TARGET},TYPE>")
+  set(IS_EXE "$<STREQUAL:${TARGET_TYPE},EXECUTABLE>")
+  set(IS_STATIC_LIB "$<STREQUAL:${TARGET_TYPE},STATIC_LIBRARY>")
+  set(IS_MODULE_LIB "$<STREQUAL:${TARGET_TYPE},MODULE_LIBRARY>")
+  set(IS_SHARED_LIB "$<STREQUAL:${TARGET_TYPE},SHARED_LIBRARY>")
+  set(IS_LIB_OR_EXE
+      "$<OR:${IS_EXE},${IS_STATIC_LIB},${IS_SHARED_LIB},${IS_MODULE_LIB}>")
+  set(${OUT} "$<${IS_LIB_OR_EXE}:$<TARGET_FILE:${TARGET}>>$<$<NOT:${IS_LIB_OR_EXE}>:$<TARGET_PROPERTY,${TARGET}:TARGET_FILE>>" PARENT_SCOPE)
+endfunction(get_output_file)
+
 function(get_target_name TARGET OUT)
   string(REGEX MATCHALL "[^\\.]+" PARTS "${TARGET}")
   list(GET PARTS -1 TARGET_NAME)
   set(${OUT} "${TARGET_NAME}" PARENT_SCOPE)
 endfunction(get_target_name)
+
+function(ios_app TARGET)
+  get_full_target(${TARGET} FULL_TARGET)
+  if (NOT IOS_BUILD AND NOT IOS_SIMULATOR_BUILD)
+    add_custom_target(${FULL_TARGET})
+    set_target_properties(${FULL_TARGET} PROPERTIES IS_IOS_APP TRUE)
+    return()
+  endif ()
+  underscores_to_camel_case(${TARGET} DIR_NAME)
+  set(DIR_PATH "${CMAKE_CURRENT_BINARY_DIR}/${DIR_NAME}.app")
+  add_custom_target(${FULL_TARGET} ALL)
+  add_custom_command(
+    TARGET ${FULL_TARGET} PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_PATH}
+    VERBATIM)
+  set_target_properties(${FULL_TARGET} PROPERTIES IS_IOS_APP TRUE)
+  set_target_properties(${FULL_TARGET} PROPERTIES TARGET_FILE ${DIR_PATH})
+endfunction(ios_app)
 
 function(j2e_binary TARGET)
   get_full_target(${TARGET} FULL_TARGET)
@@ -431,17 +539,34 @@ function(link TARGET)
   foreach (LIB ${ARGN})
     # One level of indirection is needed for MATCHES.
     set(LIB_NAME ${LIB})
-    if (LIB_NAME MATCHES "^third_party\\.")
-      if (DEFINED "${LIB_NAME}")
-        link_third_party(${TARGET} ${LIB})
+    if (LIB_NAME MATCHES "^:")
+      string(REGEX REPLACE "^:" "" LIB_NAME ${LIB_NAME})
+      link_local(${TARGET} ${LIB_NAME})
+    else ()
+      if (LIB_NAME MATCHES "^third_party\\.")
+        if (DEFINED "${LIB_NAME}")
+          link_third_party(${TARGET} ${LIB})
+        else ()
+          link_with_cmake_target(${TARGET} ${LIB})
+        endif ()
       else ()
         link_with_cmake_target(${TARGET} ${LIB})
       endif ()
-    else ()
-      link_with_cmake_target(${TARGET} ${LIB})
     endif ()
   endforeach ()
 endfunction(link)
+
+function(link_framework TARGET)
+  get_full_target(${TARGET} FULL_TARGET)
+  get_target_property(LINK_FLAGS ${FULL_TARGET} LINK_FLAGS)
+  if (NOT LINK_FLAGS)
+    set(LINK_FLAGS)
+  endif ()
+  foreach (FRAMEWORK ${ARGN})
+    set(LINK_FLAGS "${LINK_FLAGS} -framework ${FRAMEWORK}")
+  endforeach ()
+  set_target_properties(${FULL_TARGET} PROPERTIES LINK_FLAGS ${LINK_FLAGS})
+endfunction()
 
 function(link_local TARGET)
   get_current_prefix(PREFIX)
@@ -536,11 +661,12 @@ function(link_with_cmake_target_java TARGET LIB)
   endif ()
   get_classpath_target_for_target(${TARGET} CLASSPATH_TARGET)
   get_classpath_target_for_target(${LIB} LIB_CLASSPATH_TARGET)
+  get_output_file(${LIB} LIB_OUTPUT_FILE)
   add_custom_command(
     TARGET "${CLASSPATH_TARGET}" POST_BUILD
     COMMAND cat "$<TARGET_PROPERTY:${LIB},CLASSPATH_FILE>" >>
         "$<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>"
-    COMMAND echo "$<TARGET_PROPERTY:${LIB},TARGET_FILE>" >>
+    COMMAND echo "${LIB_OUTPUT_FILE}" >>
         "$<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>"
     # Remove duplicate lines.
     COMMAND cat "$<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>" | sort | uniq |
@@ -556,6 +682,28 @@ function(link_with_cmake_target_python TARGET LIB)
   endif ()
   add_dependencies(${TARGET} ${LIB})
 endfunction(link_with_cmake_target_python)
+
+function(objc_binary TARGET)
+  foreach (SRC ${ARGN})
+    if (SRC MATCHES "\\.m$")
+      message(STATUS "${SRC} -> C")
+      set_source_files_properties(${SRC} PROPERTIES LANGUAGE C)
+    endif ()
+    if (SRC MATCHES "\\.mm$")
+      message(STATUS "${SRC} -> C++")
+      set_source_files_properties(${SRC} PROPERTIES LANGUAGE CXX)
+    endif ()
+  endforeach ()
+  cc_binary(${TARGET} ${ARGN})
+endfunction()
+
+function(objc_library TARGET)
+  cc_library(${TARGET} ${ARGN})
+endfunction()
+
+function(objc_test TARGET)
+  cc_test(${TARGET} ${ARGN})
+endfunction()
 
 function(prepare_python_package PREFIX OUT)
   if ("${PREFIX}" STREQUAL "" OR "${PREFIX}" STREQUAL ".")

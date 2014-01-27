@@ -148,9 +148,11 @@ set(LINKER_FLAGS "-L${CMAKE_IOS_SDK_ROOT}/usr/lib \
                   ${LINKER_FLAGS}")
 
 if (${IOS_PLATFORM} STREQUAL "OS")
-  set(LINKER_FLAGS "-miphoneos-version-min=7.0 ${LINKER_FLAGS}")
+  set(CMAKE_C_FLAGS "-miphoneos-version-min=7.0 ${CMAKE_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "-miphoneos-version-min=7.0 ${CMAKE_CXX_FLAGS}")
 else ()
-  set(LINKER_FLAGS "-mios-simulator-version-min=7.0 ${LINKER_FLAGS}")
+  set(CMAKE_C_FLAGS "-mios-simulator-version-min=7.0 ${CMAKE_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "-mios-simulator-version-min=7.0 ${CMAKE_CXX_FLAGS}")
   set(LINKER_FLAGS "${LINKER_FLAGS} -L${CMAKE_IOS_SDK_ROOT}/usr/lib/system/host")
 endif ()
 
@@ -161,6 +163,8 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAGS}")
 
 # Set the sysroot default to the most recent SDK
 set (CMAKE_OSX_SYSROOT ${CMAKE_IOS_SDK_ROOT} CACHE PATH "Sysroot used for iOS support")
+set(CMAKE_C_FLAGS "-isysroot ${CMAKE_IOS_SDK_ROOT} ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "-isysroot ${CMAKE_IOS_SDK_ROOT} ${CMAKE_CXX_FLAGS}")
 
 # set the architecture for iOS
 if (${IOS_PLATFORM} STREQUAL "OS")
