@@ -1,7 +1,7 @@
 GooglifyCMake
 ============
 
-A project that allows using CMake like Blaze (Google's build system) for C++, Java, Python and R.
+A project that allows using CMake like Blaze (Google's build system) for C++, Objective-C, Java, Python and R. iOS apps are now supported, as well as the compilation of a few third-party libraries (Boost, OpenSSL, gflags, protobuf, ...) under i386 and armv7-armv7s architectures for the iOS simulator and iPhone targets. Check this out!
 
 TODO
 ----
@@ -136,6 +136,7 @@ By convention we list generating rules at the beginning of the `CMakeLists.txt` 
 Installation instructions
 -------------------------
 
+### Standard build
 ```bash
 cd GooglifyCmake
 mkdir build && cd build
@@ -143,12 +144,38 @@ cmake ..
 make
 ```
 
-See the `src/examples` package for use cases and examples. To run a few examples you can execute the following commands (starting from the `build` directory):
+See the [`examples`](https://github.com/QuentinFiard/GooglifyCMake/tree/master/src/examples) package for use cases and examples. To run a few examples you can execute the following commands (starting from the `build` directory):
 
 ```bash
 cd src/examples/a_package
 ./cc_exe
 ./java_exe
+```
+
+### iOS simulator build
+
+```bash
+cd GooglifyCmake
+mkdir build_ios_sim && cd build_ios_sim
+cmake .. -DIOS_SIMULATOR_BUILD=ON -DBUILD_SHARED_LIBS=OFF
+make
+```
+
+An example iOS app can be found in the [`examples.ios_app`](https://github.com/QuentinFiard/GooglifyCMake/tree/master/src/examples/ios_app) package. To run it in the iOS simulator, install [ios-sim](https://github.com/phonegap/ios-sim) (with `brew install ios-sim` for example if you have `brew` installed on your machine) and execute the following commands (starting from the `build_ios_sim` directory).
+
+```bash
+cd src/examples/ios_app
+make
+ios-sim launch TestApp.app
+```
+
+### iOS build
+
+```bash
+cd GooglifyCmake
+mkdir build_ios && cd build_ios
+cmake .. -DIOS_BUILD=ON -DBUILD_SHARED_LIBS=OFF
+make
 ```
 
 Rules
