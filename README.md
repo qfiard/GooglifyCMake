@@ -141,13 +141,13 @@ Installation instructions
 cd GooglifyCmake
 mkdir build && cd build
 cmake ..
-make
 ```
 
 See the [`examples`](https://github.com/QuentinFiard/GooglifyCMake/tree/master/src/examples) package for use cases and examples. To run a few examples you can execute the following commands (starting from the `build` directory):
 
 ```bash
 cd src/examples/a_package
+make
 ./cc_exe
 ./java_exe
 ```
@@ -158,7 +158,6 @@ cd src/examples/a_package
 cd GooglifyCmake
 mkdir build_ios_sim && cd build_ios_sim
 cmake .. -DIOS_SIMULATOR_BUILD=ON -DBUILD_SHARED_LIBS=OFF
-make
 ```
 
 An example iOS app can be found in the [`examples.ios_app`](https://github.com/QuentinFiard/GooglifyCMake/tree/master/src/examples/ios_app) package. To run it in the iOS simulator, install [ios-sim](https://github.com/phonegap/ios-sim) (with `brew install ios-sim` for example if you have `brew` installed on your machine) and execute the following commands (starting from the `build_ios_sim` directory).
