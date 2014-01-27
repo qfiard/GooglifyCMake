@@ -66,17 +66,14 @@ link(abi_test third_party.gtest)
 cc_library(algorithm algorithm.h)
 
 cc_library(csv csv.h csv.cc)
-link_local(csv logging)
-link(csv third_party.gflags)
+link(csv :logging third_party.gflags)
 
 cc_library(date_time date_time.h date_time.cc)
-link_local(date_time csv logging)
-link(date_time third_party.boost_date_time)
+link(date_time :csv :logging third_party.boost_date_time)
 add_data(date_time ${BOOST_TIME_ZONE_CSV})
 
 cc_test(date_time_test date_time_test.cc)
-link_local(date_time_test date_time logging)
-link(date_time_test third_party.gtest)
+link(date_time_test :date_time :logging third_party.gtest)
 
 cc_library(iterators iterators.h)
 
@@ -84,39 +81,34 @@ cc_library(logging logging.h logging.cc)
 link(logging third_party.g2log)
 
 cc_test(logging_test logging_test.cc)
-link_local(logging_test logging)
-link(logging_test third_party.boost_filesystem third_party.gtest)
+link(logging_test :logging third_party.boost_filesystem third_party.gtest)
 
 cc_library(ptr_set ptr_set.h)
 
 cc_library(socket socket.h socket.cc)
-link_local(socket logging)
-link(socket base.base third_party.boost_asio third_party.gflags)
+link(socket :logging base.base third_party.boost_asio third_party.gflags)
 
 java_library(socket_java Socket.java)
 
 cc_library(streams streams.h streams.cc)
 
 cc_library(strings strings.h strings.cc)
-link_local(strings logging)
+link(strings :logging)
 
 cc_test(strings_test strings_test.cc)
-link_local(strings_test strings)
-link(strings_test third_party.gtest)
+link(strings_test :strings third_party.gtest)
 
 cc_library(system system.h system.cc)
-link_local(system logging)
+link(system :logging)
 
 cc_test(system_test system_test.cc)
-link_local(system_test system)
-link(system_test third_party.gtest)
+link(system_test :system third_party.gtest)
 ```
 
 The first line recursively includes the definitions of the module `util.dev`. Each following section is of the form:
 
 1. A target definition rule (`cc_library`, `cc_test` or `java_library` in this example, see the section on **Rules** below for more target types), called with the name of the target (relative to the current package --- e.g. the rule `cc_library(strings ...)` will define a target named `util.strings`) and a list of sources.
-2. An optional `local_link` rule to link with targets defined in this module.
-2. An optional `link` rule to link with global targets.
+2. An optional `link` rule to link with local targets (identified by a colon followed by the name of the target) and global ones.
 3. A number of other rules to modify target properties (here `add_data` to allow a target to access a data file).
 
 The other of the rules is not impose by CMake, which only requires that the target definition rule be placed before any other rule associated with that target. By convention and to imitate Google Blaze we choose to always follow the above order, an automatic formatting tool is provided in the package `tools.buildifier` to easily maintain `CMakeLists.txt` files using this syntax.
@@ -129,13 +121,11 @@ flex_generate_scanner(lexer.l LEXER_SRC LEXER_HDR)
 
 cc_library(parser scanner.h scanner.cc ${PARSER_SRC} ${PARSER_HDR} ${LEXER_SRC}
            ${LEXER_SRC})
-link_local(parser processor)
-link(parser base.base third_party.boost_filesystem third_party.boost_headers
-     util.logging)
+link(parser :processor base.base third_party.boost_filesystem
+     third_party.boost_headers util.logging)
 
 cc_test(parser_test parser_test.cc)
-link_local(parser_test parser)
-link(parser_test third_party.gmock third_party.gtest)
+link(parser_test :parser third_party.gmock third_party.gtest)
 
 cc_library(processor processor.h)
 link(processor base.base)
@@ -172,11 +162,19 @@ Rules
 
 `cc_test`
 
+`ios_app`
+
 `j2e_binary`
 
 `java_binary`
 
 `java_library`
+
+`objc_binary`
+
+`objc_library`
+
+`objc_test`
 
 `py_binary`
 
@@ -188,7 +186,7 @@ Rules
 
 `link`
 
-`link_local`
+`link_framework`
 
 ### Including required data
 
