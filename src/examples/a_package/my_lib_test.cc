@@ -6,9 +6,7 @@ namespace examples {
 namespace a_package {
 namespace {
 
-TEST(MyLibTest, DummyTest) {
-  MyLib::HelloWorld();
-}
+TEST(MyLibTest, DummyTest) { MyLib::HelloWorld(); }
 
 class MyMock {
  public:
@@ -20,8 +18,6 @@ TEST(MyLibTest, DummyTestWithMock) {
   EXPECT_CALL(mock, MyMethod());
   mock.MyMethod();
 }
-
-
 
 }  // namespace
 }  // namespace a_package

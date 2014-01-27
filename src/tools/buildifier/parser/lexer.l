@@ -17,7 +17,7 @@ typedef tools::buildifier::parser::Parser::token token;
 %option noyywrap
 %option c++
 
-NAME [a-zA-Z0-9_\./-]+
+NAME [a-zA-Z0-9_\./-:]+
 QUOTED_STRING "\""(?:[^"\""\\]|\\.)*"\""
 
 %%

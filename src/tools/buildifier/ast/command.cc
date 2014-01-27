@@ -17,15 +17,14 @@ using util::dev::config::kContinuationIndentLength;
 using util::dev::config::kMaxLineLength;
 
 std::unordered_set<std::string> Command::create_target_commands_(
-    {"cc_binary", "cc_library", "cc_test", "j2e_binary", "java_binary",
-     "java_library", "mysql_udf_cc_library", "py_binary", "py_library",
-     "r_binary"}),
+    {"cc_binary", "cc_library", "cc_test", "ios_app", "j2e_binary",
+     "java_binary", "java_library", "mysql_udf_cc_library", "objc_binary",
+     "objc_library", "objc_test", "py_binary", "py_library", "r_binary"}),
     Command::generate_files_commands_(
         {"bison_generate_parser", "configure_file", "flex_generate_scanner",
          "protobuf_generate_cc", "protobuf_generate_java",
          "protobuf_generate_py"}),
-    Command::link_commands_({"link"}),
-    Command::link_local_commands_({"link_local"});
+    Command::link_commands_({"link", "link_framework"});
 
 Command::Type Command::GetType() const { return GetTypeForCommandName(name_); }
 
@@ -40,8 +39,6 @@ Command::Type Command::GetTypeForCommandName(const std::string &command_name) {
       generate_files_commands_.end())
     return kGenerateFiles;
   if (link_commands_.find(command_name) != link_commands_.end()) return kLink;
-  if (link_local_commands_.find(command_name) != link_local_commands_.end())
-    return kLinkLocal;
   return kOther;
 }
 
@@ -149,6 +146,8 @@ void Command::WrapToCharactersLimitOnNewLine(std::ostream *stream) const {
 }
 
 const std::vector<std::string> &Command::args() const { return args_; }
+
+const std::string &Command::name() const { return name_; }
 
 bool operator<(const Command &c1, const Command &c2) {
   Command::Type type1 = c1.GetType(), type2 = c2.GetType();

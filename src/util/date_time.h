@@ -10,8 +10,8 @@ namespace date_time {
 typedef boost::posix_time::ptime DateTime;
 typedef boost::posix_time::time_duration TimeDuration;
 
-std::string DateToString(const DateTime& date);
-bool GetUTCOffsetForTimezoneAbbr(const std::string& abbr, TimeDuration* offset);
+std::string DateToString(const DateTime &date);
+bool GetUTCOffsetForTimezoneAbbr(const std::string &abbr, TimeDuration *offset);
 DateTime ISO9075StringToDate(const std::string s);
 DateTime Now();
 DateTime DateFromTimeIntervalSinceReference(double seconds);
@@ -19,7 +19,7 @@ double SecondsBetweenDates(DateTime start, DateTime end);
 
 class TimeDurationHash {
  public:
-  std::size_t operator()(TimeDuration const& td) const;
+  std::size_t operator()(TimeDuration const &td) const;
 };
 
 }  // namespace date_time

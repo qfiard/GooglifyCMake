@@ -10,11 +10,11 @@ namespace base {
 class SignalHandler {
  public:
   typedef std::function<void()> Callback;
-  static void RegisterCallback(int sig, const Callback& callback);
+  static void RegisterCallback(int sig, const Callback &callback);
 
  private:
   SignalHandler() {}
-  static SignalHandler& GetInstance();
+  static SignalHandler &GetInstance();
   friend void HandleSignal(int sig);
 
   std::unordered_map<int, std::function<void()> > signal_callbacks_;

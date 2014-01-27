@@ -24,7 +24,7 @@ class ParserTest : public ::testing::Test {
 TEST_F(ParserTest, SimpleBuildFile) {
   std::stringstream build_file;
   build_file << "cc_library(a a.h a.cc)\n"
-                "link_local(a b)\n"
+                "link(a :b)\n"
                 "\n"
                 "cc_library(b b.h b.cc)\n"
                 "link(b util.logging)\n";

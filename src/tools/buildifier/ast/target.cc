@@ -12,7 +12,7 @@ Target::Target(const std::string &name) : name_(name) {}
 void Target::AddCommand(Command *command) { commands_.emplace(command); }
 
 void Target::Normalize() {
-  std::set<std::string> link_args, link_local_args;
+  std::set<std::string> link_args;
   auto it = commands_.begin();
   while (it != commands_.end()) {
     const auto &command = *it;
@@ -20,10 +20,14 @@ void Target::Normalize() {
       // First argument is the target name.
       link_args.insert(command->args().begin() + 1, command->args().end());
       it = commands_.erase(it);
-    } else if (command->GetType() == Command::kLinkLocal) {
+    } else if (command->name() == "link_local") {
+      // We integrate the deprecated link_local rules into the link rule, by
+      // prefixing the given targets with a colon.
       // First argument is the target name.
-      link_local_args.insert(command->args().begin() + 1,
-                             command->args().end());
+      for (auto it = command->args().begin() + 1; it != command->args().end();
+           ++it) {
+        link_args.insert(":" + *it);
+      }
       it = commands_.erase(it);
     } else {
       ++it;
@@ -33,12 +37,6 @@ void Target::Normalize() {
     std::list<std::string> args(link_args.begin(), link_args.end());
     args.push_front(name_);
     commands_.emplace(new Command("link", args.begin(), args.end()));
-  }
-  if (!link_local_args.empty()) {
-    std::list<std::string> args(link_local_args.begin(), link_local_args.end());
-    args.push_front(name_);
-    commands_.emplace(new Command("link_local", args.begin(),
-                                  args.end()));
   }
 }
 

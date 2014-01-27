@@ -17,9 +17,8 @@ class Command {
  public:
   enum Type {
     kCreateTarget = 0,
-    kLink = 2,
-    kLinkLocal = 1,
-    kOther = 3,
+    kLink = 1,
+    kOther = 2,
     kNonTargetCommand = 1000,
     kSetGlobalProperty = 1001,
     kAddSubdirectory = 1002,
@@ -33,6 +32,7 @@ class Command {
   static Type GetTypeForCommandName(const std::string &command_name);
   void SaveToStream(std::ostream *stream) const;
   const std::vector<std::string> &args() const;
+  const std::string &name() const;
 
  private:
   void WrapToCharactersLimit(std::ostream *output) const;

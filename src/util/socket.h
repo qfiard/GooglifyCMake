@@ -17,40 +17,40 @@ DECLARE_int32(max_buffer_size);
 template <class MessageType, class SocketType>
 class Socket {
  public:
-  typedef boost::function<void(const MessageType&)> ReadCallback;
+  typedef boost::function<void(const MessageType &)> ReadCallback;
   typedef boost::function<void()> WriteCallback;
-  static void ReadMessageFromSocket(SocketType* socket,
-                                    const ReadCallback& callback);
-  static void WriteMessageToSocket(const MessageType& message,
-                                   SocketType* socket,
-                                   const WriteCallback& callback);
+  static void ReadMessageFromSocket(SocketType *socket,
+                                    const ReadCallback &callback);
+  static void WriteMessageToSocket(const MessageType &message,
+                                   SocketType *socket,
+                                   const WriteCallback &callback);
 
  private:
-  static void HandleMessageSent(const MessageType& message, SocketType* socket,
-                                const WriteCallback& callback,
-                                const boost::system::error_code& error,
+  static void HandleMessageSent(const MessageType &message, SocketType *socket,
+                                const WriteCallback &callback,
+                                const boost::system::error_code &error,
                                 std::size_t bytes_transferred);
-  static void HandleSizeSent(const MessageType& message, SocketType* socket,
-                             const WriteCallback& callback,
-                             const boost::system::error_code& error,
+  static void HandleSizeSent(const MessageType &message, SocketType *socket,
+                             const WriteCallback &callback,
+                             const boost::system::error_code &error,
                              std::size_t bytes_transferred);
-  static void HandleWriteError(const boost::system::error_code& error);
+  static void HandleWriteError(const boost::system::error_code &error);
 
-  static void HandleSizeRead(SocketType* socket, boost::asio::streambuf* buffer,
-                             const ReadCallback& callback,
-                             const boost::system::error_code& error,
+  static void HandleSizeRead(SocketType *socket, boost::asio::streambuf *buffer,
+                             const ReadCallback &callback,
+                             const boost::system::error_code &error,
                              std::size_t num_bytes_read);
-  static void HandleMessageRead(SocketType* socket,
-                                boost::asio::streambuf* buffer,
-                                const uint8_t& message_size,
-                                const ReadCallback& callback,
-                                const boost::system::error_code& error,
+  static void HandleMessageRead(SocketType *socket,
+                                boost::asio::streambuf *buffer,
+                                const uint8_t &message_size,
+                                const ReadCallback &callback,
+                                const boost::system::error_code &error,
                                 std::size_t num_bytes_read);
-  static void Finalize(SocketType* socket, boost::asio::streambuf* buffer,
-                       const MessageType& message,
-                       const ReadCallback& callback);
-  static void HandleReadError(const boost::system::error_code& error,
-                              boost::asio::streambuf* buffer);
+  static void Finalize(SocketType *socket, boost::asio::streambuf *buffer,
+                       const MessageType &message,
+                       const ReadCallback &callback);
+  static void HandleReadError(const boost::system::error_code &error,
+                              boost::asio::streambuf *buffer);
 
   DISALLOW_IMPLICIT_CONSTRUCTORS(Socket);
 };
@@ -59,15 +59,15 @@ namespace socket {
 
 template <class MessageType, class SocketType>
 void ReadMessageFromSocket(
-    SocketType* socket,
-    const typename Socket<MessageType, SocketType>::ReadCallback& callback) {
+    SocketType *socket,
+    const typename Socket<MessageType, SocketType>::ReadCallback &callback) {
   Socket<MessageType, SocketType>::ReadMessageFromSocket(socket, callback);
 }
 
 template <class MessageType, class SocketType>
 void WriteMessageToSocket(
-    const MessageType& message, SocketType* socket,
-    const typename Socket<MessageType, SocketType>::WriteCallback& callback) {
+    const MessageType &message, SocketType *socket,
+    const typename Socket<MessageType, SocketType>::WriteCallback &callback) {
   Socket<MessageType, SocketType>::WriteMessageToSocket(message, socket,
                                                         callback);
 }
@@ -76,8 +76,8 @@ void WriteMessageToSocket(
 
 template <class MessageType, class SocketType>
 void Socket<MessageType, SocketType>::WriteMessageToSocket(
-    const MessageType& message, SocketType* socket,
-    const WriteCallback& callback) {
+    const MessageType &message, SocketType *socket,
+    const WriteCallback &callback) {
   uint64_t size = message.ByteSize();
 #if BOOST_BIG_ENDIAN
   size = __builtin_bswap64(size);
@@ -91,8 +91,8 @@ void Socket<MessageType, SocketType>::WriteMessageToSocket(
 
 template <class MessageType, class SocketType>
 void Socket<MessageType, SocketType>::HandleSizeSent(
-    const MessageType& message, SocketType* socket,
-    const WriteCallback& callback, const boost::system::error_code& error,
+    const MessageType &message, SocketType *socket,
+    const WriteCallback &callback, const boost::system::error_code &error,
     std::size_t bytes_transferred) {
   if (error) {
     HandleWriteError(error);
@@ -108,8 +108,8 @@ void Socket<MessageType, SocketType>::HandleSizeSent(
 
 template <class MessageType, class SocketType>
 void Socket<MessageType, SocketType>::HandleMessageSent(
-    const MessageType& message, SocketType* socket,
-    const WriteCallback& callback, const boost::system::error_code& error,
+    const MessageType &message, SocketType *socket,
+    const WriteCallback &callback, const boost::system::error_code &error,
     std::size_t bytes_transferred) {
   if (error) {
     HandleWriteError(error);
@@ -121,9 +121,9 @@ void Socket<MessageType, SocketType>::HandleMessageSent(
 
 template <class MessageType, class SocketType>
 void Socket<MessageType, SocketType>::ReadMessageFromSocket(
-    SocketType* socket,
-    const boost::function<void(const MessageType&)>& callback) {
-  boost::asio::streambuf* buffer = new boost::asio::streambuf;
+    SocketType *socket,
+    const boost::function<void(const MessageType &)> &callback) {
+  boost::asio::streambuf *buffer = new boost::asio::streambuf;
   boost::asio::streambuf::mutable_buffers_type mutable_buffer =
       buffer->prepare(8);
   socket->async_receive(
@@ -135,9 +135,9 @@ void Socket<MessageType, SocketType>::ReadMessageFromSocket(
 
 template <class MessageType, class SocketType>
 void Socket<MessageType, SocketType>::HandleSizeRead(
-    SocketType* socket, boost::asio::streambuf* buffer,
-    const boost::function<void(const MessageType&)>& callback,
-    const boost::system::error_code& error, std::size_t num_bytes_read) {
+    SocketType *socket, boost::asio::streambuf *buffer,
+    const boost::function<void(const MessageType &)> &callback,
+    const boost::system::error_code &error, std::size_t num_bytes_read) {
   if (error && error != boost::asio::error::eof) {
     HandleReadError(error, buffer);
     return;
@@ -157,7 +157,7 @@ void Socket<MessageType, SocketType>::HandleSizeRead(
   std::istream data_stream(buffer);
   std::string data;
   data_stream >> data;
-  uint64_t size = *(reinterpret_cast<const uint64_t*>(data.data()));
+  uint64_t size = *(reinterpret_cast<const uint64_t *>(data.data()));
 #if BOOST_BIG_ENDIAN
   size = __builtin_bswap64(size);
 #endif
@@ -173,10 +173,10 @@ void Socket<MessageType, SocketType>::HandleSizeRead(
 
 template <class MessageType, class SocketType>
 void Socket<MessageType, SocketType>::HandleMessageRead(
-    SocketType* socket, boost::asio::streambuf* buffer,
-    const uint8_t& message_size,
-    const boost::function<void(const MessageType&)>& callback,
-    const boost::system::error_code& error, std::size_t num_bytes_read) {
+    SocketType *socket, boost::asio::streambuf *buffer,
+    const uint8_t &message_size,
+    const boost::function<void(const MessageType &)> &callback,
+    const boost::system::error_code &error, std::size_t num_bytes_read) {
   if (error && error != boost::asio::error::eof) {
     HandleReadError(error, buffer);
     return;
@@ -206,23 +206,23 @@ void Socket<MessageType, SocketType>::HandleMessageRead(
 
 template <class MessageType, class SocketType>
 void Socket<MessageType, SocketType>::Finalize(
-    SocketType* socket, boost::asio::streambuf* buffer,
-    const MessageType& message,
-    const boost::function<void(const MessageType&)>& callback) {
+    SocketType *socket, boost::asio::streambuf *buffer,
+    const MessageType &message,
+    const boost::function<void(const MessageType &)> &callback) {
   delete buffer;
   socket->get_io_service().post(boost::bind(callback, message));
 }
 
 template <class MessageType, class SocketType>
 void Socket<MessageType, SocketType>::HandleReadError(
-    const boost::system::error_code& error, boost::asio::streambuf* buffer) {
+    const boost::system::error_code &error, boost::asio::streambuf *buffer) {
   LOG(ERROR) << error.message();
   delete buffer;
 }
 
 template <class MessageType, class SocketType>
 void Socket<MessageType, SocketType>::HandleWriteError(
-    const boost::system::error_code& error) {
+    const boost::system::error_code &error) {
   LOG(ERROR) << error.message();
 }
 

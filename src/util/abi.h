@@ -9,7 +9,7 @@ namespace util {
 namespace abi {
 
 template <class T>
-std::string GetDemangledType(const T& object) {
+std::string GetDemangledType(const T &object) {
   return ::abi::__cxa_demangle(typeid(object).name(), 0, 0, NULL);
 }
 

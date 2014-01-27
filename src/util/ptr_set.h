@@ -13,7 +13,7 @@ class conditional_deleter {
  public:
   conditional_deleter() : owner_(true) {}
   explicit conditional_deleter(bool owner) : owner_(owner) {}
-  void operator()(T* p) const {
+  void operator()(T *p) const {
     if (owner_) default_deleter_(p);
   }
 
@@ -32,15 +32,15 @@ class ptr_set
   typedef typename parent_type::iterator iterator;
   typedef typename parent_type::key_type key_type;
   typedef typename parent_type::size_type size_type;
-  size_type erase(const T* k) { return parent_type::erase(get_weak_ptr(k)); }
-  iterator find(const T* k) { return parent_type::find(get_weak_ptr(k)); }
-  const_iterator find(const T* k) const {
+  size_type erase(const T *k) { return parent_type::erase(get_weak_ptr(k)); }
+  iterator find(const T *k) { return parent_type::find(get_weak_ptr(k)); }
+  const_iterator find(const T *k) const {
     return parent_type::find(get_weak_ptr(k));
   }
 
  private:
-  key_type get_weak_ptr(const T* k) {
-    return key_type(const_cast<T*>(k), conditional_deleter<T>(false));
+  key_type get_weak_ptr(const T *k) {
+    return key_type(const_cast<T *>(k), conditional_deleter<T>(false));
   }
 };
 
