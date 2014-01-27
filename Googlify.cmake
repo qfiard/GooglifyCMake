@@ -337,7 +337,7 @@ function(get_output_file TARGET OUT)
   set(IS_SHARED_LIB "$<STREQUAL:${TARGET_TYPE},SHARED_LIBRARY>")
   set(IS_LIB_OR_EXE
       "$<OR:${IS_EXE},${IS_STATIC_LIB},${IS_SHARED_LIB},${IS_MODULE_LIB}>")
-  set(${OUT} "$<${IS_LIB_OR_EXE}:$<TARGET_FILE:${TARGET}>>$<$<NOT:${IS_LIB_OR_EXE}>:$<TARGET_PROPERTY,${TARGET}:TARGET_FILE>>" PARENT_SCOPE)
+  set(${OUT} "$<${IS_LIB_OR_EXE}:$<TARGET_FILE:${TARGET}>>$<$<NOT:${IS_LIB_OR_EXE}>:$<TARGET_PROPERTY:${TARGET},TARGET_FILE>>" PARENT_SCOPE)
 endfunction(get_output_file)
 
 function(get_target_name TARGET OUT)
