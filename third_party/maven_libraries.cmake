@@ -10,8 +10,10 @@ function(maven_library LIB ARTIFACT_ID VERSION)
   endif ()
   set(JAR_FILE
       "${PROJECT_BINARY_DIR}/third_party/java/${ARTIFACT_ID}-${VERSION}.jar")
-  set("third_party.${LIB}" ${JAR_FILE} PARENT_SCOPE)
-  set(TARGET "third_party.${LIB}_target")
+  set(FULL_NAME third_party.${LIB})
+  set(${FULL_NAME} ${JAR_FILE} PARENT_SCOPE)
+  set(TARGET ${FULL_NAME}_target)
+  set(${TARGET} ${TARGET} PARENT_SCOPE)
   add_custom_target(${TARGET} ALL)
   set_target_properties(
       ${TARGET} PROPERTIES ARTIFACT_ID "${ARTIFACT_ID}")
