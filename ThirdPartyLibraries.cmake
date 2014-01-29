@@ -7,8 +7,9 @@ set(BOOST_ROOT "" CACHE STRING "Boost install directory")
 set(BOOST_TIME_ZONE_CSV "" CACHE STRING "Boost time zone csv datafile")
 
 
+set(SUPPORT_DIR ${CMAKE_CURRENT_LIST_DIR}/support)
 set(THIRD_PARTY_BINARY_DIR ${PROJECT_BINARY_DIR}/third_party)
-set(THIRD_PARTY_SOURCE_DIR ${PROJECT_SOURCE_DIR}/third_party)
+set(THIRD_PARTY_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party)
 
 
 # Escaping architectures.
@@ -64,8 +65,8 @@ if (${SVN} STREQUAL SVN-NOTFOUND)
   message(FATAL_ERROR "Please install SVN available at http://subversion.apache.org/.")
 endif ()
 
-set(SET_INSTALL_NAMES "${PROJECT_SOURCE_DIR}/support/set_install_names.sh")
-set(CREATE_FAT_LIBS "${PROJECT_SOURCE_DIR}/support/create_fat_libs.sh")
+set(SET_INSTALL_NAMES "${SUPPORT_DIR}/set_install_names.sh")
+set(CREATE_FAT_LIBS "${SUPPORT_DIR}/create_fat_libs.sh")
 
 # A few convenient functions to define third-party libraries.
 function(set_prefix OUT PREFIX)
@@ -1540,12 +1541,12 @@ set(MAVEN_LAST_DOWNLOAD "${THIRD_PARTY_BINARY_DIR}/java/last_download")
 set(MAVEN_CLASSPATH_UPDATE "${THIRD_PARTY_BINARY_DIR}/java/classpath_update")
 add_custom_command(
   OUTPUT ${MAVEN_LAST_DOWNLOAD}
-  COMMAND ${MVN} -f ${PROJECT_SOURCE_DIR}/third_party/pom.xml
+  COMMAND ${MVN} -f ${THIRD_PARTY_SOURCE_DIR}/pom.xml
       -q dependency:copy-dependencies
   COMMAND date > ${MAVEN_LAST_DOWNLOAD}
-  MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/third_party/pom.xml)
+  MAIN_DEPENDENCY ${THIRD_PARTY_SOURCE_DIR}/pom.xml)
 set(GENERATE_CLASSPATH_FOR_MAVEN_LIBS
-    ${PROJECT_SOURCE_DIR}/support/generate_classpath_for_maven_libs.py)
+    ${SUPPORT_DIR}/generate_classpath_for_maven_libs.py)
 add_custom_command(
   OUTPUT ${MAVEN_CLASSPATH_UPDATE}
   COMMAND ${GENERATE_CLASSPATH_FOR_MAVEN_LIBS} "${MVN}"
@@ -2439,5 +2440,5 @@ endfunction(use_openmp)
 ################################################################################
 # External dependency management.
 ################################################################################
-include(${PROJECT_SOURCE_DIR}/third_party/maven_libraries.cmake)
-include(${PROJECT_SOURCE_DIR}/third_party/pip_libraries.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/third_party/maven_libraries.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/third_party/pip_libraries.cmake)
