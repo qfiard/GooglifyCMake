@@ -1218,8 +1218,6 @@ add_external_project(
       ${SVN} export --force
           http://jsoncpp.svn.sourceforge.net/svnroot/jsoncpp/trunk/jsoncpp
           ${JSONCPP_TARGET}
-  PATCH_COMMAND
-      patch -Np0 < ${THIRD_PARTY_SOURCE_DIR}/jsoncpp.patch
   CMAKE_ARGS
       -DJSONCPP_WITH_TESTS=OFF
 
