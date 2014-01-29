@@ -744,6 +744,13 @@ add_external_project(
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
       -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${CLANG_PREFIX})
+add_external_project_step(
+  ${CLANG_TARGET} set_install_names
+  COMMAND ${SET_INSTALL_NAMES} ${CMAKE_INSTALL_NAME_TOOL}
+      ${CMAKE_SHARED_LIBRARY_SUFFIX}
+  DEPENDEES install
+  DEPENDS ${SET_INSTALL_NAMES}
+  WORKING_DIRECTORY ${CLANG_PREFIX}/lib)
 add_include_directory(${CLANG_PREFIX}/include)
 
 ################################################################################
