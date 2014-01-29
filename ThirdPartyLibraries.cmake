@@ -744,6 +744,7 @@ add_external_project(
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
       -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${CLANG_PREFIX})
+add_include_directory(${CLANG_PREFIX}/include)
 
 ################################################################################
 # Clang/OpenMP - OpenMP compatible clang compiler.
