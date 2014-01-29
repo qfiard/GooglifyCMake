@@ -181,6 +181,7 @@ add_target(MARISA_TRIE marisa_trie)
 add_target(MAVEN maven)
 add_target(MAVEN_LIBS maven_libs)
 add_target(MCRYPT mcrypt)
+add_target(MILI mili)
 add_target(MPC mpc)
 add_target(MPFR mpfr)
 add_target(MYSQL mysql)
@@ -382,6 +383,7 @@ set_library(llvm_xcore_desc ${LLVM_LIB_DIR} LLVMXCoreDesc)
 set_library(llvm_xcore_disassembler ${LLVM_LIB_DIR} LLVMXCoreDisassembler)
 set_library(llvm_xcore_info ${LLVM_LIB_DIR} LLVMXCoreInfo)
 set_library(marisa_trie ${MARISA_TRIE_PREFIX}/lib marisa)
+set_library(mili "")  # Mili is header only.
 set_library(mpc ${MPC_PREFIX}/lib mpc)
 set_library(mpfr ${MPFR_PREFIX}/lib mpfr)
 set_library(mysqlcppconn ${MYSQLCPPCONN_PREFIX}/lib mysqlcppconn)
@@ -1575,6 +1577,19 @@ add_external_project(
 add_dependencies(${MCRYPT_TARGET} ${LIBICONV_TARGET})
 add_dependencies(${MCRYPT_TARGET} ${LIBMCRYPT_TARGET})
 add_dependencies(${MCRYPT_TARGET} ${LIBMHASH_TARGET})
+
+################################################################################
+# Mili.
+add_external_project(
+  ${MILI_TARGET}
+  PREFIX ${MILI_PREFIX}
+  DOWNLOAD_COMMAND
+      ${HG} clone https://code.google.com/p/mili ${MILI_TARGET}
+  CONFIGURE_COMMAND echo ""
+  BUILD_COMMAND echo ""
+  INSTALL_COMMAND find mili | cpio -dp <INSTALL_DIR>/include
+  BUILD_IN_SOURCE 1)
+add_include_directory(${MILI_PREFIX}/include)
 
 ################################################################################
 # MPC.
