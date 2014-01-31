@@ -794,12 +794,12 @@ add_external_project(
   DOWNLOAD_COMMAND
       # Patch file is specific to revision 199104, a missing header leads to an
       # undefined symbol without it. Might be unnecessary in the near future.
-      ${SVN} export --force http://llvm.org/svn/llvm-project/llvm/trunk ${CLANG_TARGET} &&
+      ${GIT} clone --depth 1 https://github.com/QuentinFiard/llvm ${CLANG_TARGET} &&
       ${SVN} export --force http://llvm.org/svn/llvm-project/compiler-rt/trunk ${CLANG_TARGET}/projects/compiler-rt &&
       ${SVN} export --force http://llvm.org/svn/llvm-project/cfe/trunk ${CLANG_TARGET}/tools/clang
-  PATCH_COMMAND
-      patch -p0 < ${THIRD_PARTY_SOURCE_DIR}/clang.patch
   CMAKE_ARGS
+      -DLLVM_REQUIRES_RTTI=ON
+
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
       -DCMAKE_BUILD_TYPE=RELEASE
