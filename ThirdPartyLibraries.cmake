@@ -68,7 +68,29 @@ endif ()
 set(SET_INSTALL_NAMES "${SUPPORT_DIR}/set_install_names.sh")
 set(CREATE_FAT_LIBS "${SUPPORT_DIR}/create_fat_libs.sh")
 
-# A few convenient functions to define third-party libraries.
+################################################################################
+# Public interface.
+################################################################################
+function(get_include_directories LIB OUT)
+  set(${OUT} ${${${LIB}_target}_includes} PARENT_SCOPE)
+endfunction()
+
+function(get_libraries LIB OUT)
+  set(${OUT} ${${LIB}} PARENT_SCOPE)
+endfunction()
+
+function(get_target LIB OUT)
+  set(TARGET ${${LIB}_target})
+  if ("${TARGET}" STREQUAL "")
+    set(${OUT} ${LIB}-NOTFOUND PARENT_SCOPE)
+    return()
+  endif ()
+  set(${OUT} ${TARGET} PARENT_SCOPE)
+endfunction()
+
+################################################################################
+# Private interface.
+################################################################################
 function(set_prefix OUT PREFIX)
   set(${OUT} ${THIRD_PARTY_BINARY_DIR}/${PREFIX} PARENT_SCOPE)
 endfunction()
@@ -78,17 +100,12 @@ function(add_target OUT NAME)
   set(${OUT}_TARGET third_party.${NAME}_target PARENT_SCOPE)
 endfunction()
 
-macro(set_header_only NAME)
-  set(third_party.${NAME} ";")
-endmacro()
-
-macro(set_library NAME DIR)
+macro(set_libraries NAME DIR)
   set(FULL_NAME third_party.${NAME})
   # Defines the target of the library, by default it is equal to the name of
   # library suffixed with _target.
   set(${FULL_NAME}_target ${FULL_NAME}_target)
-  # Without the next line CMake would complain with header-only libraries.
-  set(third_party.${NAME} ";")
+  set(third_party.${NAME})
   if (BUILD_SHARED_LIBS AND NOT "${DIR}" STREQUAL "")
     list(APPEND third_party.${NAME} -L${DIR})
   endif ()
@@ -107,7 +124,7 @@ macro(set_target_for_libraries TARGET)
   endforeach ()
 endmacro()
 
-macro(add_library_dependency NAME)
+macro(add_library_dependencies NAME)
   foreach (LIB ${ARGN})
     if (NOT DEFINED ${LIB})
       # We assume that LIB is a system library.
@@ -127,14 +144,10 @@ function(add_external_project_step)
   ExternalProject_Add_Step(${ARGN})
 endfunction()
 
-function(add_include_directory DIR)
-  file(MAKE_DIRECTORY ${DIR})
-  include_directories(${DIR})
-endfunction()
-
-function(add_link_directory DIR)
-  file(MAKE_DIRECTORY ${DIR})
-  link_directories(${DIR})
+function(set_include_directories LIB)
+  set(TARGET ${third_party.${LIB}_target})
+  set(INCLUDE_DIRECTORIES ${TARGET}_includes)
+  set(${INCLUDE_DIRECTORIES} ${ARGN} PARENT_SCOPE)
 endfunction()
 
 # Forward declarations.
@@ -215,228 +228,228 @@ set(LLVM_LIB_DIR ${CLANG_LIB_DIR})
 set(OPENCV_LIB_DIR ${OPENCV_PREFIX}/lib)
 
 # Third-party libraries definitions.
-set_library(arabica ${ARABICA_PREFIX}/lib arabica)
-set_library(boost_atomic ${BOOST_LIB_DIR} boost_atomic)
-set_library(boost_chrono ${BOOST_LIB_DIR} boost_chrono)
-set_library(boost_context ${BOOST_LIB_DIR} boost_context)
-set_library(boost_coroutine ${BOOST_LIB_DIR} boost_coroutine)
-set_library(boost_date_time ${BOOST_LIB_DIR} boost_date_time)
-set_library(boost_exception ${BOOST_LIB_DIR} boost_exception)
-set_library(boost_filesystem ${BOOST_LIB_DIR} boost_filesystem)
-set_library(boost_graph ${BOOST_LIB_DIR} boost_graph)
-set_library(boost_graph_parallel ${BOOST_LIB_DIR} boost_graph_parallel)
-set_header_only(boost_headers)
-set_library(boost_iostreams ${BOOST_LIB_DIR} boost_iostreams)
-set_library(boost_locale ${BOOST_LIB_DIR} boost_locale)
-set_library(boost_log ${BOOST_LIB_DIR} boost_log)
-set_library(boost_math ${BOOST_LIB_DIR} boost_math)
-set_library(boost_mpi ${BOOST_LIB_DIR} boost_mpi)
-set_library(boost_program_options ${BOOST_LIB_DIR} boost_program_options)
-set_library(boost_python ${BOOST_LIB_DIR} boost_python)
-set_library(boost_random ${BOOST_LIB_DIR} boost_random)
-set_library(boost_regex ${BOOST_LIB_DIR} boost_regex)
-set_library(boost_serialization ${BOOST_LIB_DIR} boost_serialization)
-set_library(boost_signals ${BOOST_LIB_DIR} boost_signals)
-set_library(boost_system ${BOOST_LIB_DIR} boost_system)
-set_library(boost_test ${BOOST_LIB_DIR} boost_test)
-set_library(boost_thread ${BOOST_LIB_DIR} boost_thread)
-set_library(boost_timer ${BOOST_LIB_DIR} boost_timer)
-set_library(boost_wave ${BOOST_LIB_DIR} boost_wave)
-set_library(clang ${CLANG_LIB_DIR} clang)
-set_library(clang_analysis ${CLANG_LIB_DIR} clangAnalysis)
-set_library(clang_arcmigrate ${CLANG_LIB_DIR} clangARCMigrate)
-set_library(clang_ast ${CLANG_LIB_DIR} clangAST)
-set_library(clang_ast_matchers ${CLANG_LIB_DIR} clangASTMatchers)
-set_library(clang_basic ${CLANG_LIB_DIR} clangBasic)
-set_library(clang_code_gen ${CLANG_LIB_DIR} clangCodeGen)
-set_library(clang_driver ${CLANG_LIB_DIR} clangDriver)
-set_library(clang_dynamic_ast_matchers ${CLANG_LIB_DIR} clangDynamicASTMatchers)
-set_library(clang_edit ${CLANG_LIB_DIR} clangEdit)
-set_library(clang_format ${CLANG_LIB_DIR} clangFormat)
-set_library(clang_frontend ${CLANG_LIB_DIR} clangFrontend)
-set_library(clang_frontend_tool ${CLANG_LIB_DIR} clangFrontendTool)
-set_library(clang_index ${CLANG_LIB_DIR} clangIndex)
-set_library(clang_lex ${CLANG_LIB_DIR} clangLex)
-set_library(clang_parse ${CLANG_LIB_DIR} clangParse)
-set_library(clang_rewrite_core ${CLANG_LIB_DIR} clangRewriteCore)
-set_library(clang_rewrite_frontend ${CLANG_LIB_DIR} clangRewriteFrontend)
-set_library(clang_sema ${CLANG_LIB_DIR} clangSema)
-set_library(clang_serialization ${CLANG_LIB_DIR} clangSerialization)
-set_library(
+set_libraries(arabica ${ARABICA_PREFIX}/lib arabica)
+set_libraries(boost_atomic ${BOOST_LIB_DIR} boost_atomic)
+set_libraries(boost_chrono ${BOOST_LIB_DIR} boost_chrono)
+set_libraries(boost_context ${BOOST_LIB_DIR} boost_context)
+set_libraries(boost_coroutine ${BOOST_LIB_DIR} boost_coroutine)
+set_libraries(boost_date_time ${BOOST_LIB_DIR} boost_date_time)
+set_libraries(boost_exception ${BOOST_LIB_DIR} boost_exception)
+set_libraries(boost_filesystem ${BOOST_LIB_DIR} boost_filesystem)
+set_libraries(boost_graph ${BOOST_LIB_DIR} boost_graph)
+set_libraries(boost_graph_parallel ${BOOST_LIB_DIR} boost_graph_parallel)
+set_libraries(boost_iostreams ${BOOST_LIB_DIR} boost_iostreams)
+set_libraries(boost_locale ${BOOST_LIB_DIR} boost_locale)
+set_libraries(boost_log ${BOOST_LIB_DIR} boost_log)
+set_libraries(boost_math ${BOOST_LIB_DIR} boost_math)
+set_libraries(boost_mpi ${BOOST_LIB_DIR} boost_mpi)
+set_libraries(boost_program_options ${BOOST_LIB_DIR} boost_program_options)
+set_libraries(boost_python ${BOOST_LIB_DIR} boost_python)
+set_libraries(boost_random ${BOOST_LIB_DIR} boost_random)
+set_libraries(boost_regex ${BOOST_LIB_DIR} boost_regex)
+set_libraries(boost_serialization ${BOOST_LIB_DIR} boost_serialization)
+set_libraries(boost_signals ${BOOST_LIB_DIR} boost_signals)
+set_libraries(boost_system ${BOOST_LIB_DIR} boost_system)
+set_libraries(boost_test ${BOOST_LIB_DIR} boost_test)
+set_libraries(boost_thread ${BOOST_LIB_DIR} boost_thread)
+set_libraries(boost_timer ${BOOST_LIB_DIR} boost_timer)
+set_libraries(boost_wave ${BOOST_LIB_DIR} boost_wave)
+set_libraries(clang ${CLANG_LIB_DIR} clang)
+set_libraries(clang_analysis ${CLANG_LIB_DIR} clangAnalysis)
+set_libraries(clang_arcmigrate ${CLANG_LIB_DIR} clangARCMigrate)
+set_libraries(clang_ast ${CLANG_LIB_DIR} clangAST)
+set_libraries(clang_ast_matchers ${CLANG_LIB_DIR} clangASTMatchers)
+set_libraries(clang_basic ${CLANG_LIB_DIR} clangBasic)
+set_libraries(clang_code_gen ${CLANG_LIB_DIR} clangCodeGen)
+set_libraries(clang_driver ${CLANG_LIB_DIR} clangDriver)
+set_libraries(
+    clang_dynamic_ast_matchers ${CLANG_LIB_DIR} clangDynamicASTMatchers)
+set_libraries(clang_edit ${CLANG_LIB_DIR} clangEdit)
+set_libraries(clang_format ${CLANG_LIB_DIR} clangFormat)
+set_libraries(clang_frontend ${CLANG_LIB_DIR} clangFrontend)
+set_libraries(clang_frontend_tool ${CLANG_LIB_DIR} clangFrontendTool)
+set_libraries(clang_index ${CLANG_LIB_DIR} clangIndex)
+set_libraries(clang_lex ${CLANG_LIB_DIR} clangLex)
+set_libraries(clang_parse ${CLANG_LIB_DIR} clangParse)
+set_libraries(clang_rewrite_core ${CLANG_LIB_DIR} clangRewriteCore)
+set_libraries(clang_rewrite_frontend ${CLANG_LIB_DIR} clangRewriteFrontend)
+set_libraries(clang_sema ${CLANG_LIB_DIR} clangSema)
+set_libraries(clang_serialization ${CLANG_LIB_DIR} clangSerialization)
+set_libraries(
     clang_static_analyzer_checkers ${CLANG_LIB_DIR} clangStaticAnalyzerCheckers)
-set_library(
+set_libraries(
     clang_static_analyzer_core ${CLANG_LIB_DIR} clangStaticAnalyzerCore)
-set_library(
+set_libraries(
     clang_static_analyzer_frontend ${CLANG_LIB_DIR} clangStaticAnalyzerFrontend)
-set_library(clang_tooling ${CLANG_LIB_DIR} clangTooling)
-set_library(curl-asio ${CURL_ASIO_PREFIX}/lib curlasio)
-set_library(dlib ${DLIB_PREFIX}/lib dlib)
-set_library(eigen "")  # Eigen is header only.
-set_library(flex ${FLEX_PREFIX}/lib fl)
-set_library(g2log ${G2LOG_PREFIX}/lib lib_activeobject lib_g2logger)
-set_library(gflags ${GFLAGS_PREFIX}/lib gflags)
-set_library(gmock ${GMOCK_PREFIX}/lib gmock gmock_main)
-set_library(gmp ${GMP_PREFIX}/lib gmp)
-set_library(gtest ${GTEST_PREFIX}/lib gtest gtest_main)
-set_library(jsoncpp ${JSONCPP_PREFIX}/lib jsoncpp)
-set_library(libcurl ${LIBCURL_PREFIX}/lib curl)
-set_library(libcxx ${LIBCXX_PREFIX}/lib c++)
-set_library(libcxxabi ${LIBCXXABI_PREFIX}/lib c++abi)
-set_library(libxml ${LIBXML_PREFIX}/lib xml2)
-set_library(llvm_aarch64_asm_parser ${LLVM_LIB_DIR} LLVMAArch64AsmParser)
-set_library(llvm_aarch64_asm_printer ${LLVM_LIB_DIR} LLVMAArch64AsmPrinter)
-set_library(llvm_aarch64_code_gen ${LLVM_LIB_DIR} LLVMAArch64CodeGen)
-set_library(llvm_aarch64_desc ${LLVM_LIB_DIR} LLVMAArch64Desc)
-set_library(llvm_aarch64_disassembler ${LLVM_LIB_DIR} LLVMAArch64Disassembler)
-set_library(llvm_aarch64_info ${LLVM_LIB_DIR} LLVMAArch64Info)
-set_library(llvm_aarch64_utils ${LLVM_LIB_DIR} LLVMAArch64Utils)
-set_library(llvm_analysis ${LLVM_LIB_DIR} LLVMAnalysis)
-set_library(llvm_arm_asm_parser ${LLVM_LIB_DIR} LLVMARMAsmParser)
-set_library(llvm_arm_asm_printer ${LLVM_LIB_DIR} LLVMARMAsmPrinter)
-set_library(llvm_arm_code_gen ${LLVM_LIB_DIR} LLVMARMCodeGen)
-set_library(llvm_arm_desc ${LLVM_LIB_DIR} LLVMARMDesc)
-set_library(llvm_arm_disassembler ${LLVM_LIB_DIR} LLVMARMDisassembler)
-set_library(llvm_arm_info ${LLVM_LIB_DIR} LLVMARMInfo)
-set_library(llvm_asm_parser ${LLVM_LIB_DIR} LLVMAsmParser)
-set_library(llvm_asm_printer ${LLVM_LIB_DIR} LLVMAsmPrinter)
-set_library(llvm_bit_reader ${LLVM_LIB_DIR} LLVMBitReader)
-set_library(llvm_bit_writer ${LLVM_LIB_DIR} LLVMBitWriter)
-set_library(llvm_code_gen ${LLVM_LIB_DIR} LLVMCodeGen)
-set_library(llvm_core ${LLVM_LIB_DIR} LLVMCore)
-set_library(llvm_cpp_backend_code_gen ${LLVM_LIB_DIR} LLVMCppBackendCodeGen)
-set_library(llvm_cpp_backend_info ${LLVM_LIB_DIR} LLVMCppBackendInfo)
-set_library(llvm_debug_info ${LLVM_LIB_DIR} LLVMDebugInfo)
-set_library(llvm_execution_engine ${LLVM_LIB_DIR} LLVMExecutionEngine)
-set_library(llvm_hexagon_asm_printer ${LLVM_LIB_DIR} LLVMHexagonAsmPrinter)
-set_library(llvm_hexagon_code_gen ${LLVM_LIB_DIR} LLVMHexagonCodeGen)
-set_library(llvm_hexagon_desc ${LLVM_LIB_DIR} LLVMHexagonDesc)
-set_library(llvm_hexagon_info ${LLVM_LIB_DIR} LLVMHexagonInfo)
-set_library(llvm_inst_combine ${LLVM_LIB_DIR} LLVMInstCombine)
-set_library(llvm_instrumentation ${LLVM_LIB_DIR} LLVMInstrumentation)
-set_library(llvm_interpreter ${LLVM_LIB_DIR} LLVMInterpreter)
-set_library(llvm_ipa ${LLVM_LIB_DIR} LLVMipa)
-set_library(llvm_ipo ${LLVM_LIB_DIR} LLVMipo)
-set_library(llvm_ir_reader ${LLVM_LIB_DIR} LLVMIRReader)
-set_library(llvm_jit ${LLVM_LIB_DIR} LLVMJIT)
-set_library(llvm_linker ${LLVM_LIB_DIR} LLVMLinker)
-set_library(llvm_lto ${LLVM_LIB_DIR} LLVMLTO)
-set_library(llvm_mc ${LLVM_LIB_DIR} LLVMMC)
-set_library(llvm_mc_disassembler ${LLVM_LIB_DIR} LLVMMCDisassembler)
-set_library(llvm_mc_jit ${LLVM_LIB_DIR} LLVMMCJIT)
-set_library(llvm_mc_parser ${LLVM_LIB_DIR} LLVMMCParser)
-set_library(llvm_mips_asm_parser ${LLVM_LIB_DIR} LLVMMipsAsmParser)
-set_library(llvm_mips_asm_printer ${LLVM_LIB_DIR} LLVMMipsAsmPrinter)
-set_library(llvm_mips_code_gen ${LLVM_LIB_DIR} LLVMMipsCodeGen)
-set_library(llvm_mips_desc ${LLVM_LIB_DIR} LLVMMipsDesc)
-set_library(llvm_mips_disassembler ${LLVM_LIB_DIR} LLVMMipsDisassembler)
-set_library(llvm_mips_info ${LLVM_LIB_DIR} LLVMMipsInfo)
-set_library(llvm_msp430_asm_printer ${LLVM_LIB_DIR} LLVMMSP430AsmPrinter)
-set_library(llvm_msp430_code_gen ${LLVM_LIB_DIR} LLVMMSP430CodeGen)
-set_library(llvm_msp430_desc ${LLVM_LIB_DIR} LLVMMSP430Desc)
-set_library(llvm_msp430_info ${LLVM_LIB_DIR} LLVMMSP430Info)
-set_library(llvm_nvptx_asm_printer ${LLVM_LIB_DIR} LLVMNVPTXAsmPrinter)
-set_library(llvm_nvptx_code_gen ${LLVM_LIB_DIR} LLVMNVPTXCodeGen)
-set_library(llvm_nvptx_desc ${LLVM_LIB_DIR} LLVMNVPTXDesc)
-set_library(llvm_nvptx_info ${LLVM_LIB_DIR} LLVMNVPTXInfo)
-set_library(llvm_obj_carcopts ${LLVM_LIB_DIR} LLVMObjCARCOpts)
-set_library(llvm_object ${LLVM_LIB_DIR} LLVMObject)
-set_library(llvm_option ${LLVM_LIB_DIR} LLVMOption)
-set_library(llvm_power_pcasm_parser ${LLVM_LIB_DIR} LLVMPowerPCAsmParser)
-set_library(llvm_power_pcasm_printer ${LLVM_LIB_DIR} LLVMPowerPCAsmPrinter)
-set_library(llvm_power_pccode_gen ${LLVM_LIB_DIR} LLVMPowerPCCodeGen)
-set_library(llvm_power_pcdesc ${LLVM_LIB_DIR} LLVMPowerPCDesc)
-set_library(llvm_power_pcdisassembler ${LLVM_LIB_DIR} LLVMPowerPCDisassembler)
-set_library(llvm_power_pcinfo ${LLVM_LIB_DIR} LLVMPowerPCInfo)
-set_library(llvm_r600_asm_printer ${LLVM_LIB_DIR} LLVMR600AsmPrinter)
-set_library(llvm_r600_code_gen ${LLVM_LIB_DIR} LLVMR600CodeGen)
-set_library(llvm_r600_desc ${LLVM_LIB_DIR} LLVMR600Desc)
-set_library(llvm_r600_info ${LLVM_LIB_DIR} LLVMR600Info)
-set_library(llvm_runtime_dyld ${LLVM_LIB_DIR} LLVMRuntimeDyld)
-set_library(llvm_scalar_opts ${LLVM_LIB_DIR} LLVMScalarOpts)
-set_library(llvm_selection_dag ${LLVM_LIB_DIR} LLVMSelectionDAG)
-set_library(llvm_sparc_asm_parser ${LLVM_LIB_DIR} LLVMSparcAsmParser)
-set_library(llvm_sparc_asm_printer ${LLVM_LIB_DIR} LLVMSparcAsmPrinter)
-set_library(llvm_sparc_code_gen ${LLVM_LIB_DIR} LLVMSparcCodeGen)
-set_library(llvm_sparc_desc ${LLVM_LIB_DIR} LLVMSparcDesc)
-set_library(llvm_sparc_disassembler ${LLVM_LIB_DIR} LLVMSparcDisassembler)
-set_library(llvm_sparc_info ${LLVM_LIB_DIR} LLVMSparcInfo)
-set_library(llvm_support ${LLVM_LIB_DIR} LLVMSupport)
-set_library(llvm_system_zasm_parser ${LLVM_LIB_DIR} LLVMSystemZAsmParser)
-set_library(llvm_system_zasm_printer ${LLVM_LIB_DIR} LLVMSystemZAsmPrinter)
-set_library(llvm_system_zcode_gen ${LLVM_LIB_DIR} LLVMSystemZCodeGen)
-set_library(llvm_system_zdesc ${LLVM_LIB_DIR} LLVMSystemZDesc)
-set_library(llvm_system_zdisassembler ${LLVM_LIB_DIR} LLVMSystemZDisassembler)
-set_library(llvm_system_zinfo ${LLVM_LIB_DIR} LLVMSystemZInfo)
-set_library(llvm_table_gen ${LLVM_LIB_DIR} LLVMTableGen)
-set_library(llvm_target ${LLVM_LIB_DIR} LLVMTarget)
-set_library(llvm_transform_utils ${LLVM_LIB_DIR} LLVMTransformUtils)
-set_library(llvm_vectorize ${LLVM_LIB_DIR} LLVMVectorize)
-set_library(llvm_x86_asm_parser ${LLVM_LIB_DIR} LLVMX86AsmParser)
-set_library(llvm_x86_asm_printer ${LLVM_LIB_DIR} LLVMX86AsmPrinter)
-set_library(llvm_x86_code_gen ${LLVM_LIB_DIR} LLVMX86CodeGen)
-set_library(llvm_x86_desc ${LLVM_LIB_DIR} LLVMX86Desc)
-set_library(llvm_x86_disassembler ${LLVM_LIB_DIR} LLVMX86Disassembler)
-set_library(llvm_x86_info ${LLVM_LIB_DIR} LLVMX86Info)
-set_library(llvm_x86_utils ${LLVM_LIB_DIR} LLVMX86Utils)
-set_library(llvm_xcore_asm_printer ${LLVM_LIB_DIR} LLVMXCoreAsmPrinter)
-set_library(llvm_xcore_code_gen ${LLVM_LIB_DIR} LLVMXCoreCodeGen)
-set_library(llvm_xcore_desc ${LLVM_LIB_DIR} LLVMXCoreDesc)
-set_library(llvm_xcore_disassembler ${LLVM_LIB_DIR} LLVMXCoreDisassembler)
-set_library(llvm_xcore_info ${LLVM_LIB_DIR} LLVMXCoreInfo)
-set_library(marisa_trie ${MARISA_TRIE_PREFIX}/lib marisa)
-set_library(mili "")  # Mili is header only.
-set_library(mpc ${MPC_PREFIX}/lib mpc)
-set_library(mpfr ${MPFR_PREFIX}/lib mpfr)
-set_library(mysqlcppconn ${MYSQLCPPCONN_PREFIX}/lib mysqlcppconn)
-set_library(opencv_bioinspired ${OPENCV_LIB_DIR} opencv_bioinspired)
-set_library(opencv_calib3d ${OPENCV_LIB_DIR} opencv_calib3d)
-set_library(opencv_contrib ${OPENCV_LIB_DIR} opencv_contrib)
-set_library(opencv_core ${OPENCV_LIB_DIR} opencv_core)
-set_library(opencv_cuda ${OPENCV_LIB_DIR} opencv_cuda)
-set_library(opencv_cudaarithm ${OPENCV_LIB_DIR} opencv_cudaarithm)
-set_library(opencv_cudabgsegm ${OPENCV_LIB_DIR} opencv_cudabgsegm)
-set_library(opencv_cudafeatures2d ${OPENCV_LIB_DIR} opencv_cudafeatures2d)
-set_library(opencv_cudafilters ${OPENCV_LIB_DIR} opencv_cudafilters)
-set_library(opencv_cudaimgproc ${OPENCV_LIB_DIR} opencv_cudaimgproc)
-set_library(opencv_cudaoptflow ${OPENCV_LIB_DIR} opencv_cudaoptflow)
-set_library(opencv_cudastereo ${OPENCV_LIB_DIR} opencv_cudastereo)
-set_library(opencv_cudawarping ${OPENCV_LIB_DIR} opencv_cudawarping)
-set_library(opencv_features2d ${OPENCV_LIB_DIR} opencv_features2d)
-set_library(opencv_flann ${OPENCV_LIB_DIR} opencv_flann)
-set_library(opencv_highgui ${OPENCV_LIB_DIR} opencv_highgui)
-set_library(opencv_imgproc ${OPENCV_LIB_DIR} opencv_imgproc)
-set_library(opencv_legacy ${OPENCV_LIB_DIR} opencv_legacy)
-set_library(opencv_ml ${OPENCV_LIB_DIR} opencv_ml)
-set_library(opencv_nonfree ${OPENCV_LIB_DIR} opencv_nonfree)
-set_library(opencv_objdetect ${OPENCV_LIB_DIR} opencv_objdetect)
-set_library(opencv_ocl ${OPENCV_LIB_DIR} opencv_ocl)
-set_library(opencv_optim ${OPENCV_LIB_DIR} opencv_optim)
-set_library(opencv_photo ${OPENCV_LIB_DIR} opencv_photo)
-set_library(opencv_shape ${OPENCV_LIB_DIR} opencv_shape)
-set_library(opencv_softcascade ${OPENCV_LIB_DIR} opencv_softcascade)
-set_library(opencv_stitching ${OPENCV_LIB_DIR} opencv_stitching)
-set_library(opencv_superres ${OPENCV_LIB_DIR} opencv_superres)
-set_library(opencv_ts ${OPENCV_LIB_DIR} opencv_ts)
-set_library(opencv_video ${OPENCV_LIB_DIR} opencv_video)
-set_library(opencv_videostab ${OPENCV_LIB_DIR} opencv_videostab)
-set_library(openmp ${OPENMP_PREFIX}/lib iomp5)
-set_library(openssl ${OPENSSL_PREFIX}/lib crypto ssl)
-set_library(protobuf ${PROTOBUF_PREFIX}/lib protobuf)
-set_library(readline ${READLINE_PREFIX}/lib readline history)
-set_library(shark ${SHARK_PREFIX}/lib shark)
-set_library(tbb ${TBB_PREFIX}/lib tbb)
-set_library(zlib ${ZLIB_PREFIX}/lib z)
+set_libraries(clang_tooling ${CLANG_LIB_DIR} clangTooling)
+set_libraries(curl-asio ${CURL_ASIO_PREFIX}/lib curlasio)
+set_libraries(dlib ${DLIB_PREFIX}/lib dlib)
+set_libraries(eigen "")  # Eigen is header only.
+set_libraries(flex ${FLEX_PREFIX}/lib fl)
+set_libraries(g2log ${G2LOG_PREFIX}/lib lib_activeobject lib_g2logger)
+set_libraries(gflags ${GFLAGS_PREFIX}/lib gflags)
+set_libraries(gmock ${GMOCK_PREFIX}/lib gmock gmock_main)
+set_libraries(gmp ${GMP_PREFIX}/lib gmp)
+set_libraries(gtest ${GTEST_PREFIX}/lib gtest gtest_main)
+set_libraries(jsoncpp ${JSONCPP_PREFIX}/lib jsoncpp)
+set_libraries(libcurl ${LIBCURL_PREFIX}/lib curl)
+set_libraries(libcxx ${LIBCXX_PREFIX}/lib c++)
+set_libraries(libcxxabi ${LIBCXXABI_PREFIX}/lib c++abi)
+set_libraries(libxml ${LIBXML_PREFIX}/lib xml2)
+set_libraries(llvm_aarch64_asm_parser ${LLVM_LIB_DIR} LLVMAArch64AsmParser)
+set_libraries(llvm_aarch64_asm_printer ${LLVM_LIB_DIR} LLVMAArch64AsmPrinter)
+set_libraries(llvm_aarch64_code_gen ${LLVM_LIB_DIR} LLVMAArch64CodeGen)
+set_libraries(llvm_aarch64_desc ${LLVM_LIB_DIR} LLVMAArch64Desc)
+set_libraries(llvm_aarch64_disassembler ${LLVM_LIB_DIR} LLVMAArch64Disassembler)
+set_libraries(llvm_aarch64_info ${LLVM_LIB_DIR} LLVMAArch64Info)
+set_libraries(llvm_aarch64_utils ${LLVM_LIB_DIR} LLVMAArch64Utils)
+set_libraries(llvm_analysis ${LLVM_LIB_DIR} LLVMAnalysis)
+set_libraries(llvm_arm_asm_parser ${LLVM_LIB_DIR} LLVMARMAsmParser)
+set_libraries(llvm_arm_asm_printer ${LLVM_LIB_DIR} LLVMARMAsmPrinter)
+set_libraries(llvm_arm_code_gen ${LLVM_LIB_DIR} LLVMARMCodeGen)
+set_libraries(llvm_arm_desc ${LLVM_LIB_DIR} LLVMARMDesc)
+set_libraries(llvm_arm_disassembler ${LLVM_LIB_DIR} LLVMARMDisassembler)
+set_libraries(llvm_arm_info ${LLVM_LIB_DIR} LLVMARMInfo)
+set_libraries(llvm_asm_parser ${LLVM_LIB_DIR} LLVMAsmParser)
+set_libraries(llvm_asm_printer ${LLVM_LIB_DIR} LLVMAsmPrinter)
+set_libraries(llvm_bit_reader ${LLVM_LIB_DIR} LLVMBitReader)
+set_libraries(llvm_bit_writer ${LLVM_LIB_DIR} LLVMBitWriter)
+set_libraries(llvm_code_gen ${LLVM_LIB_DIR} LLVMCodeGen)
+set_libraries(llvm_core ${LLVM_LIB_DIR} LLVMCore)
+set_libraries(llvm_cpp_backend_code_gen ${LLVM_LIB_DIR} LLVMCppBackendCodeGen)
+set_libraries(llvm_cpp_backend_info ${LLVM_LIB_DIR} LLVMCppBackendInfo)
+set_libraries(llvm_debug_info ${LLVM_LIB_DIR} LLVMDebugInfo)
+set_libraries(llvm_execution_engine ${LLVM_LIB_DIR} LLVMExecutionEngine)
+set_libraries(llvm_hexagon_asm_printer ${LLVM_LIB_DIR} LLVMHexagonAsmPrinter)
+set_libraries(llvm_hexagon_code_gen ${LLVM_LIB_DIR} LLVMHexagonCodeGen)
+set_libraries(llvm_hexagon_desc ${LLVM_LIB_DIR} LLVMHexagonDesc)
+set_libraries(llvm_hexagon_info ${LLVM_LIB_DIR} LLVMHexagonInfo)
+set_libraries(llvm_inst_combine ${LLVM_LIB_DIR} LLVMInstCombine)
+set_libraries(llvm_instrumentation ${LLVM_LIB_DIR} LLVMInstrumentation)
+set_libraries(llvm_interpreter ${LLVM_LIB_DIR} LLVMInterpreter)
+set_libraries(llvm_ipa ${LLVM_LIB_DIR} LLVMipa)
+set_libraries(llvm_ipo ${LLVM_LIB_DIR} LLVMipo)
+set_libraries(llvm_ir_reader ${LLVM_LIB_DIR} LLVMIRReader)
+set_libraries(llvm_jit ${LLVM_LIB_DIR} LLVMJIT)
+set_libraries(llvm_linker ${LLVM_LIB_DIR} LLVMLinker)
+set_libraries(llvm_lto ${LLVM_LIB_DIR} LLVMLTO)
+set_libraries(llvm_mc ${LLVM_LIB_DIR} LLVMMC)
+set_libraries(llvm_mc_disassembler ${LLVM_LIB_DIR} LLVMMCDisassembler)
+set_libraries(llvm_mc_jit ${LLVM_LIB_DIR} LLVMMCJIT)
+set_libraries(llvm_mc_parser ${LLVM_LIB_DIR} LLVMMCParser)
+set_libraries(llvm_mips_asm_parser ${LLVM_LIB_DIR} LLVMMipsAsmParser)
+set_libraries(llvm_mips_asm_printer ${LLVM_LIB_DIR} LLVMMipsAsmPrinter)
+set_libraries(llvm_mips_code_gen ${LLVM_LIB_DIR} LLVMMipsCodeGen)
+set_libraries(llvm_mips_desc ${LLVM_LIB_DIR} LLVMMipsDesc)
+set_libraries(llvm_mips_disassembler ${LLVM_LIB_DIR} LLVMMipsDisassembler)
+set_libraries(llvm_mips_info ${LLVM_LIB_DIR} LLVMMipsInfo)
+set_libraries(llvm_msp430_asm_printer ${LLVM_LIB_DIR} LLVMMSP430AsmPrinter)
+set_libraries(llvm_msp430_code_gen ${LLVM_LIB_DIR} LLVMMSP430CodeGen)
+set_libraries(llvm_msp430_desc ${LLVM_LIB_DIR} LLVMMSP430Desc)
+set_libraries(llvm_msp430_info ${LLVM_LIB_DIR} LLVMMSP430Info)
+set_libraries(llvm_nvptx_asm_printer ${LLVM_LIB_DIR} LLVMNVPTXAsmPrinter)
+set_libraries(llvm_nvptx_code_gen ${LLVM_LIB_DIR} LLVMNVPTXCodeGen)
+set_libraries(llvm_nvptx_desc ${LLVM_LIB_DIR} LLVMNVPTXDesc)
+set_libraries(llvm_nvptx_info ${LLVM_LIB_DIR} LLVMNVPTXInfo)
+set_libraries(llvm_obj_carcopts ${LLVM_LIB_DIR} LLVMObjCARCOpts)
+set_libraries(llvm_object ${LLVM_LIB_DIR} LLVMObject)
+set_libraries(llvm_option ${LLVM_LIB_DIR} LLVMOption)
+set_libraries(llvm_power_pcasm_parser ${LLVM_LIB_DIR} LLVMPowerPCAsmParser)
+set_libraries(llvm_power_pcasm_printer ${LLVM_LIB_DIR} LLVMPowerPCAsmPrinter)
+set_libraries(llvm_power_pccode_gen ${LLVM_LIB_DIR} LLVMPowerPCCodeGen)
+set_libraries(llvm_power_pcdesc ${LLVM_LIB_DIR} LLVMPowerPCDesc)
+set_libraries(llvm_power_pcdisassembler ${LLVM_LIB_DIR} LLVMPowerPCDisassembler)
+set_libraries(llvm_power_pcinfo ${LLVM_LIB_DIR} LLVMPowerPCInfo)
+set_libraries(llvm_r600_asm_printer ${LLVM_LIB_DIR} LLVMR600AsmPrinter)
+set_libraries(llvm_r600_code_gen ${LLVM_LIB_DIR} LLVMR600CodeGen)
+set_libraries(llvm_r600_desc ${LLVM_LIB_DIR} LLVMR600Desc)
+set_libraries(llvm_r600_info ${LLVM_LIB_DIR} LLVMR600Info)
+set_libraries(llvm_runtime_dyld ${LLVM_LIB_DIR} LLVMRuntimeDyld)
+set_libraries(llvm_scalar_opts ${LLVM_LIB_DIR} LLVMScalarOpts)
+set_libraries(llvm_selection_dag ${LLVM_LIB_DIR} LLVMSelectionDAG)
+set_libraries(llvm_sparc_asm_parser ${LLVM_LIB_DIR} LLVMSparcAsmParser)
+set_libraries(llvm_sparc_asm_printer ${LLVM_LIB_DIR} LLVMSparcAsmPrinter)
+set_libraries(llvm_sparc_code_gen ${LLVM_LIB_DIR} LLVMSparcCodeGen)
+set_libraries(llvm_sparc_desc ${LLVM_LIB_DIR} LLVMSparcDesc)
+set_libraries(llvm_sparc_disassembler ${LLVM_LIB_DIR} LLVMSparcDisassembler)
+set_libraries(llvm_sparc_info ${LLVM_LIB_DIR} LLVMSparcInfo)
+set_libraries(llvm_support ${LLVM_LIB_DIR} LLVMSupport)
+set_libraries(llvm_system_zasm_parser ${LLVM_LIB_DIR} LLVMSystemZAsmParser)
+set_libraries(llvm_system_zasm_printer ${LLVM_LIB_DIR} LLVMSystemZAsmPrinter)
+set_libraries(llvm_system_zcode_gen ${LLVM_LIB_DIR} LLVMSystemZCodeGen)
+set_libraries(llvm_system_zdesc ${LLVM_LIB_DIR} LLVMSystemZDesc)
+set_libraries(llvm_system_zdisassembler ${LLVM_LIB_DIR} LLVMSystemZDisassembler)
+set_libraries(llvm_system_zinfo ${LLVM_LIB_DIR} LLVMSystemZInfo)
+set_libraries(llvm_table_gen ${LLVM_LIB_DIR} LLVMTableGen)
+set_libraries(llvm_target ${LLVM_LIB_DIR} LLVMTarget)
+set_libraries(llvm_transform_utils ${LLVM_LIB_DIR} LLVMTransformUtils)
+set_libraries(llvm_vectorize ${LLVM_LIB_DIR} LLVMVectorize)
+set_libraries(llvm_x86_asm_parser ${LLVM_LIB_DIR} LLVMX86AsmParser)
+set_libraries(llvm_x86_asm_printer ${LLVM_LIB_DIR} LLVMX86AsmPrinter)
+set_libraries(llvm_x86_code_gen ${LLVM_LIB_DIR} LLVMX86CodeGen)
+set_libraries(llvm_x86_desc ${LLVM_LIB_DIR} LLVMX86Desc)
+set_libraries(llvm_x86_disassembler ${LLVM_LIB_DIR} LLVMX86Disassembler)
+set_libraries(llvm_x86_info ${LLVM_LIB_DIR} LLVMX86Info)
+set_libraries(llvm_x86_utils ${LLVM_LIB_DIR} LLVMX86Utils)
+set_libraries(llvm_xcore_asm_printer ${LLVM_LIB_DIR} LLVMXCoreAsmPrinter)
+set_libraries(llvm_xcore_code_gen ${LLVM_LIB_DIR} LLVMXCoreCodeGen)
+set_libraries(llvm_xcore_desc ${LLVM_LIB_DIR} LLVMXCoreDesc)
+set_libraries(llvm_xcore_disassembler ${LLVM_LIB_DIR} LLVMXCoreDisassembler)
+set_libraries(llvm_xcore_info ${LLVM_LIB_DIR} LLVMXCoreInfo)
+set_libraries(marisa_trie ${MARISA_TRIE_PREFIX}/lib marisa)
+set_libraries(mili "")  # Mili is header only.
+set_libraries(mpc ${MPC_PREFIX}/lib mpc)
+set_libraries(mpfr ${MPFR_PREFIX}/lib mpfr)
+set_libraries(mysqlcppconn ${MYSQLCPPCONN_PREFIX}/lib mysqlcppconn)
+set_libraries(opencv_bioinspired ${OPENCV_LIB_DIR} opencv_bioinspired)
+set_libraries(opencv_calib3d ${OPENCV_LIB_DIR} opencv_calib3d)
+set_libraries(opencv_contrib ${OPENCV_LIB_DIR} opencv_contrib)
+set_libraries(opencv_core ${OPENCV_LIB_DIR} opencv_core)
+set_libraries(opencv_cuda ${OPENCV_LIB_DIR} opencv_cuda)
+set_libraries(opencv_cudaarithm ${OPENCV_LIB_DIR} opencv_cudaarithm)
+set_libraries(opencv_cudabgsegm ${OPENCV_LIB_DIR} opencv_cudabgsegm)
+set_libraries(opencv_cudafeatures2d ${OPENCV_LIB_DIR} opencv_cudafeatures2d)
+set_libraries(opencv_cudafilters ${OPENCV_LIB_DIR} opencv_cudafilters)
+set_libraries(opencv_cudaimgproc ${OPENCV_LIB_DIR} opencv_cudaimgproc)
+set_libraries(opencv_cudaoptflow ${OPENCV_LIB_DIR} opencv_cudaoptflow)
+set_libraries(opencv_cudastereo ${OPENCV_LIB_DIR} opencv_cudastereo)
+set_libraries(opencv_cudawarping ${OPENCV_LIB_DIR} opencv_cudawarping)
+set_libraries(opencv_features2d ${OPENCV_LIB_DIR} opencv_features2d)
+set_libraries(opencv_flann ${OPENCV_LIB_DIR} opencv_flann)
+set_libraries(opencv_highgui ${OPENCV_LIB_DIR} opencv_highgui)
+set_libraries(opencv_imgproc ${OPENCV_LIB_DIR} opencv_imgproc)
+set_libraries(opencv_legacy ${OPENCV_LIB_DIR} opencv_legacy)
+set_libraries(opencv_ml ${OPENCV_LIB_DIR} opencv_ml)
+set_libraries(opencv_nonfree ${OPENCV_LIB_DIR} opencv_nonfree)
+set_libraries(opencv_objdetect ${OPENCV_LIB_DIR} opencv_objdetect)
+set_libraries(opencv_ocl ${OPENCV_LIB_DIR} opencv_ocl)
+set_libraries(opencv_optim ${OPENCV_LIB_DIR} opencv_optim)
+set_libraries(opencv_photo ${OPENCV_LIB_DIR} opencv_photo)
+set_libraries(opencv_shape ${OPENCV_LIB_DIR} opencv_shape)
+set_libraries(opencv_softcascade ${OPENCV_LIB_DIR} opencv_softcascade)
+set_libraries(opencv_stitching ${OPENCV_LIB_DIR} opencv_stitching)
+set_libraries(opencv_superres ${OPENCV_LIB_DIR} opencv_superres)
+set_libraries(opencv_ts ${OPENCV_LIB_DIR} opencv_ts)
+set_libraries(opencv_video ${OPENCV_LIB_DIR} opencv_video)
+set_libraries(opencv_videostab ${OPENCV_LIB_DIR} opencv_videostab)
+set_libraries(openmp ${OPENMP_PREFIX}/lib iomp5)
+set_libraries(openssl ${OPENSSL_PREFIX}/lib crypto ssl)
+set_libraries(protobuf ${PROTOBUF_PREFIX}/lib protobuf)
+set_libraries(readline ${READLINE_PREFIX}/lib readline history)
+set_libraries(shark ${SHARK_PREFIX}/lib shark)
+set_libraries(tbb ${TBB_PREFIX}/lib tbb)
+set_libraries(zlib ${ZLIB_PREFIX}/lib z)
 
 # Dependencies. We must be careful to define a DAG.
-add_library_dependency(boost_filesystem third_party.boost_system)
-add_library_dependency(openssl third_party.gmp)
-add_library_dependency(libcurl third_party.openssl third_party.zlib)
-add_library_dependency(curl-asio third_party.boost_system third_party.libcurl)
-add_library_dependency(readline ncurses)
-add_library_dependency(shark third_party.boost_serialization)
+add_library_dependencies(boost_filesystem third_party.boost_system)
+add_library_dependencies(openssl third_party.gmp)
+add_library_dependencies(libcurl third_party.openssl third_party.zlib)
+add_library_dependencies(curl-asio third_party.boost_system third_party.libcurl)
+add_library_dependencies(readline ncurses)
+add_library_dependencies(shark third_party.boost_serialization)
 
 # Aliases.
-add_library_dependency(boost_asio third_party.boost_system)
+add_library_dependencies(boost_asio third_party.boost_system)
 
 # Corrects library targets for modular libraries.
 set_target_for_libraries(
@@ -577,8 +590,8 @@ add_external_project_step(${ARABICA_TARGET} set_install_names
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${ARABICA_PREFIX}/lib)
-add_include_directory(${ARABICA_PREFIX}/include)
-add_include_directory(${ARABICA_PREFIX}/include/arabica)
+set_include_directories(
+    arabica ${ARABICA_PREFIX}/include ${ARABICA_PREFIX}/include/arabica)
 add_dependencies(${ARABICA_TARGET} ${BOOST_TARGET})
 add_dependencies(${ARABICA_TARGET} ${LIBXML_TARGET})
 
@@ -683,7 +696,7 @@ else ()
   set(BOOST_PREFIX ${BOOST_ROOT})
   add_custom_target(${BOOST_TARGET})
 endif ()
-add_include_directory(${BOOST_PREFIX}/include)
+set_include_directories(boost ${BOOST_PREFIX}/include)
 
 ################################################################################
 # bsdiff.
@@ -752,7 +765,7 @@ add_external_project_step(
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${CLANG_PREFIX}/lib)
-add_include_directory(${CLANG_PREFIX}/include)
+set_include_directories(clang ${CLANG_PREFIX}/include)
 
 ################################################################################
 # Clang/OpenMP - OpenMP compatible clang compiler.
@@ -810,7 +823,7 @@ add_external_project_step(
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${CURL_ASIO_PREFIX}/lib)
-add_include_directory(${CURL_ASIO_PREFIX}/include)
+set_include_directories(curl-asio ${CURL_ASIO_PREFIX}/include)
 add_dependencies(${CURL_ASIO_TARGET} ${BOOST_TARGET})
 add_dependencies(${CURL_ASIO_TARGET} ${LIBCURL_TARGET})
 
@@ -845,7 +858,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       find . -name "*.h" |
       cpio -dp <INSTALL_DIR>/include/dlib)
-add_include_directory(${DLIB_PREFIX}/include)
+set_include_directories(dlib ${DLIB_PREFIX}/include)
 
 ################################################################################
 # Eigen.
@@ -870,7 +883,7 @@ add_external_project(
       -DGMP_LIBRARIES=${GMP_PREFIX}/lib
       -DMPFR_INCLUDES=${MPFR_PREFIX}/include
       -DMPFR_LIBRARIES=${MPFR_PREFIX}/lib)
-add_include_directory(${EIGEN_INCLUDE_PATH})
+set_include_directories(eigen ${EIGEN_INCLUDE_PATH})
 add_dependencies(${EIGEN_TARGET} ${GMP_TARGET})
 add_dependencies(${EIGEN_TARGET} ${MPFR_TARGET})
 
@@ -889,7 +902,7 @@ add_external_project(
           ${FLEX_PREFIX}/download/flex-2.5.37.tar.bz2
   CONFIGURE_COMMAND ./configure --prefix=${FLEX_PREFIX} ${HOST}
   BUILD_IN_SOURCE 1)
-add_include_directory(${FLEX_PREFIX}/include)
+set_include_directories(flex ${FLEX_PREFIX}/include)
 set(FLEX_EXECUTABLE ${FLEX_PREFIX}/bin/flex++)
 
 ################################################################################
@@ -940,7 +953,7 @@ add_external_project(
       cd <SOURCE_DIR>/src &&
       find . -name "*.h" |
       cpio -dp <INSTALL_DIR>/include/g2log)
-add_include_directory(${G2LOG_PREFIX}/include)
+set_include_directories(g2log ${G2LOG_PREFIX}/include)
 
 ################################################################################
 # GNU GCC compiler.
@@ -988,7 +1001,7 @@ add_external_project(
           CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${CONFIGURE_LIB_TYPE})
-add_include_directory(${GFLAGS_PREFIX}/include)
+set_include_directories(gflags ${GFLAGS_PREFIX}/include)
 
 ################################################################################
 # gmock.
@@ -1014,7 +1027,7 @@ add_external_project(
       find . -name "*${CMAKE_STATIC_LIBRARY_SUFFIX}" | cpio -dp <INSTALL_DIR>/lib &&
       cd <SOURCE_DIR>/include &&
       find . -name "*.h" | cpio -dp <INSTALL_DIR>/include)
-add_include_directory(${GMOCK_PREFIX}/include)
+set_include_directories(gmock ${GMOCK_PREFIX}/include)
 
 ################################################################################
 # GMP.
@@ -1041,7 +1054,7 @@ add_external_project(
           ${GMP_PREFIX}/download/gmp-5.1.3.tar.bz2
   CONFIGURE_COMMAND ${CONFIGURE_COMMAND}
   BUILD_IN_SOURCE 1)
-add_include_directory(${GMP_PREFIX}/include)
+set_include_directories(gmp ${GMP_PREFIX}/include)
 add_dependencies(${GMP_TARGET} ${GNUTAR_TARGET})
 
 ################################################################################
@@ -1127,7 +1140,7 @@ add_external_project(
     find . -name "*${CMAKE_STATIC_LIBRARY_SUFFIX}" | cpio -dp <INSTALL_DIR>/lib &&
     cd <SOURCE_DIR>/include &&
     find . -name "*.h" | cpio -dp <INSTALL_DIR>/include)
-add_include_directory(${GTEST_PREFIX}/include)
+set_include_directories(gtest ${GTEST_PREFIX}/include)
 
 ################################################################################
 # HAProxy. TODO(qfiard): Make portable.
@@ -1240,7 +1253,7 @@ add_external_project(
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
       -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${JSONCPP_PREFIX})
-add_include_directory(${JSONCPP_PREFIX}/include)
+set_include_directories(jsoncpp ${JSONCPP_PREFIX}/include)
 
 ################################################################################
 # LDAP.
@@ -1314,7 +1327,7 @@ add_external_project(
       CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
       LDFLAGS=${LIBCURL_LINKER_FLAGS}
       ${CONFIGURE_LIB_TYPE})
-add_include_directory(${LIBCURL_PREFIX}/include)
+set_include_directories(libcurl ${LIBCURL_PREFIX}/include)
 add_dependencies(${LIBCURL_TARGET} ${OPENSSL_TARGET})
 add_dependencies(${LIBCURL_TARGET} ${ZLIB_TARGET})
 
@@ -1485,8 +1498,8 @@ add_external_project(
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${WITH_PYTHON}
           ${CONFIGURE_LIB_TYPE})
-add_include_directory(${LIBXML_PREFIX}/include)
-add_include_directory(${LIBXML_PREFIX}/include/libxml2)
+set_include_directories(
+    libxml ${LIBXML_PREFIX}/include ${LIBXML_PREFIX}/include/libxml2)
 add_dependencies(${LIBXML_TARGET} ${XZ_TARGET})
 add_dependencies(${LIBXML_TARGET} ${ZLIB_TARGET})
 
@@ -1510,7 +1523,7 @@ add_external_project(
           CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${CONFIGURE_LIB_TYPE})
-add_include_directory(${MARISA_TRIE_PREFIX}/include)
+set_include_directories(marisa_trie ${MARISA_TRIE_PREFIX}/include)
 
 ################################################################################
 # Maven.
@@ -1596,7 +1609,7 @@ add_external_project(
   BUILD_COMMAND echo ""
   INSTALL_COMMAND find mili | cpio -dp <INSTALL_DIR>/include
   BUILD_IN_SOURCE 1)
-add_include_directory(${MILI_PREFIX}/include)
+set_include_directories(mili ${MILI_PREFIX}/include)
 
 ################################################################################
 # MPC.
@@ -1620,7 +1633,7 @@ add_external_project(
           CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${CONFIGURE_LIB_TYPE})
-add_include_directory(${MPC_PREFIX}/include)
+set_include_directories(mpc ${MPC_PREFIX}/include)
 add_dependencies(${MPC_TARGET} ${GMP_TARGET})
 add_dependencies(${MPC_TARGET} ${MPFR_TARGET})
 
@@ -1645,7 +1658,7 @@ add_external_project(
           CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${CONFIGURE_LIB_TYPE})
-add_include_directory(${MPFR_PREFIX}/include)
+set_include_directories(mpfr ${MPFR_PREFIX}/include)
 add_dependencies(${MPFR_TARGET} ${GMP_TARGET})
 
 ################################################################################
@@ -1677,7 +1690,7 @@ add_external_project(
       -DWITH_ZLIB=test
       -DZLIB_ROOT=${ZLIB_PREFIX}
       -DWITH_SSL_PATH=${OPENSSL_PREFIX})
-add_include_directory(${MYSQL_PREFIX}/include)
+set_include_directories(mysql ${MYSQL_PREFIX}/include)
 add_dependencies(${MYSQL_TARGET} ${OPENSSL_TARGET})
 add_dependencies(${MYSQL_TARGET} ${ZLIB_TARGET})
 
@@ -1685,7 +1698,7 @@ add_dependencies(${MYSQL_TARGET} ${ZLIB_TARGET})
 # Mysql C++/Connector.
 if (IOS_BUILD OR IOS_SIMULATOR_BUILD)
   add_custom_target(${MYSQLCPPCONN_TARGET})
-  set_library(mysqlcppconn "")
+  set_libraries(mysqlcppconn "")
 else ()
   add_external_project(
     ${MYSQLCPPCONN_TARGET}
@@ -1714,7 +1727,7 @@ else ()
     DEPENDEES install
     DEPENDS ${SET_INSTALL_NAMES}
     WORKING_DIRECTORY ${MYSQLCPPCONN_PREFIX}/lib)
-  add_include_directory(${MYSQLCPPCONN_PREFIX}/include)
+  set_include_directories(mysqlcppconn ${MYSQLCPPCONN_PREFIX}/include)
 endif ()
 
 ################################################################################
@@ -1817,7 +1830,7 @@ add_external_project_step(${OPENCV_TARGET} set_install_names
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${OPENCV_PREFIX}/lib)
-add_include_directory(${OPENCV_PREFIX}/include)
+set_include_directories(opencv ${OPENCV_PREFIX}/include)
 add_dependencies(${OPENCV_TARGET} ${EIGEN_TARGET})
 # add_dependencies(${OPENCV_TARGET} ${GCC_TARGET})
 add_dependencies(${OPENCV_TARGET} ${TBB_PREFIX})
@@ -1852,7 +1865,7 @@ add_external_project_step(${OPENMP_TARGET} set_install_names
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${OPENMP_PREFIX}/lib)
-add_include_directory(${OPENMP_PREFIX}/include)
+set_include_directories(openmp ${OPENMP_PREFIX}/include)
 set(OPENMP_COMPILE_FLAG "-fopenmp")
 add_dependencies(${OPENMP_TARGET} ${GCC_TARGET})
 # add_dependencies(${OPENMP_TARGET} ${CLANG_OMP_TARGET})
@@ -1957,7 +1970,7 @@ else ()
     CONFIGURE_COMMAND ${CONFIGURE_COMMAND}
     BUILD_IN_SOURCE 1)
 endif ()
-add_include_directory(${OPENSSL_PREFIX}/include)
+set_include_directories(openssl ${OPENSSL_PREFIX}/include)
 add_dependencies(${OPENSSL_TARGET} ${GMP_TARGET})
 
 ################################################################################
@@ -2097,7 +2110,7 @@ if (PYTHON_SUPPORTED)
     WORKING_DIRECTORY <SOURCE_DIR>/python)
   add_dependencies(${PROTOBUF_TARGET} ${VIRTUALENV_TARGET})
 endif ()
-add_include_directory(${PROTOBUF_PREFIX}/include)
+set_include_directories(protobuf ${PROTOBUF_PREFIX}/include)
 
 ################################################################################
 # protoc - Google's Protocol Buffers compiler.
@@ -2135,7 +2148,7 @@ add_external_project(
       CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
       LDFLAGS=${LDFLAGS_WITH_ARCHS}
       ${CONFIGURE_LIB_TYPE})
-add_include_directory(${READLINE_PREFIX}/include)
+set_include_directories(readline ${READLINE_PREFIX}/include)
 
 ################################################################################
 # Shark.
@@ -2170,7 +2183,7 @@ add_external_project_step(${SHARK_TARGET} set_install_names
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${SHARK_PREFIX}/lib
 )
-add_include_directory(${SHARK_PREFIX}/include)
+set_include_directories(shark ${SHARK_PREFIX}/include)
 add_definitions(-DSHARK_USE_OPENMP)
 
 # Adds dependencies.
@@ -2214,7 +2227,7 @@ add_external_project_step(${TBB_TARGET} set_install_names
   DEPENDEES install_libs
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${TBB_PREFIX}/lib)
-add_include_directory(${TBB_PREFIX}/include)
+set_include_directories(tbb ${TBB_PREFIX}/include)
 
 ################################################################################
 # virtualenv.
