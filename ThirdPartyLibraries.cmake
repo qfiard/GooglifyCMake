@@ -97,13 +97,15 @@ endfunction()
 
 function(add_target OUT NAME)
   set(${OUT}_PREFIX ${THIRD_PARTY_BINARY_DIR}/${NAME} PARENT_SCOPE)
-  set(${OUT}_TARGET third_party.${NAME}_target PARENT_SCOPE)
+  set(TARGET third_party.${NAME}_target)
+  set(${OUT}_TARGET ${TARGET} PARENT_SCOPE)
+  set(${TARGET} ${TARGET} PARENT_SCOPE)
 endfunction()
 
 macro(set_libraries NAME DIR)
-  set(FULL_NAME third_party.${NAME})
   # Defines the target of the library, by default it is equal to the name of
   # library suffixed with _target.
+  set(FULL_NAME third_party.${NAME})
   set(${FULL_NAME}_target ${FULL_NAME}_target)
   set(third_party.${NAME})
   if (BUILD_SHARED_LIBS AND NOT "${DIR}" STREQUAL "")
