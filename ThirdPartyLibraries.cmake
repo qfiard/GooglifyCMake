@@ -137,6 +137,15 @@ macro(add_library_dependencies NAME)
   endforeach ()
 endmacro()
 
+macro(add_include_dependencies NAME)
+  get_include_directories(third_party.${NAME} INCLUDES)
+  foreach (LIB ${ARGN})
+    get_include_directories(${LIB} LIB_INCLUDES)
+    list(APPEND INCLUDES ${LIB_INCLUDES})
+  endforeach ()
+  set_include_directories(${NAME} ${INCLUDES})
+endmacro()
+
 function(add_external_project NAME)
   ExternalProject_Add(${NAME} ${ARGN})
   set_target_properties(${NAME} PROPERTIES EXCLUDE_FROM_ALL TRUE)
@@ -511,6 +520,43 @@ set_target_for_libraries(
 set(EIGEN_INCLUDE_PATH ${EIGEN_PREFIX}/include/eigen3)
 
 
+# Include directories.
+set_include_directories(
+    arabica ${ARABICA_PREFIX}/include ${ARABICA_PREFIX}/include/arabica)
+set_include_directories(boost ${BOOST_PREFIX}/include)
+set_include_directories(clang ${CLANG_PREFIX}/include)
+set_include_directories(curl-asio ${CURL_ASIO_PREFIX}/include)
+set_include_directories(dlib ${DLIB_PREFIX}/include)
+set_include_directories(eigen ${EIGEN_INCLUDE_PATH})
+set_include_directories(flex ${FLEX_PREFIX}/include)
+set_include_directories(g2log ${G2LOG_PREFIX}/include)
+set_include_directories(gflags ${GFLAGS_PREFIX}/include)
+set_include_directories(gmock ${GMOCK_PREFIX}/include)
+set_include_directories(gmp ${GMP_PREFIX}/include)
+set_include_directories(gtest ${GTEST_PREFIX}/include)
+set_include_directories(jsoncpp ${JSONCPP_PREFIX}/include)
+set_include_directories(libcurl ${LIBCURL_PREFIX}/include)
+set_include_directories(
+    libxml ${LIBXML_PREFIX}/include ${LIBXML_PREFIX}/include/libxml2)
+set_include_directories(marisa_trie ${MARISA_TRIE_PREFIX}/include)
+set_include_directories(mili ${MILI_PREFIX}/include)
+set_include_directories(mpc ${MPC_PREFIX}/include)
+set_include_directories(mpfr ${MPFR_PREFIX}/include)
+set_include_directories(mysql ${MYSQL_PREFIX}/include)
+set_include_directories(mysqlcppconn ${MYSQLCPPCONN_PREFIX}/include)
+set_include_directories(opencv ${OPENCV_PREFIX}/include)
+set_include_directories(openmp ${OPENMP_PREFIX}/include)
+set_include_directories(openssl ${OPENSSL_PREFIX}/include)
+set_include_directories(protobuf ${PROTOBUF_PREFIX}/include)
+set_include_directories(readline ${READLINE_PREFIX}/include)
+set_include_directories(shark ${SHARK_PREFIX}/include)
+set_include_directories(tbb ${TBB_PREFIX}/include)
+
+# Fixing implicit header dependencies. Again we must be careful to define a DAG.
+add_include_dependencies(arabica third_party.libxml)
+
+
+# 3rd-party executables.
 set(GNUGREP ${GNUGREP_PREFIX}/bin/grep)
 set(GNUTAR ${GNUTAR_PREFIX}/bin/tar)
 set(MVN ${MAVEN_PREFIX}/bin/mvn)
@@ -591,8 +637,6 @@ add_external_project_step(${ARABICA_TARGET} set_install_names
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${ARABICA_PREFIX}/lib)
-set_include_directories(
-    arabica ${ARABICA_PREFIX}/include ${ARABICA_PREFIX}/include/arabica)
 add_dependencies(${ARABICA_TARGET} ${BOOST_TARGET})
 add_dependencies(${ARABICA_TARGET} ${LIBXML_TARGET})
 
@@ -697,7 +741,6 @@ else ()
   set(BOOST_PREFIX ${BOOST_ROOT})
   add_custom_target(${BOOST_TARGET})
 endif ()
-set_include_directories(boost ${BOOST_PREFIX}/include)
 
 ################################################################################
 # bsdiff.
@@ -766,7 +809,6 @@ add_external_project_step(
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${CLANG_PREFIX}/lib)
-set_include_directories(clang ${CLANG_PREFIX}/include)
 
 ################################################################################
 # Clang/OpenMP - OpenMP compatible clang compiler.
@@ -824,7 +866,6 @@ add_external_project_step(
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${CURL_ASIO_PREFIX}/lib)
-set_include_directories(curl-asio ${CURL_ASIO_PREFIX}/include)
 add_dependencies(${CURL_ASIO_TARGET} ${BOOST_TARGET})
 add_dependencies(${CURL_ASIO_TARGET} ${LIBCURL_TARGET})
 
@@ -859,7 +900,6 @@ add_external_project(
       cd <SOURCE_DIR> &&
       find . -name "*.h" |
       cpio -dp <INSTALL_DIR>/include/dlib)
-set_include_directories(dlib ${DLIB_PREFIX}/include)
 
 ################################################################################
 # Eigen.
@@ -884,7 +924,6 @@ add_external_project(
       -DGMP_LIBRARIES=${GMP_PREFIX}/lib
       -DMPFR_INCLUDES=${MPFR_PREFIX}/include
       -DMPFR_LIBRARIES=${MPFR_PREFIX}/lib)
-set_include_directories(eigen ${EIGEN_INCLUDE_PATH})
 add_dependencies(${EIGEN_TARGET} ${GMP_TARGET})
 add_dependencies(${EIGEN_TARGET} ${MPFR_TARGET})
 
@@ -903,7 +942,6 @@ add_external_project(
           ${FLEX_PREFIX}/download/flex-2.5.37.tar.bz2
   CONFIGURE_COMMAND ./configure --prefix=${FLEX_PREFIX} ${HOST}
   BUILD_IN_SOURCE 1)
-set_include_directories(flex ${FLEX_PREFIX}/include)
 set(FLEX_EXECUTABLE ${FLEX_PREFIX}/bin/flex++)
 
 ################################################################################
@@ -954,7 +992,6 @@ add_external_project(
       cd <SOURCE_DIR>/src &&
       find . -name "*.h" |
       cpio -dp <INSTALL_DIR>/include/g2log)
-set_include_directories(g2log ${G2LOG_PREFIX}/include)
 
 ################################################################################
 # GNU GCC compiler.
@@ -1002,7 +1039,6 @@ add_external_project(
           CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${CONFIGURE_LIB_TYPE})
-set_include_directories(gflags ${GFLAGS_PREFIX}/include)
 
 ################################################################################
 # gmock.
@@ -1028,7 +1064,6 @@ add_external_project(
       find . -name "*${CMAKE_STATIC_LIBRARY_SUFFIX}" | cpio -dp <INSTALL_DIR>/lib &&
       cd <SOURCE_DIR>/include &&
       find . -name "*.h" | cpio -dp <INSTALL_DIR>/include)
-set_include_directories(gmock ${GMOCK_PREFIX}/include)
 
 ################################################################################
 # GMP.
@@ -1055,7 +1090,6 @@ add_external_project(
           ${GMP_PREFIX}/download/gmp-5.1.3.tar.bz2
   CONFIGURE_COMMAND ${CONFIGURE_COMMAND}
   BUILD_IN_SOURCE 1)
-set_include_directories(gmp ${GMP_PREFIX}/include)
 add_dependencies(${GMP_TARGET} ${GNUTAR_TARGET})
 
 ################################################################################
@@ -1141,7 +1175,6 @@ add_external_project(
     find . -name "*${CMAKE_STATIC_LIBRARY_SUFFIX}" | cpio -dp <INSTALL_DIR>/lib &&
     cd <SOURCE_DIR>/include &&
     find . -name "*.h" | cpio -dp <INSTALL_DIR>/include)
-set_include_directories(gtest ${GTEST_PREFIX}/include)
 
 ################################################################################
 # HAProxy. TODO(qfiard): Make portable.
@@ -1254,7 +1287,6 @@ add_external_project(
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
       -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${JSONCPP_PREFIX})
-set_include_directories(jsoncpp ${JSONCPP_PREFIX}/include)
 
 ################################################################################
 # LDAP.
@@ -1328,7 +1360,6 @@ add_external_project(
       CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
       LDFLAGS=${LIBCURL_LINKER_FLAGS}
       ${CONFIGURE_LIB_TYPE})
-set_include_directories(libcurl ${LIBCURL_PREFIX}/include)
 add_dependencies(${LIBCURL_TARGET} ${OPENSSL_TARGET})
 add_dependencies(${LIBCURL_TARGET} ${ZLIB_TARGET})
 
@@ -1499,8 +1530,6 @@ add_external_project(
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${WITH_PYTHON}
           ${CONFIGURE_LIB_TYPE})
-set_include_directories(
-    libxml ${LIBXML_PREFIX}/include ${LIBXML_PREFIX}/include/libxml2)
 add_dependencies(${LIBXML_TARGET} ${XZ_TARGET})
 add_dependencies(${LIBXML_TARGET} ${ZLIB_TARGET})
 
@@ -1524,7 +1553,6 @@ add_external_project(
           CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${CONFIGURE_LIB_TYPE})
-set_include_directories(marisa_trie ${MARISA_TRIE_PREFIX}/include)
 
 ################################################################################
 # Maven.
@@ -1610,7 +1638,6 @@ add_external_project(
   BUILD_COMMAND echo ""
   INSTALL_COMMAND find mili | cpio -dp <INSTALL_DIR>/include
   BUILD_IN_SOURCE 1)
-set_include_directories(mili ${MILI_PREFIX}/include)
 
 ################################################################################
 # MPC.
@@ -1634,7 +1661,6 @@ add_external_project(
           CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${CONFIGURE_LIB_TYPE})
-set_include_directories(mpc ${MPC_PREFIX}/include)
 add_dependencies(${MPC_TARGET} ${GMP_TARGET})
 add_dependencies(${MPC_TARGET} ${MPFR_TARGET})
 
@@ -1659,7 +1685,6 @@ add_external_project(
           CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${CONFIGURE_LIB_TYPE})
-set_include_directories(mpfr ${MPFR_PREFIX}/include)
 add_dependencies(${MPFR_TARGET} ${GMP_TARGET})
 
 ################################################################################
@@ -1691,7 +1716,6 @@ add_external_project(
       -DWITH_ZLIB=test
       -DZLIB_ROOT=${ZLIB_PREFIX}
       -DWITH_SSL_PATH=${OPENSSL_PREFIX})
-set_include_directories(mysql ${MYSQL_PREFIX}/include)
 add_dependencies(${MYSQL_TARGET} ${OPENSSL_TARGET})
 add_dependencies(${MYSQL_TARGET} ${ZLIB_TARGET})
 
@@ -1728,8 +1752,7 @@ else ()
     DEPENDEES install
     DEPENDS ${SET_INSTALL_NAMES}
     WORKING_DIRECTORY ${MYSQLCPPCONN_PREFIX}/lib)
-  set_include_directories(mysqlcppconn ${MYSQLCPPCONN_PREFIX}/include)
-endif ()
+  endif ()
 
 ################################################################################
 # Nginx.
@@ -1831,7 +1854,6 @@ add_external_project_step(${OPENCV_TARGET} set_install_names
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${OPENCV_PREFIX}/lib)
-set_include_directories(opencv ${OPENCV_PREFIX}/include)
 add_dependencies(${OPENCV_TARGET} ${EIGEN_TARGET})
 # add_dependencies(${OPENCV_TARGET} ${GCC_TARGET})
 add_dependencies(${OPENCV_TARGET} ${TBB_PREFIX})
@@ -1866,7 +1888,6 @@ add_external_project_step(${OPENMP_TARGET} set_install_names
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${OPENMP_PREFIX}/lib)
-set_include_directories(openmp ${OPENMP_PREFIX}/include)
 set(OPENMP_COMPILE_FLAG "-fopenmp")
 add_dependencies(${OPENMP_TARGET} ${GCC_TARGET})
 # add_dependencies(${OPENMP_TARGET} ${CLANG_OMP_TARGET})
@@ -1971,7 +1992,6 @@ else ()
     CONFIGURE_COMMAND ${CONFIGURE_COMMAND}
     BUILD_IN_SOURCE 1)
 endif ()
-set_include_directories(openssl ${OPENSSL_PREFIX}/include)
 add_dependencies(${OPENSSL_TARGET} ${GMP_TARGET})
 
 ################################################################################
@@ -2111,7 +2131,6 @@ if (PYTHON_SUPPORTED)
     WORKING_DIRECTORY <SOURCE_DIR>/python)
   add_dependencies(${PROTOBUF_TARGET} ${VIRTUALENV_TARGET})
 endif ()
-set_include_directories(protobuf ${PROTOBUF_PREFIX}/include)
 
 ################################################################################
 # protoc - Google's Protocol Buffers compiler.
@@ -2149,7 +2168,6 @@ add_external_project(
       CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
       LDFLAGS=${LDFLAGS_WITH_ARCHS}
       ${CONFIGURE_LIB_TYPE})
-set_include_directories(readline ${READLINE_PREFIX}/include)
 
 ################################################################################
 # Shark.
@@ -2184,7 +2202,6 @@ add_external_project_step(${SHARK_TARGET} set_install_names
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${SHARK_PREFIX}/lib
 )
-set_include_directories(shark ${SHARK_PREFIX}/include)
 add_definitions(-DSHARK_USE_OPENMP)
 
 # Adds dependencies.
@@ -2228,7 +2245,6 @@ add_external_project_step(${TBB_TARGET} set_install_names
   DEPENDEES install_libs
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${TBB_PREFIX}/lib)
-set_include_directories(tbb ${TBB_PREFIX}/include)
 
 ################################################################################
 # virtualenv.
