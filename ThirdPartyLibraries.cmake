@@ -284,7 +284,6 @@ set_libraries(
 set_libraries(clang_tooling ${CLANG_LIB_DIR} clangTooling)
 set_libraries(curl-asio ${CURL_ASIO_PREFIX}/lib curlasio)
 set_libraries(dlib ${DLIB_PREFIX}/lib dlib)
-set_libraries(eigen "")  # Eigen is header only.
 set_libraries(flex ${FLEX_PREFIX}/lib fl)
 set_libraries(g2log ${G2LOG_PREFIX}/lib lib_activeobject lib_g2logger)
 set_libraries(gflags ${GFLAGS_PREFIX}/lib gflags)
