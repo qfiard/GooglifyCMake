@@ -1584,6 +1584,7 @@ set(MAVEN_CLASSPATH_UPDATE "${THIRD_PARTY_BINARY_DIR}/java/classpath_update")
 add_custom_command(
   OUTPUT ${MAVEN_LAST_DOWNLOAD}
   COMMAND ${MVN} -f ${THIRD_PARTY_SOURCE_DIR}/pom.xml
+      -DprojectBinaryDir=${PROJECT_BINARY_DIR}
       -q dependency:copy-dependencies
   COMMAND date > ${MAVEN_LAST_DOWNLOAD}
   MAIN_DEPENDENCY ${THIRD_PARTY_SOURCE_DIR}/pom.xml)
