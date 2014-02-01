@@ -276,7 +276,8 @@ endfunction()
 function(get_classpath_file_for_target TARGET OUT)
   get_directory_for_target("${TARGET}" TARGET_DIR)
   get_target_name("${TARGET}" TARGET_NAME)
-  set(${OUT} "${TARGET_DIR}/${TARGET_NAME}.classpath_" PARENT_SCOPE)
+  set(${OUT} "${TARGET_DIR}${CMAKE_FILES_DIRECTORY}/${TARGET_NAME}.classpath_"
+      PARENT_SCOPE)
 endfunction(get_classpath_file_for_target)
 
 function(get_classpath_target_for_target TARGET OUT)
@@ -368,8 +369,9 @@ function(j2e_binary TARGET)
     return()
   endif ()
   set(ARCHIVE "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.war")
-  set(TEMP_DIR_PATH "${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.war.dir")
-  set(TEMP_DIR_TARGET "${TARGET}.war.dir")
+  set(TEMP_DIR_PATH
+      "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${TARGET}.war")
+  set(TEMP_DIR_TARGET "${TARGET}.war.dir_")
   add_custom_target(${TEMP_DIR_TARGET})
   add_custom_command(
     TARGET ${TEMP_DIR_TARGET} PRE_BUILD
