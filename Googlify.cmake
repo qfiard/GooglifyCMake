@@ -435,7 +435,9 @@ function(java_library TARGET)
           else\
             javac -d ${CMAKE_CURRENT_BINARY_DIR} ${ABS_SRC}$<SEMICOLON>\
           fi$<SEMICOLON>\
-          IFS=$OIFS"
+          ret_code=$?\
+          IFS=$OIFS\
+          exit $ret_code"
       MAIN_DEPENDENCY ${ABS_SRC}
       VERBATIM)
     list(APPEND CLASS_FILES ${CLASS_FILE})
@@ -503,7 +505,9 @@ function(java_binary TARGET SRC)
         else\
           javac -d ${CMAKE_CURRENT_BINARY_DIR} ${ABS_SRC}$<SEMICOLON>\
         fi$<SEMICOLON>\
-        IFS=$OIFS"
+        ret_code=$?\
+        IFS=$OIFS\
+        exit $ret_code"
     MAIN_DEPENDENCY ${ABS_SRC}
     VERBATIM)
   add_custom_command(
