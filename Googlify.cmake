@@ -41,7 +41,7 @@ function(add_compile_defs TARGET)
   get_full_target(${TARGET} FULL_TARGET)
   get_target_property(DEFS "${FULL_TARGET}" COMPILE_DEFINITIONS)
   if (NOT "${DEFS}")
-    set(DEFS "")
+    set(DEFS)
   endif ()
   set_target_properties(
       "${FULL_TARGET}" PROPERTIES COMPILE_DEFINITIONS "${DEFS} ${ARGN}")
@@ -51,11 +51,21 @@ function(add_cxxflags TARGET)
   get_full_target(${TARGET} FULL_TARGET)
   get_target_property(FLAGS "${FULL_TARGET}" COMPILE_FLAGS)
   if (NOT "${FLAGS}")
-    set(FLAGS "")
+    set(FLAGS)
   endif ()
   set_target_properties(
       "${FULL_TARGET}" PROPERTIES COMPILE_FLAGS "${FLAGS} ${ARGN}")
 endfunction(add_cxxflags)
+
+function(add_linkflags TARGET)
+  get_full_target(${TARGET} FULL_TARGET)
+  get_target_property(FLAGS "${FULL_TARGET}" LINK_FLAGS)
+  if (NOT "${FLAGS}")
+    set(FLAGS)
+  endif ()
+  set_target_properties(
+      "${FULL_TARGET}" PROPERTIES LINK_FLAGS "${FLAGS} ${ARGN}")
+endfunction(add_linkflags)
 
 function(add_data TARGET DATA)
   get_current_prefix(PREFIX)
@@ -693,6 +703,17 @@ endfunction()
 function(objc_test TARGET)
   prepare_sources_for_objc(${ARGN})
   cc_test(${TARGET} ${ARGN})
+  add_linkflags(${TARGET} "-bundle")
+  get_full_target(${TARGET} FULL_TARGET)
+  set_target_properties(${FULL_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
+                        ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY})
+  set(BUNDLE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.xctest)
+  set(EXE_LOCATION ${BUNDLE}/Contents/MacOS)
+  add_custom_command(
+      TARGET ${FULL_TARGET} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${EXE_LOCATION} &&
+              mv $<TARGET_FILE:${FULL_TARGET}> ${EXE_LOCATION}
+      VERBATIM)
 endfunction()
 
 function(prepare_python_package PREFIX OUT)
