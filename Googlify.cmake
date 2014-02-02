@@ -21,6 +21,13 @@ else ()
   option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 endif ()
 
+set(OBJC_TEST_SUPPORTED TRUE)
+find_program(XCTEST xctest)
+if (NOT XCTEST)
+  set(OBJC_TEST_SUPPORTED FALSE)
+  message(WARNING "xctest not found, Objective-C unit testing will be disabled.")
+endif ()
+
 set(PYTHON_SUPPORTED TRUE)
 if (${IOS_BUILD} OR ${IOS_SIMULATOR_BUILD})
   set(PYTHON_SUPPORTED FALSE)
@@ -293,6 +300,12 @@ endfunction(get_classpath_file_for_target)
 function(get_classpath_target_for_target TARGET OUT)
   set(${OUT} "${TARGET}.classpath_" PARENT_SCOPE)
 endfunction(get_classpath_target_for_target)
+
+#! @brief Returns the CMakeFiles subdirectory for the given target.
+function(get_cmake_files_subdir TARGET OUT)
+  get_full_target(${TARGET} FULL_TARGET)
+  set(${OUT} ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${FULL_TARGET}.dir PARENT_SCOPE)
+endfunction()
 
 function(get_directory_for_prefix PREFIX OUT)
   if ("${PREFIX}" STREQUAL "")
@@ -589,6 +602,41 @@ function(link_third_party TARGET LIB)
   link_third_party_with_full_targets("${FULL_TARGET}" ${LIB})
 endfunction(link_third_party)
 
+function(link_third_party_with_full_targets TARGET LIB)
+  get_target_property(IS_JAVA ${TARGET} IS_JAVA)
+  if (${IS_JAVA} STREQUAL TRUE)
+    link_third_party_with_full_targets_java(${TARGET} ${LIB})
+    return()
+  endif ()
+  get_target_property(IS_PYTHON ${TARGET} IS_PYTHON)
+  if (${IS_PYTHON} STREQUAL TRUE)
+    link_third_party_with_full_targets_python(${TARGET} ${LIB})
+    return()
+  endif ()
+  link_third_party_with_full_targets_c(${TARGET} ${LIB})
+endfunction(link_third_party_with_full_targets)
+
+function(link_third_party_with_full_targets_c TARGET LIB)
+  get_target_property(IS_OBJC ${TARGET} IS_OBJC)
+  get_target_property(IS_TEST ${TARGET} IS_TEST)
+  if (IS_OBJC AND IS_TEST AND NOT OBJC_TEST_SUPPORTED)
+    return()
+  endif ()
+  get_target(${LIB} LIB_TARGET)
+  if (NOT LIB_TARGET)
+    message(FATAL_ERROR "No such library: ${LIB}")
+  endif ()
+  add_dependencies(${TARGET} ${LIB_TARGET})
+  get_libraries(${LIB} LIBRARIES)
+  get_include_directories(${LIB} INCLUDE_DIRECTORIES)
+  if (NOT "${LIBRARIES}" STREQUAL "")
+    target_link_libraries(${TARGET} ${LIBRARIES})
+  endif ()
+  if (NOT "${INCLUDE_DIRECTORIES}" STREQUAL "")
+    target_include_directories(${TARGET} PUBLIC ${INCLUDE_DIRECTORIES})
+  endif ()
+endfunction()
+
 function(link_third_party_with_full_targets_java TARGET LIB)
   if (NOT JAVA_SUPPORTED)
     return()
@@ -608,7 +656,7 @@ function(link_third_party_with_full_targets_java TARGET LIB)
         $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE> > /dev/null
     VERBATIM)
   add_dependencies(${CLASSPATH_TARGET} ${LIB_TARGET})
-endfunction(link_third_party_with_full_targets_java)
+endfunction()
 
 function(link_third_party_with_full_targets_python TARGET LIB)
   if (NOT PYTHON_SUPPORTED)
@@ -619,76 +667,59 @@ function(link_third_party_with_full_targets_python TARGET LIB)
     message(FATAL_ERROR "No such library: ${LIB}")
   endif ()
   add_dependencies(${TARGET} ${LIB_TARGET})
-endfunction(link_third_party_with_full_targets_python)
-
-function(link_third_party_with_full_targets TARGET LIB)
-  get_target_property(IS_JAVA "${TARGET}" IS_JAVA)
-  if (${IS_JAVA} STREQUAL TRUE)
-    link_third_party_with_full_targets_java(${TARGET} ${LIB})
-    return()
-  endif ()
-  get_target_property(IS_PYTHON "${TARGET}" IS_PYTHON)
-  if (${IS_PYTHON} STREQUAL TRUE)
-    link_third_party_with_full_targets_python(${TARGET} ${LIB})
-    return()
-  endif ()
-  get_target(${LIB} LIB_TARGET)
-  if (NOT LIB_TARGET)
-    message(FATAL_ERROR "No such library: ${LIB}")
-  endif ()
-  add_dependencies(${TARGET} ${LIB_TARGET})
-  get_libraries(${LIB} LIBRARIES)
-  get_include_directories(${LIB} INCLUDE_DIRECTORIES)
-  if (NOT "${LIBRARIES}" STREQUAL "")
-    target_link_libraries(${TARGET} ${LIBRARIES})
-  endif ()
-  if (NOT "${INCLUDE_DIRECTORIES}" STREQUAL "")
-    target_include_directories(${TARGET} PUBLIC ${INCLUDE_DIRECTORIES})
-  endif ()
-endfunction(link_third_party_with_full_targets)
+endfunction()
 
 function(link_with_cmake_target TARGET LIB)
   get_full_target(${TARGET} FULL_TARGET)
   get_target_property(IS_JAVA ${FULL_TARGET} IS_JAVA)
   if (${IS_JAVA} STREQUAL TRUE)
-    link_with_cmake_target_java(${FULL_TARGET} ${LIB})
+    link_with_full_cmake_target_java(${FULL_TARGET} ${LIB})
     return()
   endif ()
   get_target_property(IS_PYTHON ${FULL_TARGET} IS_PYTHON)
   if (${IS_PYTHON} STREQUAL TRUE)
-    link_with_cmake_target_python(${FULL_TARGET} ${LIB})
+    link_with_full_cmake_target_python(${FULL_TARGET} ${LIB})
     return()
   endif ()
+  link_with_full_cmake_target_c(${FULL_TARGET} ${LIB})
+endfunction()
+
+function(link_with_full_cmake_target_c FULL_TARGET LIB)
+  get_target_property(IS_OBJC ${FULL_TARGET} IS_OBJC)
+  get_target_property(IS_TEST ${FULL_TARGET} IS_TEST)
+  if (IS_OBJC AND IS_TEST AND NOT OBJC_TEST_SUPPORTED)
+    return()
+  endif()
   target_link_libraries(${FULL_TARGET} ${LIB})
 endfunction()
 
-function(link_with_cmake_target_java TARGET LIB)
+function(link_with_full_cmake_target_java FULL_TARGET LIB)
   if (NOT JAVA_SUPPORTED)
     return()
   endif ()
-  get_classpath_target_for_target(${TARGET} CLASSPATH_TARGET)
+  get_classpath_target_for_target(${FULL_TARGET} CLASSPATH_TARGET)
   get_classpath_target_for_target(${LIB} LIB_CLASSPATH_TARGET)
   get_output_file(${LIB} LIB_OUTPUT_FILE)
   add_custom_command(
     TARGET "${CLASSPATH_TARGET}" POST_BUILD
     COMMAND cat "$<TARGET_PROPERTY:${LIB},CLASSPATH_FILE>" >>
-        "$<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>"
+        "$<TARGET_PROPERTY:${FULL_TARGET},CLASSPATH_FILE>"
     COMMAND echo "${LIB_OUTPUT_FILE}" >>
-        "$<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>"
+        "$<TARGET_PROPERTY:${FULL_TARGET},CLASSPATH_FILE>"
     # Remove duplicate lines.
-    COMMAND cat "$<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>" | sort | uniq |
-        tee "$<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>" > /dev/null
+    COMMAND cat "$<TARGET_PROPERTY:${FULL_TARGET},CLASSPATH_FILE>" | sort | uniq |
+        tee "$<TARGET_PROPERTY:${FULL_TARGET},CLASSPATH_FILE>" > /dev/null
     VERBATIM)
-  add_dependencies(${TARGET} ${LIB})
+  add_dependencies(${FULL_TARGET} ${LIB})
   add_dependencies(${CLASSPATH_TARGET} ${LIB_CLASSPATH_TARGET})
-endfunction(link_with_cmake_target_java)
+endfunction()
 
-function(link_with_cmake_target_python TARGET LIB)
+function(link_with_full_cmake_target_python FULL_TARGET LIB)
   if (NOT PYTHON_SUPPORTED)
     return()
   endif ()
-  add_dependencies(${TARGET} ${LIB})
-endfunction(link_with_cmake_target_python)
+  add_dependencies(${FULL_TARGET} ${LIB})
+endfunction()
 
 function(objc_binary TARGET)
   prepare_sources_for_objc(${ARGN})
@@ -701,19 +732,46 @@ function(objc_library TARGET)
 endfunction()
 
 function(objc_test TARGET)
+  get_full_target(${TARGET} FULL_TARGET)
+  if (NOT OBJC_TEST_SUPPORTED)
+    add_custom_target(${FULL_TARGET})
+    set_target_properties(${FULL_TARGET} PROPERTIES IS_OBJC TRUE IS_TEST TRUE)
+    return()
+  endif ()
+
+  get_cmake_files_subdir(${TARGET} CMAKE_FILES_SUBDIR)
+  set(BUNDLE ${CMAKE_FILES_SUBDIR}/${TARGET}.xctest)
+  set(BUNDLE_MACOS_DIR ${BUNDLE}/Contents/MacOS)
+  set(TEST_EXE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET})
+
+  add_custom_command(
+      OUTPUT ${TEST_EXE}
+      COMMAND echo "#!/usr/bin/env bash" > ${TEST_EXE}
+      COMMAND echo "\
+        if [ $# -eq 0 ]$<SEMICOLON> then\
+          ${XCTEST} -XCTest All ${BUNDLE}$<SEMICOLON>\
+        else\
+          ${XCTEST} -XCTest $@ ${BUNDLE}$<SEMICOLON>\
+        fi" >> ${TEST_EXE}
+      COMMAND chmod +x ${TEST_EXE}
+      VERBATIM)
+  set(TEST_EXE_TARGET ${FULL_TARGET}_)
+  add_custom_target(${TEST_EXE_TARGET} SOURCES ${TEST_EXE})
+
   prepare_sources_for_objc(${ARGN})
   cc_test(${TARGET} ${ARGN})
   add_linkflags(${TARGET} "-bundle")
-  get_full_target(${TARGET} FULL_TARGET)
-  set_target_properties(${FULL_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
-                        ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY})
-  set(BUNDLE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}.xctest)
-  set(EXE_LOCATION ${BUNDLE}/Contents/MacOS)
+  set_target_properties(
+      ${FULL_TARGET} PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY ${CMAKE_FILES_SUBDIR}
+      IS_OBJC TRUE
+      IS_TEST TRUE)
   add_custom_command(
       TARGET ${FULL_TARGET} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory ${EXE_LOCATION} &&
-              mv $<TARGET_FILE:${FULL_TARGET}> ${EXE_LOCATION}
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${BUNDLE_MACOS_DIR}
+      COMMAND mv $<TARGET_FILE:${FULL_TARGET}> ${BUNDLE_MACOS_DIR}
       VERBATIM)
+  add_dependencies(${FULL_TARGET} ${TEST_EXE_TARGET})
 endfunction()
 
 function(prepare_python_package PREFIX OUT)
