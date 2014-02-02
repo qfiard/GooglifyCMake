@@ -366,15 +366,14 @@ function(get_target_name TARGET OUT)
   set(${OUT} "${TARGET_NAME}" PARENT_SCOPE)
 endfunction(get_target_name)
 
-function(ios_app TARGET)
+function(ios_app TARGET NAME)
   get_full_target(${TARGET} FULL_TARGET)
   if (NOT IOS_BUILD AND NOT IOS_SIMULATOR_BUILD)
     add_custom_target(${FULL_TARGET})
     set_target_properties(${FULL_TARGET} PROPERTIES IS_IOS_APP TRUE)
     return()
   endif ()
-  underscores_to_camel_case(${TARGET} DIR_NAME)
-  set(DIR_PATH "${CMAKE_CURRENT_BINARY_DIR}/${DIR_NAME}.app")
+  set(DIR_PATH "${CMAKE_CURRENT_BINARY_DIR}/${NAME}.app")
   add_custom_target(${FULL_TARGET} ALL)
   add_custom_command(
     TARGET ${FULL_TARGET} PRE_BUILD
