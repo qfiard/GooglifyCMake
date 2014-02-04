@@ -17,7 +17,7 @@ typedef tools::buildifier::parser::Parser::token token;
 %option noyywrap
 %option c++
 
-NAME [a-zA-Z0-9_\./-:]+
+NAME [a-zA-Z0-9_\./\-:\+]+
 QUOTED_STRING "\""(?:[^"\""\\]|\\.)*"\""
 
 %%
@@ -27,7 +27,7 @@ QUOTED_STRING "\""(?:[^"\""\\]|\\.)*"\""
 \$ { return token::DOLLAR; }
 \{ { return token::LBRACKET; }
 \} { return token::RBRACKET; }
-[ \t] { }  // Ignore whitespace.
+[ \t]+ { return token::SPACE; }
 {NAME} { yylval->string_value = new std::string(yytext); return token::STRING; }
 {QUOTED_STRING} { yylval->string_value = new std::string(yytext); return token::STRING; }
 . { std::cerr << "Unknown token '" << yytext << "'\n"; return 1; }

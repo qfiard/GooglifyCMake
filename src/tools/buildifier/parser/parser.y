@@ -53,7 +53,7 @@ static int yylex(
 %destructor { if($$) { delete $$; $$ = NULL; } } <string_value>
 %destructor { if($$) { delete $$; $$ = NULL; } } <string_vector_value>
 
-%token LPAREN RPAREN NEWLINE DOLLAR IF LBRACKET RBRACKET
+%token LPAREN RPAREN NEWLINE DOLLAR IF LBRACKET RBRACKET SPACE
 %token <string_value> STRING
 %type <string_value> command argument cmake_var cmake_var_name
 %type <string_vector_value> arguments stripped_arguments
@@ -63,12 +63,13 @@ static int yylex(
 %%
 
 build_rules:
-    %empty
-  | build_rule
-  | build_rule new_line_plus build_rules
+    separator_or_empty
+  | build_rule build_rules
 ;
 
-build_rule: command LPAREN arguments RPAREN { processor->AddCommand(*$1, *$3); }
+build_rule: separator_or_empty command LPAREN arguments RPAREN {
+  processor->AddCommand(*$2, *$4);
+}
 ;
 
 command: STRING { $$ = $1; };
@@ -76,6 +77,8 @@ command: STRING { $$ = $1; };
 argument:
     STRING { $$ = $1; }
   | cmake_var { $$ = $1; }
+  | STRING argument { $$ = new std::string(*$1 + *$2); }
+  | cmake_var argument { $$ = new std::string(*$1 + *$2); }
 ;
 
 cmake_var: DOLLAR LBRACKET cmake_var_name RBRACKET {
@@ -88,22 +91,24 @@ cmake_var_name:
 ;
 
 arguments:
-    %empty { $$ = new std::vector<std::string>(); }
-  | new_line_star stripped_arguments new_line_star { $$ = $2; };
+    separator_or_empty { $$ = new std::vector<std::string>(); }
+  | separator_or_empty stripped_arguments separator_or_empty { $$ = $2; };
 
 stripped_arguments:
     argument { $$ = new std::vector<std::string>(1, *$1); }
-  | stripped_arguments new_line_star argument  { $1->push_back(*$3); $$ = $1; }
+  | stripped_arguments separator argument  { $1->push_back(*$3); $$ = $1; }
 ;
 
-new_line_star:
+separator_or_empty:
     %empty
-  | new_line_star NEWLINE
+  | separator
 ;
 
-new_line_plus:
-    NEWLINE
-  | new_line_plus NEWLINE
+separator:
+    SPACE
+  | NEWLINE
+  | separator NEWLINE
+  | separator SPACE
 ;
 
 %%

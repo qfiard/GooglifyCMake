@@ -148,11 +148,16 @@ string(REGEX REPLACE
 set(MIN_IOS_VERSION "${IOS_SDK_MAJOR_VERSION}.${IOS_SDK_MINOR_VERSION}"
     CACHE STRING "Minimum iOS version")
 
-set(CMAKE_C_FLAGS "-isystem ${CMAKE_IOS_SDK_ROOT}/usr/include ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "-isystem ${CMAKE_IOS_SDK_ROOT}/usr/include ${CMAKE_CXX_FLAGS}")
+set(CMAKE_C_FLAGS "-isystem ${CMAKE_IOS_SDK_ROOT}/usr/include \
+                   -F${CMAKE_IOS_SDK_ROOT}/System/Library/Frameworks \
+                   -F${CMAKE_IOS_SDK_ROOT}/Developer/Library/Frameworks \
+                   ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "-isystem ${CMAKE_IOS_SDK_ROOT}/usr/include \
+                     -F${CMAKE_IOS_SDK_ROOT}/System/Library/Frameworks \
+                     -F${CMAKE_IOS_SDK_ROOT}/Developer/Library/Frameworks \
+                     ${CMAKE_CXX_FLAGS}")
 set(LINKER_FLAGS "-L${CMAKE_IOS_SDK_ROOT}/usr/lib \
                   -L${CMAKE_IOS_SDK_ROOT}/usr/lib/system \
-                  -F${CMAKE_IOS_SDK_ROOT}/System/Library/Frameworks \
                   ${LINKER_FLAGS}")
 
 if (${IOS_PLATFORM} STREQUAL "OS")

@@ -223,6 +223,7 @@ add_target(PROTOC protoc)
 add_target(RAPIDXML rapidxml)
 add_target(READLINE readline)
 add_target(SHARK shark)
+add_target(SSTOOLKIT sstoolkit)
 add_target(TBB tbb)
 add_target(VIRTUALENV virtualenv)
 add_target(XZ xz)
@@ -447,6 +448,7 @@ set_libraries(openssl ${OPENSSL_PREFIX}/lib crypto ssl)
 set_libraries(protobuf ${PROTOBUF_PREFIX}/lib protobuf)
 set_libraries(readline ${READLINE_PREFIX}/lib readline history)
 set_libraries(shark ${SHARK_PREFIX}/lib shark)
+set_libraries(sstoolkit ${SSTOOLKIT_PREFIX}/lib SSToolkit)
 set_libraries(tbb ${TBB_PREFIX}/lib tbb)
 set_libraries(zlib ${ZLIB_PREFIX}/lib z)
 
@@ -550,6 +552,7 @@ set_include_directories(openssl ${OPENSSL_PREFIX}/include)
 set_include_directories(protobuf ${PROTOBUF_PREFIX}/include)
 set_include_directories(readline ${READLINE_PREFIX}/include)
 set_include_directories(shark ${SHARK_PREFIX}/include)
+set_include_directories(sstoolkit ${SSTOOLKIT_PREFIX}/include)
 set_include_directories(tbb ${TBB_PREFIX}/include)
 
 # Fixing implicit header dependencies. Again we must be careful to define a DAG.
@@ -2208,6 +2211,27 @@ add_definitions(-DSHARK_USE_OPENMP)
 # Adds dependencies.
 add_dependencies(${SHARK_TARGET} ${BOOST_TARGET})
 add_dependencies(${SHARK_TARGET} ${OPENMP_TARGET})
+
+################################################################################
+# SSToolkit.
+if (IS_IOS)
+  string(REGEX REPLACE "^\\-" "" SSTOOLKIT_SDK ${CMAKE_XCODE_EFFECTIVE_PLATFORMS})
+  add_external_project(
+    ${SSTOOLKIT_TARGET}
+    PREFIX ${SSTOOLKIT_PREFIX}
+    DOWNLOAD_COMMAND
+        ${GIT} clone --depth 1 https://github.com/soffes/sstoolkit.git
+            ${SSTOOLKIT_TARGET}
+    CONFIGURE_COMMAND echo ""
+    BUILD_COMMAND
+        xcodebuild -project <SOURCE_DIR>/SSToolkit.xcodeproj
+            -sdk ${SSTOOLKIT_SDK}
+    INSTALL_COMMAND
+        ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/lib &&
+        cp -f build/Release-${SSTOOLKIT_SDK}/libSSToolkit.a <INSTALL_DIR>/lib &&
+        ditto SSToolkit <INSTALL_DIR>/include/SSToolkit
+    BUILD_IN_SOURCE 1)
+endif ()
 
 ################################################################################
 # TBB.
