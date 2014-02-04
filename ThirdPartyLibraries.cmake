@@ -1184,12 +1184,12 @@ add_external_project(
   PREFIX ${HAPROXY_PREFIX}
   DOWNLOAD_DIR ${HAPROXY_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O haproxy-1.4.24.tar.gz http://haproxy.1wt.eu/download/1.4/src/haproxy-1.4.24.tar.gz &&
-      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/haproxy-1.4.24.tar.gz.sig
-          haproxy-1.4.24.tar.gz &&
+      wget -O haproxy-1.5-dev22.tar.gz http://haproxy.1wt.eu/download/1.5/src/devel/haproxy-1.5-dev22.tar.gz &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/haproxy-1.5-dev22.tar.gz.sig
+          haproxy-1.5-dev22.tar.gz &&
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
-          ${HAPROXY_PREFIX}/download/haproxy-1.4.24.tar.gz
+          ${HAPROXY_PREFIX}/download/haproxy-1.5-dev22.tar.gz
   CONFIGURE_COMMAND ${NOP}
   BUILD_COMMAND make TARGET=osx CPU_CFLAGS=${CMAKE_C_FLAGS}
       USE_PCRE=1 USE_OPENSSL=1 USE_LIBCRYPT=
@@ -1197,9 +1197,9 @@ add_external_project(
       echo "This will install haproxy in /usr/local/haproxy." &&
       sudo make install DESTDIR=${HAPROXY_PREFIX} &&
       sudo ${CMAKE_COMMAND} -E make_directory /usr/local/haproxy &&
-      sudo mv ${HAPROXY_PREFIX}/usr/local/doc /usr/local/haproxy &&
-      sudo mv ${HAPROXY_PREFIX}/usr/local/sbin /usr/local/haproxy &&
-      sudo mv ${HAPROXY_PREFIX}/usr/local/share /usr/local/haproxy &&
+      sudo ditto ${HAPROXY_PREFIX}/usr/local/doc /usr/local/haproxy/doc &&
+      sudo ditto ${HAPROXY_PREFIX}/usr/local/sbin /usr/local/haproxy/sbin &&
+      sudo ditto ${HAPROXY_PREFIX}/usr/local/share /usr/local/haproxy/share &&
       sudo rm -rf ${HAPROXY_PREFIX}/usr &&
       sudo ${CMAKE_COMMAND} -E make_directory /usr/local/haproxy/logs
   BUILD_IN_SOURCE 1)
