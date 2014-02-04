@@ -47,6 +47,9 @@ foreach (FLAG ${CMAKE_SHARED_LINKER_FLAGS})
   endif ()
 endforeach ()
 
+# Required to disable steps in an external project.
+set(NOP echo "")
+
 # Required executables.
 find_program(ANT ant)
 if (${ANT} STREQUAL ANT-NOTFOUND)
@@ -778,7 +781,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${BZIP2_PREFIX}/download/bzip2-1.0.6.tar.gz
-  CONFIGURE_COMMAND ""
+  CONFIGURE_COMMAND ${NOP}
   BUILD_COMMAND make
   INSTALL_COMMAND make install PREFIX=${BZIP2_PREFIX}
   BUILD_IN_SOURCE 1)
@@ -1192,7 +1195,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${HAPROXY_PREFIX}/download/haproxy-1.4.24.tar.gz
-  CONFIGURE_COMMAND ""
+  CONFIGURE_COMMAND ${NOP}
   BUILD_COMMAND make TARGET=osx CPU_CFLAGS=${CMAKE_C_FLAGS}
       USE_PCRE=1 USE_OPENSSL=1 USE_LIBCRYPT=
   INSTALL_COMMAND
@@ -1243,7 +1246,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${IMAP_2007F_PREFIX}/download/imap-2007f.tar.gz
-  CONFIGURE_COMMAND ""
+  CONFIGURE_COMMAND ${NOP}
   BUILD_COMMAND make osx SSLTYPE=unix.nopwd EXTRACFLAGS=-fPIC
   INSTALL_COMMAND
       cd <SOURCE_DIR> &&
@@ -1373,9 +1376,9 @@ add_external_project(
   PREFIX ${LIBCXX_PREFIX}
   DOWNLOAD_COMMAND
       ${SVN} export --force http://llvm.org/svn/llvm-project/libcxx/trunk ${LIBCXX_TARGET}
-  CONFIGURE_COMMAND ""
-  BUILD_COMMAND ""
-  INSTALL_COMMAND "")
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND ${NOP})
 
 ################################################################################
 # libcxx.
@@ -1415,12 +1418,12 @@ add_external_project(
       ${SVN} export --force http://llvm.org/svn/llvm-project/libcxxabi/trunk <INSTALL_DIR>
   PATCH_COMMAND
     cd <INSTALL_DIR>/lib && patch -p0 < ${THIRD_PARTY_SOURCE_DIR}/libcxxabi.patch
-  CONFIGURE_COMMAND ""
+  CONFIGURE_COMMAND ${NOP}
   BUILD_COMMAND
     cd <INSTALL_DIR>/lib &&
     CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ./buildit &&
     ln -s libc++abi.1.0.dylib libc++abi.dylib
-  INSTALL_COMMAND "")
+  INSTALL_COMMAND ${NOP})
 add_external_project_step(${LIBCXXABI_TARGET} set_install_names
   COMMAND
       ${SET_INSTALL_NAMES} ${CMAKE_INSTALL_NAME_TOOL}
@@ -1570,7 +1573,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${MAVEN_PREFIX}/download/apache-maven-3.1.1-src.tar.gz
-  CONFIGURE_COMMAND echo ""
+  CONFIGURE_COMMAND ${NOP}
   BUILD_COMMAND
       M2_HOME=${MAVEN_PREFIX}/build ${ANT}
   INSTALL_COMMAND
@@ -1638,8 +1641,8 @@ add_external_project(
   PREFIX ${MILI_PREFIX}
   DOWNLOAD_COMMAND
       ${HG} clone https://code.google.com/p/mili ${MILI_TARGET}
-  CONFIGURE_COMMAND echo ""
-  BUILD_COMMAND echo ""
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
   INSTALL_COMMAND find mili | cpio -dp <INSTALL_DIR>/include
   BUILD_IN_SOURCE 1)
 
@@ -1872,7 +1875,7 @@ add_external_project(
       ${SVN} export --force http://llvm.org/svn/llvm-project/openmp/trunk openmp &&
       rm -rf <SOURCE_DIR> &&
       mv openmp/runtime <SOURCE_DIR>
-  CONFIGURE_COMMAND echo ""
+  CONFIGURE_COMMAND ${NOP}
   BUILD_COMMAND
       PATH=${GCC_PREFIX}/bin:$ENV{PATH}
           LIB_GCC=${GCC_PREFIX}/lib/libgcc_s.1${CMAKE_SHARED_LIBRARY_SUFFIX}
@@ -1920,8 +1923,8 @@ if (IOS_BUILD)
         cd <SOURCE_DIR> &&
         tar --strip-components 1 -xvf
             ${OPENSSL_PREFIX}/download/openssl-1.0.1e.tar.gz
-    CONFIGURE_COMMAND echo ""
-    BUILD_COMMAND echo ""
+    CONFIGURE_COMMAND ${NOP}
+    BUILD_COMMAND ${NOP}
     INSTALL_COMMAND
         ln -sf ${OPENSSL_PREFIX}/${FIRST_ARCH}/include
             ${OPENSSL_PREFIX}/${FIRST_ARCH}/ssl ${OPENSSL_PREFIX})
@@ -2222,7 +2225,7 @@ if (IS_IOS)
     DOWNLOAD_COMMAND
         ${GIT} clone --depth 1 https://github.com/soffes/sstoolkit.git
             ${SSTOOLKIT_TARGET}
-    CONFIGURE_COMMAND echo ""
+    CONFIGURE_COMMAND ${NOP}
     BUILD_COMMAND
         xcodebuild -project <SOURCE_DIR>/SSToolkit.xcodeproj
             -sdk ${SSTOOLKIT_SDK}
