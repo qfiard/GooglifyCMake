@@ -11,42 +11,6 @@ set(SUPPORT_DIR ${CMAKE_CURRENT_LIST_DIR}/support)
 set(THIRD_PARTY_BINARY_DIR ${PROJECT_BINARY_DIR}/third_party)
 set(THIRD_PARTY_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party)
 
-
-# Escaping architectures.
-string(REPLACE ";" "$<SEMICOLON>" ARCHS "${CMAKE_OSX_ARCHITECTURES}")
-string(REPLACE ";" " -arch " ARCHS_AS_FLAGS "${CMAKE_OSX_ARCHITECTURES}")
-if (NOT "${ARCHS_AS_FLAGS}" STREQUAL "")
-  set(ARCHS_AS_FLAGS "-arch ${ARCHS_AS_FLAGS}")
-endif ()
-set(CMAKE_C_FLAGS_WITH_ARCHS "${ARCHS_AS_FLAGS} ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS_WITH_ARCHS "${ARCHS_AS_FLAGS} ${CMAKE_CXX_FLAGS}")
-set(LDFLAGS_WITH_ARCHS "${ARCHS_AS_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
-
-# Sets the --host flag to the appropriate value if necessary.
-if (IOS_BUILD)
-  set(HOST "--host=arm")
-endif ()
-
-# Generic configure flags to select static or shared library compilation.
-if (${BUILD_SHARED_LIBS})
-  set(CONFIGURE_LIB_TYPE --enable-shared --disable-static)
-else ()
-  set(CONFIGURE_LIB_TYPE --disable-shared --enable-static)
-endif ()
-
-# The build systems used by some libraries do not allow the use of linker flags.
-# In this case, we pass the linker flags directly to the compiler, with the
-# "-Wl," prefix.
-set(LINKER_AS_COMPILER_FLAGS)
-set(FIRST TRUE)
-foreach (FLAG ${CMAKE_SHARED_LINKER_FLAGS})
-  if (FIRST)
-    set(LINKER_AS_COMPILER_FLAGS "-Wl,${FLAG}")
-  else ()
-    set(LINKER_AS_COMPILER_FLAGS "${LINKER_AS_COMPILER_FLAGS} -Wl,${FLAG}")
-  endif ()
-endforeach ()
-
 # Required to disable steps in an external project.
 set(NOP echo "")
 
@@ -152,6 +116,9 @@ endmacro()
 function(add_external_project NAME)
   ExternalProject_Add(${NAME} ${ARGN})
   set_target_properties(${NAME} PROPERTIES EXCLUDE_FROM_ALL TRUE)
+  if (NOT NAME MATCHES "^third_party.libcxx")
+    add_dependencies(${NAME} ${LIBCXX_TARGET})
+  endif ()
 endfunction()
 
 function(add_external_project_step)
@@ -171,6 +138,7 @@ add_target(ARABICA arabica)
 add_target(BERKELEY_DB berkeley-db)
 add_target(BISON bison)
 add_target(BOOST boost)
+add_target(BSDIFF bsdiff)
 add_target(BZIP2 bzip2)
 add_target(CLANG clang)
 add_target(CLANG_OMP clang_omp)
@@ -184,11 +152,13 @@ add_target(GCC gcc)
 add_target(GFLAGS gflags)
 add_target(GMOCK gmock)
 add_target(GMP gmp)
+add_target(GNUAUTOMAKE gnuautomake)
 add_target(GNUBASH gnubash)
 add_target(GNUGREP gnugrep)
 add_target(GNUTAR gnutar)
 add_target(GTEST gtest)
 add_target(HAPROXY haproxy)
+add_target(HTTPXX httpxx)
 add_target(ICU icu)
 add_target(IMAP_2007F imap-2007f)
 add_target(IWYU iwyu)
@@ -215,6 +185,7 @@ add_target(MPFR mpfr)
 add_target(MYSQL mysql)
 add_target(MYSQLCPPCONN mysqlcppconn)
 add_target(NGINX nginx)
+add_target(NJK_WEB_VIEW_PROGRESS njk_web_view_progress)
 add_target(NTP ntp)
 add_target(OPENCV opencv)
 add_target(OPENMP openmp)
@@ -227,6 +198,7 @@ add_target(RAPIDXML rapidxml)
 add_target(READLINE readline)
 add_target(SHARK shark)
 add_target(SSTOOLKIT sstoolkit)
+add_target(SW_REVEAL_VIEW_CONTROLLER sw_reveal_view_controller)
 add_target(TBB tbb)
 add_target(VIRTUALENV virtualenv)
 add_target(XZ xz)
@@ -305,6 +277,7 @@ set_libraries(gflags ${GFLAGS_PREFIX}/lib gflags)
 set_libraries(gmock ${GMOCK_PREFIX}/lib gmock gmock_main)
 set_libraries(gmp ${GMP_PREFIX}/lib gmp)
 set_libraries(gtest ${GTEST_PREFIX}/lib gtest gtest_main)
+set_libraries(httpxx ${HTTPXX_PREFIX}/lib http_parser httpxx)
 set_libraries(jsoncpp ${JSONCPP_PREFIX}/lib jsoncpp)
 set_libraries(libcurl ${LIBCURL_PREFIX}/lib curl)
 set_libraries(libcxx ${LIBCXX_PREFIX}/lib c++)
@@ -415,6 +388,8 @@ set_libraries(mili "")  # Mili is header only.
 set_libraries(mpc ${MPC_PREFIX}/lib mpc)
 set_libraries(mpfr ${MPFR_PREFIX}/lib mpfr)
 set_libraries(mysqlcppconn ${MYSQLCPPCONN_PREFIX}/lib mysqlcppconn)
+set_libraries(njk_web_view_progress ${NJK_WEB_VIEW_PROGRESS_PREFIX}/lib
+              njk_web_view_progress)
 set_libraries(opencv_bioinspired ${OPENCV_LIB_DIR} opencv_bioinspired)
 set_libraries(opencv_calib3d ${OPENCV_LIB_DIR} opencv_calib3d)
 set_libraries(opencv_contrib ${OPENCV_LIB_DIR} opencv_contrib)
@@ -452,6 +427,8 @@ set_libraries(protobuf ${PROTOBUF_PREFIX}/lib protobuf)
 set_libraries(readline ${READLINE_PREFIX}/lib readline history)
 set_libraries(shark ${SHARK_PREFIX}/lib shark)
 set_libraries(sstoolkit ${SSTOOLKIT_PREFIX}/lib SSToolkit)
+set_libraries(sw_reveal_view_controller ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/lib
+              sw_reveal_view_controller)
 set_libraries(tbb ${TBB_PREFIX}/lib tbb)
 set_libraries(zlib ${ZLIB_PREFIX}/lib z)
 
@@ -539,8 +516,10 @@ set_include_directories(gflags ${GFLAGS_PREFIX}/include)
 set_include_directories(gmock ${GMOCK_PREFIX}/include)
 set_include_directories(gmp ${GMP_PREFIX}/include)
 set_include_directories(gtest ${GTEST_PREFIX}/include)
+set_include_directories(httpxx ${HTTPXX_PREFIX}/include)
 set_include_directories(jsoncpp ${JSONCPP_PREFIX}/include)
 set_include_directories(libcurl ${LIBCURL_PREFIX}/include)
+set_include_directories(libcxx ${LIBCXX_PREFIX}/include/c++/v1)
 set_include_directories(
     libxml ${LIBXML_PREFIX}/include ${LIBXML_PREFIX}/include/libxml2)
 set_include_directories(marisa_trie ${MARISA_TRIE_PREFIX}/include)
@@ -549,6 +528,8 @@ set_include_directories(mpc ${MPC_PREFIX}/include)
 set_include_directories(mpfr ${MPFR_PREFIX}/include)
 set_include_directories(mysql ${MYSQL_PREFIX}/include)
 set_include_directories(mysqlcppconn ${MYSQLCPPCONN_PREFIX}/include)
+set_include_directories(
+    njk_web_view_progress ${NJK_WEB_VIEW_PROGRESS_PREFIX}/include)
 set_include_directories(opencv ${OPENCV_PREFIX}/include)
 set_include_directories(openmp ${OPENMP_PREFIX}/include)
 set_include_directories(openssl ${OPENSSL_PREFIX}/include)
@@ -556,6 +537,8 @@ set_include_directories(protobuf ${PROTOBUF_PREFIX}/include)
 set_include_directories(readline ${READLINE_PREFIX}/include)
 set_include_directories(shark ${SHARK_PREFIX}/include)
 set_include_directories(sstoolkit ${SSTOOLKIT_PREFIX}/include)
+set_include_directories(
+    sw_reveal_view_controller ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/include)
 set_include_directories(tbb ${TBB_PREFIX}/include)
 
 # Fixing implicit header dependencies. Again we must be careful to define a DAG.
@@ -568,6 +551,51 @@ set(GNUTAR ${GNUTAR_PREFIX}/bin/tar)
 set(MVN ${MAVEN_PREFIX}/bin/mvn)
 set(PCREGREP ${PCRE_PREFIX}/bin/pcregrep)
 set(XZ ${XZ_PREFIX}/bin/xz)
+
+# Bypassing default C++ library.
+set(CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} -I${LIBCXX_PREFIX}/include/c++/v1")
+set(LINKER_FLAGS
+    "-L${LIBCXX_PREFIX}/lib -lc++ -L${LIBCXXABI_PREFIX}/lib -lc++abi")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAGS}")
+set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${LINKER_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINKER_FLAGS}")
+
+
+# Escaping architectures.
+string(REPLACE ";" "$<SEMICOLON>" ARCHS "${CMAKE_OSX_ARCHITECTURES}")
+string(REPLACE ";" " -arch " ARCHS_AS_FLAGS "${CMAKE_OSX_ARCHITECTURES}")
+if (NOT "${ARCHS_AS_FLAGS}" STREQUAL "")
+  set(ARCHS_AS_FLAGS "-arch ${ARCHS_AS_FLAGS}")
+endif ()
+set(CMAKE_C_FLAGS_WITH_ARCHS "${ARCHS_AS_FLAGS} ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS_WITH_ARCHS "${ARCHS_AS_FLAGS} ${CMAKE_CXX_FLAGS}")
+set(LDFLAGS_WITH_ARCHS "${ARCHS_AS_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
+
+# Sets the --host flag to the appropriate value if necessary.
+if (IOS_BUILD)
+  set(HOST "--host=arm")
+endif ()
+
+# Generic configure flags to select static or shared library compilation.
+if (${BUILD_SHARED_LIBS})
+  set(CONFIGURE_LIB_TYPE --enable-shared --disable-static)
+else ()
+  set(CONFIGURE_LIB_TYPE --disable-shared --enable-static)
+endif ()
+
+# The build systems used by some libraries do not allow the use of linker flags.
+# In this case, we pass the linker flags directly to the compiler, with the
+# "-Wl," prefix.
+set(LINKER_AS_COMPILER_FLAGS)
+set(FIRST TRUE)
+foreach (FLAG ${CMAKE_SHARED_LINKER_FLAGS})
+  if (FIRST)
+    set(LINKER_AS_COMPILER_FLAGS "-Wl,${FLAG}")
+  else ()
+    set(LINKER_AS_COMPILER_FLAGS "${LINKER_AS_COMPILER_FLAGS} -Wl,${FLAG}")
+  endif ()
+endforeach ()
 
 ################################################################################
 # External project inclusions.
@@ -839,7 +867,10 @@ add_external_project(
 # See https://github.com/mologie/curl-asio.
 set(CURL_ASIO_C_FLAGS "-I${LIBCURL_PREFIX}/include ${CMAKE_C_FLAGS}")
 set(CURL_ASIO_CXX_FLAGS "-I${LIBCURL_PREFIX}/include ${CMAKE_CXX_FLAGS}")
-set(CURL_ASIO_LINKER_FLAGS "${third_party.libcurl} ${LINKER_FLAGS}")
+set(CURL_ASIO_LINKER_FLAGS "${LINKER_FLAGS}")
+foreach (FLAG ${third_party.libcurl})
+  set(CURL_ASIO_LINKER_FLAGS "${CURL_ASIO_LINKER_FLAGS} ${FLAG}")
+endforeach ()
 add_external_project(
   ${CURL_ASIO_TARGET}
   PREFIX ${CURL_ASIO_PREFIX}
@@ -1094,6 +1125,24 @@ add_external_project(
 add_dependencies(${GMP_TARGET} ${GNUTAR_TARGET})
 
 ################################################################################
+# GNU automake.
+add_external_project(
+  ${GNUAUTOMAKE_TARGET}
+  PREFIX ${GNUAUTOMAKE_PREFIX}
+  DOWNLOAD_DIR ${GNUAUTOMAKE_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O automake-1.14.1.tar.gz http://ftp.gnu.org/pub/gnu/automake/automake-1.14.1.tar.gz &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/automake-1.14.1.tar.gz.sig
+          automake-1.14.1.tar.gz &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf
+          ${GNUAUTOMAKE_PREFIX}/download/automake-1.14.1.tar.gz
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure
+  INSTALL_COMMAND
+      echo "This will install bash in /usr/local." &&
+      sudo make install)
+
+################################################################################
 # GNU bash.
 add_external_project(
   ${GNUBASH_TARGET}
@@ -1203,6 +1252,34 @@ add_external_project(
       sudo rm -rf ${HAPROXY_PREFIX}/usr &&
       sudo ${CMAKE_COMMAND} -E make_directory /usr/local/haproxy/logs
   BUILD_IN_SOURCE 1)
+
+################################################################################
+# httpxx.
+add_external_project(
+  ${HTTPXX_TARGET}
+  PREFIX ${HTTPXX_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --recursive --depth 1 https://github.com/QuentinFiard/httpxx.git
+          ${HTTPXX_TARGET}
+  CMAKE_ARGS
+      -DBUILD_EXAMPLES=OFF
+
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_BUILD_TYPE=DEBUG
+      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+      -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_INSTALL_PREFIX=${HTTPXX_PREFIX})
+add_external_project_step(${HTTPXX_TARGET} set_install_names
+  COMMAND
+      ${SET_INSTALL_NAMES} ${CMAKE_INSTALL_NAME_TOOL}
+          ${CMAKE_SHARED_LIBRARY_SUFFIX}
+  DEPENDEES install
+  DEPENDS ${SET_INSTALL_NAMES}
+  WORKING_DIRECTORY ${HTTPXX_PREFIX}/lib)
 
 ################################################################################
 # ICU. TODO(qfiard): Make portable.
@@ -1343,6 +1420,18 @@ add_dependencies(${LDAP_SASL_TARGET} ${OPENSSL_TARGET})
 ################################################################################
 # libcurl. TODO(qfiard): Make portable.
 set(LIBCURL_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -L${ZLIB_PREFIX}/lib")
+set(CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBCURL_PREFIX} ${HOST}
+        --with-zlib=${ZLIB_PREFIX})
+if (APPLE)
+  set(CONFIGURE_COMMAND ${CONFIGURE_COMMAND} --with-darwinssl)
+else ()
+  set(CONFIGURE_COMMAND ${CONFIGURE_COMMAND} --with-ssl=${OPENSSL_PREFIX})
+endif ()
+set(CONFIGURE_COMMAND ${CONFIGURE_COMMAND} CC=${CMAKE_C_COMPILER}
+        CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+        CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+        LDFLAGS=${LIBCURL_LINKER_FLAGS}
+        ${CONFIGURE_LIB_TYPE})
 add_external_project(
   ${LIBCURL_TARGET}
   PREFIX ${LIBCURL_PREFIX}
@@ -1354,14 +1443,10 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${LIBCURL_PREFIX}/download/curl-7.33.0.tar.bz2
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBCURL_PREFIX} ${HOST}
-      --with-zlib=${ZLIB_PREFIX} --with-ssl=${OPENSSL_PREFIX}
-      CC=${CMAKE_C_COMPILER}
-      CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
-      CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
-      LDFLAGS=${LIBCURL_LINKER_FLAGS}
-      ${CONFIGURE_LIB_TYPE})
-add_dependencies(${LIBCURL_TARGET} ${OPENSSL_TARGET})
+  CONFIGURE_COMMAND ${CONFIGURE_COMMAND})
+if (NOT APPLE)
+  add_dependencies(${LIBCURL_TARGET} ${OPENSSL_TARGET})
+endif ()
 add_dependencies(${LIBCURL_TARGET} ${ZLIB_TARGET})
 
 ################################################################################
@@ -1501,15 +1586,17 @@ add_external_project(
 add_external_project(
   ${LIBPNG_TARGET}
   PREFIX ${LIBPNG_PREFIX}
-  DOWNLOAD_DIR ${LIBPNG_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O libpng-1.6.7.tar.gz http://downloads.sourceforge.net/project/libpng/libpng16/1.6.7/libpng-1.6.7.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Flibpng%2Ffiles%2Flibpng16%2F1.6.7%2F&ts=1385863731&use_mirror=kent &&
-      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/libpng-1.6.7.tar.gz.sig
-          libpng-1.6.7.tar.gz &&
+    ${GIT} clone git://git.code.sf.net/p/libpng/code ${LIBPNG_TARGET} &&
+    cd ${LIBPNG_TARGET} &&
+    ${GIT} checkout v1.6.9 &&
+    rm -rf .git
+  CONFIGURE_COMMAND
       cd <SOURCE_DIR> &&
-      tar --strip-components 1 -xvf
-          ${LIBPNG_PREFIX}/download/libpng-1.6.7.tar.gz
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBPNG_PREFIX} ${HOST})
+      ./autogen.sh &&
+      cd <BINARY_DIR> &&
+      <SOURCE_DIR>/configure --prefix=${LIBPNG_PREFIX} ${HOST})
+add_dependencies(${LIBPNG_TARGET} ${GNUAUTOMAKE_TARGET})
 
 ################################################################################
 # libxml.
@@ -1718,43 +1805,50 @@ add_external_project(
       -DWITH_ZLIB=test
       -DZLIB_ROOT=${ZLIB_PREFIX}
       -DWITH_SSL_PATH=${OPENSSL_PREFIX})
+add_external_project_step(${MYSQL_TARGET} set_install_names
+  COMMAND
+      ${SET_INSTALL_NAMES} ${CMAKE_INSTALL_NAME_TOOL}
+          ${CMAKE_SHARED_LIBRARY_SUFFIX}
+  DEPENDEES install
+  DEPENDS ${SET_INSTALL_NAMES}
+  WORKING_DIRECTORY ${MYSQL_PREFIX}/lib)
 add_dependencies(${MYSQL_TARGET} ${OPENSSL_TARGET})
 add_dependencies(${MYSQL_TARGET} ${ZLIB_TARGET})
 
 ################################################################################
 # Mysql C++/Connector.
-if (IOS_BUILD OR IOS_SIMULATOR_BUILD)
-  add_custom_target(${MYSQLCPPCONN_TARGET})
-  set_libraries(mysqlcppconn "")
-else ()
-  add_external_project(
-    ${MYSQLCPPCONN_TARGET}
-    PREFIX ${MYSQLCPPCONN_PREFIX}
-    DOWNLOAD_DIR ${MYSQLCPPCONN_PREFIX}/download
-    DOWNLOAD_COMMAND
-        wget -O mysqlcppconn.tar.gz http://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-1.1.3.tar.gz/from/http://cdn.mysql.com/ &&
-        cd <SOURCE_DIR> &&
-        tar --strip-components 1 -xvf ${MYSQLCPPCONN_PREFIX}/download/mysqlcppconn.tar.gz
-    CMAKE_ARGS
-        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-        -DCMAKE_BUILD_TYPE=RELEASE
-        -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
-        -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
-        -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-        -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
-        -DCMAKE_INSTALL_PREFIX=${MYSQLCPPCONN_PREFIX}
-    BUILD_IN_SOURCE 1  # Needed for config header file.
-    )
-  add_external_project_step(${MYSQLCPPCONN_TARGET} set_install_names
-    COMMAND
-        ${SET_INSTALL_NAMES} ${CMAKE_INSTALL_NAME_TOOL}
-            ${CMAKE_SHARED_LIBRARY_SUFFIX}
-    DEPENDEES install
-    DEPENDS ${SET_INSTALL_NAMES}
-    WORKING_DIRECTORY ${MYSQLCPPCONN_PREFIX}/lib)
-  endif ()
+set(MYSQLCPPCONN_C_FLAGS "-I${MYSQL_PREFIX}/include ${CMAKE_C_FLAGS}")
+set(MYSQLCPPCONN_CXX_FLAGS "-I${MYSQL_PREFIX}/include ${CMAKE_CXX_FLAGS}")
+set(MYSQLCPPCONN_LINKER_FLAGS
+    "-L${MYSQL_PREFIX}/lib ${CMAKE_SHARED_LINKER_FLAGS}")
+add_external_project(
+  ${MYSQLCPPCONN_TARGET}
+  PREFIX ${MYSQLCPPCONN_PREFIX}
+  DOWNLOAD_DIR ${MYSQLCPPCONN_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O mysqlcppconn.tar.gz http://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-1.1.3.tar.gz/from/http://cdn.mysql.com/ &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf ${MYSQLCPPCONN_PREFIX}/download/mysqlcppconn.tar.gz
+  CMAKE_ARGS
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_BUILD_TYPE=DEBUG
+      -DCMAKE_C_FLAGS=${MYSQLCPPCONN_C_FLAGS}
+      -DCMAKE_CXX_FLAGS=${MYSQLCPPCONN_CXX_FLAGS}
+      -DCMAKE_SHARED_LINKER_FLAGS=${MYSQLCPPCONN_LINKER_FLAGS}
+      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_INSTALL_PREFIX=${MYSQLCPPCONN_PREFIX}
+  BUILD_IN_SOURCE 1  # Needed for config header file.
+  )
+add_external_project_step(${MYSQLCPPCONN_TARGET} set_install_names
+  COMMAND
+      ${SET_INSTALL_NAMES} ${CMAKE_INSTALL_NAME_TOOL}
+          ${CMAKE_SHARED_LIBRARY_SUFFIX}
+  DEPENDEES install
+  DEPENDS ${SET_INSTALL_NAMES}
+  WORKING_DIRECTORY ${MYSQLCPPCONN_PREFIX}/lib)
+add_dependencies(${MYSQLCPPCONN_TARGET} ${MYSQL_TARGET})
 
 ################################################################################
 # Nginx.
@@ -1779,6 +1873,43 @@ add_external_project(
       sudo make install &&
       sudo ${CMAKE_COMMAND} -E make_directory /usr/local/nginx/logs
   BUILD_IN_SOURCE 1)
+
+################################################################################
+# NJKWebViewProgress.
+if (IS_IOS)
+  set(DOWNLOAD_TARGET ${NJK_WEB_VIEW_PROGRESS_TARGET}_download)
+  add_external_project(
+    ${DOWNLOAD_TARGET}
+    PREFIX ${NJK_WEB_VIEW_PROGRESS_PREFIX}
+    DOWNLOAD_COMMAND
+        ${GIT} clone --depth 1 https://github.com/QuentinFiard/NJKWebViewProgress
+            ${DOWNLOAD_TARGET}
+    CONFIGURE_COMMAND ${NOP}
+    BUILD_COMMAND ${NOP}
+    INSTALL_COMMAND
+      cd <SOURCE_DIR> &&
+      ${CMAKE_COMMAND} -E make_directory ${NJK_WEB_VIEW_PROGRESS_PREFIX}/include &&
+      find NJKWebViewProgress -name "*.h" |
+      cpio -dp ${NJK_WEB_VIEW_PROGRESS_PREFIX}/include)
+  ExternalProject_Get_Property(${DOWNLOAD_TARGET} INSTALL_DIR)
+  ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+  set(SOURCE_DIR ${SOURCE_DIR}/NJKWebViewProgress)
+  set(SRCS
+      ${SOURCE_DIR}/NJKWebViewProgress.h
+      ${SOURCE_DIR}/NJKWebViewProgress.m
+      ${SOURCE_DIR}/NJKWebViewProgressView.h
+      ${SOURCE_DIR}/NJKWebViewProgressView.m)
+  set_source_files_properties(${SRCS} PROPERTIES GENERATED TRUE)
+  add_custom_command(OUTPUT ${SRCS} COMMAND echo "")
+  objc_library(${NJK_WEB_VIEW_PROGRESS_TARGET} ${SRCS})
+  link_framework(${NJK_WEB_VIEW_PROGRESS_TARGET} UIKit)
+  set_target_properties(
+      ${NJK_WEB_VIEW_PROGRESS_TARGET} PROPERTIES
+      ARCHIVE_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
+      LIBRARY_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
+      OUTPUT_NAME njk_web_view_progress)
+  add_dependencies(${NJK_WEB_VIEW_PROGRESS_TARGET} ${DOWNLOAD_TARGET})
+endif ()
 
 ################################################################################
 # NTP.
@@ -2232,6 +2363,39 @@ if (IS_IOS)
 endif ()
 
 ################################################################################
+# SWRevealViewController.
+if (IS_IOS)
+  set(DOWNLOAD_TARGET ${SW_REVEAL_VIEW_CONTROLLER_TARGET}_download)
+  add_external_project(
+    ${DOWNLOAD_TARGET}
+    PREFIX ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}
+    DOWNLOAD_COMMAND
+        ${GIT} clone --depth 1 https://github.com/John-Lluch/SWRevealViewController.git
+            ${DOWNLOAD_TARGET}
+    CONFIGURE_COMMAND echo ""
+    BUILD_COMMAND echo ""
+    INSTALL_COMMAND
+      cd <SOURCE_DIR> &&
+      ${CMAKE_COMMAND} -E make_directory ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/include &&
+      find SWRevealViewController -name "*.h" |
+      cpio -dp ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/include)
+  ExternalProject_Get_Property(${DOWNLOAD_TARGET} INSTALL_DIR)
+  ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+  set(SOURCE_DIR ${SOURCE_DIR}/SWRevealViewController)
+  set(SRCS ${SOURCE_DIR}/SWRevealViewController.h
+      ${SOURCE_DIR}/SWRevealViewController.m)
+  set_source_files_properties(${SRCS} PROPERTIES GENERATED TRUE)
+  add_custom_command(OUTPUT ${SRCS} COMMAND echo "")
+  objc_library(${SW_REVEAL_VIEW_CONTROLLER_TARGET} ${SRCS})
+  set_target_properties(
+      ${SW_REVEAL_VIEW_CONTROLLER_TARGET} PROPERTIES
+      ARCHIVE_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
+      LIBRARY_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
+      OUTPUT_NAME sw_reveal_view_controller)
+  add_dependencies(${SW_REVEAL_VIEW_CONTROLLER_TARGET} ${DOWNLOAD_TARGET})
+endif ()
+
+################################################################################
 # TBB.
 add_external_project(
   ${TBB_TARGET}
@@ -2364,7 +2528,7 @@ function(protobuf_generate_cc SRCS HDRS)
       OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.cc"
              "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.pb.h"
       COMMAND  ${PROTOBUF_PROTOC_EXECUTABLE}
-      ARGS --cpp_out ${PROJECT_BINARY_DIR}/src
+      ARGS --cpp_out ${PROJECT_BINARY_DIR}/src -I${PROTOBUF_PREFIX}/include
           -I${PROJECT_SOURCE_DIR}/src  ${ABS_FIL}
       DEPENDS ${PROTOBUF_TARGET} ${PROTOC_TARGET} ${ABS_FIL}
       COMMENT "Running C++ protocol buffer compiler on ${FIL}"
@@ -2397,7 +2561,7 @@ function(protobuf_generate_java SRCS)
     add_custom_command(
       OUTPUT ${SRC}
       COMMAND  ${PROTOBUF_PROTOC_EXECUTABLE}
-      ARGS --java_out ${PROJECT_BINARY_DIR}/src
+      ARGS --java_out ${PROJECT_BINARY_DIR}/src -I${PROTOBUF_PREFIX}/include
           -I${PROJECT_SOURCE_DIR}/src  ${ABS_FIL}
       DEPENDS ${PROTOBUF_TARGET} ${PROTOC_TARGET} ${ABS_FIL}
       COMMENT "Running java protocol buffer compiler on ${FIL}"
@@ -2428,7 +2592,7 @@ function(protobuf_generate_py SRCS)
     add_custom_command(
       OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}_pb2.py"
       COMMAND  ${PROTOBUF_PROTOC_EXECUTABLE}
-      ARGS --python_out ${PROJECT_BINARY_DIR}/src
+      ARGS --python_out ${PROJECT_BINARY_DIR}/src -I${PROTOBUF_PREFIX}/include
           -I${PROJECT_SOURCE_DIR}/src  ${ABS_FIL}
       DEPENDS ${PROTOBUF_TARGET} ${PROTOC_TARGET} ${ABS_FIL}
       COMMENT "Running python protocol buffer compiler on ${FIL}"

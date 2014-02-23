@@ -75,15 +75,19 @@ function(add_linkflags TARGET)
       "${FULL_TARGET}" PROPERTIES LINK_FLAGS "${FLAGS} ${ARGN}")
 endfunction(add_linkflags)
 
-function(add_data TARGET DATA)
+function(add_data TARGET)
   get_current_prefix(PREFIX)
-  add_custom_command(
-    TARGET "${PREFIX}${TARGET}" POST_BUILD
-    COMMAND ln -sf ${DATA} ${CMAKE_CURRENT_BINARY_DIR})
+  foreach (DATA ${ARGN})
+    add_custom_command(
+      TARGET "${PREFIX}${TARGET}" POST_BUILD
+      COMMAND ln -sf ${DATA} ${CMAKE_CURRENT_BINARY_DIR})
+  endforeach ()
 endfunction(add_data)
 
-function(add_local_data TARGET DATA)
-  add_data(${TARGET} "${CMAKE_CURRENT_SOURCE_DIR}/${DATA}")
+function(add_local_data TARGET)
+  foreach (DATA ${ARGN})
+    add_data(${TARGET} "${CMAKE_CURRENT_SOURCE_DIR}/${DATA}")
+  endforeach ()
 endfunction(add_local_data)
 
 #! @brief Adds a file specified by its absolute path to a J2E archive or an iOS
@@ -242,8 +246,10 @@ endfunction(add_subdirectory_if)
 #! @param ARGN List of C++ sources.
 function(cc_binary TARGET)
   get_full_target(${TARGET} FULL_TARGET)
-  add_executable(${FULL_TARGET} ${ARGN})
+  prepare_sources_for_c(SRCS ${ARGN})
+  add_executable(${FULL_TARGET} ${SRCS})
   set_target_properties(${FULL_TARGET} PROPERTIES OUTPUT_NAME ${TARGET})
+  link(${TARGET} third_party.libcxx)
 endfunction()
 
 #! @brief Creates a new target for a C++ executable in the current package.
@@ -251,7 +257,8 @@ endfunction()
 #! @param ARGN List of C++ sources.
 function(cc_library TARGET)
   get_full_target(${TARGET} FULL_TARGET)
-  string(REGEX MATCHALL "[^;]+\\.(cc|m|mm)($|;)" HAS_CC_FILE "${ARGN}")
+  prepare_sources_for_c(SRCS ${ARGN})
+  string(REGEX MATCHALL "[^;]+\\.(cc|m|mm)($|;)" HAS_CC_FILE "${SRCS}")
   if ("${HAS_CC_FILE}" STREQUAL "")
     # An empty cc file is required to link a header only library (which
     # although unnecessary is more simple to handle - e.g. if the library was to
@@ -266,13 +273,14 @@ function(cc_library TARGET)
       COMMAND > ${EMPTY_CC_FILE}
       COMMENT "Generating empty c++ file required for header only library")
     set_source_files_properties(${EMPTY_CC_FILE} PROPERTIES GENERATED TRUE)
-    add_library(${FULL_TARGET} ${ARGN} ${EMPTY_CC_FILE})
+    add_library(${FULL_TARGET} ${SRCS} ${EMPTY_CC_FILE})
     add_dependencies(${FULL_TARGET} _empty_cc_file)
     set_target_properties(${FULL_TARGET} PROPERTIES LINKER_LANGUAGE CXX)
   else ()
-    add_library(${FULL_TARGET} ${ARGN})
+    add_library(${FULL_TARGET} ${SRCS})
   endif ()
   set_target_properties(${FULL_TARGET} PROPERTIES OUTPUT_NAME ${TARGET})
+  link(${TARGET} third_party.libcxx)
 endfunction(cc_library)
 
 function(cc_test TARGET)
@@ -309,7 +317,7 @@ endfunction()
 #!     stored.
 function(get_current_prefix RESULT)
   string(
-      REGEX REPLACE ${PROJECT_SOURCE_DIR}/src "" TARGET_PATH
+      REGEX REPLACE "${PROJECT_SOURCE_DIR}(/src)?" "" TARGET_PATH
       ${CMAKE_CURRENT_SOURCE_DIR})
   if ("${TARGET_PATH}" STREQUAL "")
     set(${RESULT} "" PARENT_SCOPE)
@@ -829,6 +837,17 @@ function(prepare_python_package PREFIX OUT)
   set(${OUT} ${INIT_PY} PARENT_SCOPE)
 endfunction()
 
+function(prepare_sources_for_c OUT)
+  set(SRCS)
+  foreach (SRC ${ARGN})
+    get_source_file_property(GENERATED ${SRC} GENERATED)
+    if (NOT SRC MATCHES "\\.h$" OR GENERATED)
+      list(APPEND SRCS ${SRC})
+    endif ()
+  endforeach ()
+  set(${OUT} ${SRCS} PARENT_SCOPE)
+endfunction()
+
 function(prepare_sources_for_objc)
   foreach (SRC ${ARGN})
     if (SRC MATCHES "\\.m$")
@@ -905,6 +924,10 @@ function(r_binary TARGET SRC)
     DEPENDS ${exe}
     VERBATIM)
 endfunction(r_binary)
+
+function(test_only TARGET)
+
+endfunction()
 
 # Src: https://github.com/maidsafe/MaidSafe/blob/master/cmake_modules/utils.cmake
 function(underscores_to_camel_case IN OUT)

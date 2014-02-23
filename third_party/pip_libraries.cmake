@@ -19,6 +19,7 @@ endfunction(pip_library)
 
 pip_library(Pillow CC=/usr/bin/gcc)
 pip_library(django)
+pip_library(numpy CC=/usr/bin/gcc)
 pip_library(psd-tools)
 pip_library(python-gflags)
 pip_library(requests)

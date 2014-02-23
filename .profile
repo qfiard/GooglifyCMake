@@ -11,6 +11,7 @@ alias rfb='dir=`echo \`pwd\`|sed "s@\($DEV_ROOT\)/build\(.*\)@\1\2@"`; cd $dir'
 alias sconf_edit="$DEV_ROOT/build/src/crypto/config/editor/editor_main "
 alias tb='dir=`echo \`pwd\`|sed "s@\($DEV_ROOT\)\(.*\)@\1/build\2@"`; cd $dir'
 
+export PATH=$DEV_ROOT/build/third_party/bsdiff/bin:$PATH
 export PATH=$DEV_ROOT/build/third_party/gcc/bin:$PATH
 export PATH=$DEV_ROOT/build/third_party/maven/bin:$PATH
 export PATH=$DEV_ROOT/build/third_party/virtualenv/lib/python:$PATH
