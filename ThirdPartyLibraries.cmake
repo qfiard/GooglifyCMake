@@ -647,7 +647,7 @@ add_external_project(
   ${ARABICA_TARGET}
   PREFIX ${ARABICA_PREFIX}
   DOWNLOAD_COMMAND
-      ${GIT} clone --depth 1 https://github.com/QuentinFiard/arabica.git
+      ${GIT} clone --depth 1 git://github.com/QuentinFiard/arabica.git
           ${ARABICA_TARGET}
   CMAKE_ARGS
       -DBOOST_ROOT=${BOOST_PREFIX}
@@ -782,7 +782,7 @@ add_external_project(
   ${BSDIFF_TARGET}
   PREFIX ${BSDIFF_PREFIX}
   DOWNLOAD_COMMAND
-      ${GIT} clone --depth 1 https://github.com/QuentinFiard/bsdiff.git
+      ${GIT} clone --depth 1 git://github.com/QuentinFiard/bsdiff.git
   CMAKE_ARGS
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
@@ -822,7 +822,7 @@ add_external_project(
   DOWNLOAD_COMMAND
       # Patch file is specific to revision 199104, a missing header leads to an
       # undefined symbol without it. Might be unnecessary in the near future.
-      ${GIT} clone --depth 1 https://github.com/QuentinFiard/llvm ${CLANG_TARGET} &&
+      ${GIT} clone --depth 1 git://github.com/QuentinFiard/llvm ${CLANG_TARGET} &&
       ${SVN} export --force http://llvm.org/svn/llvm-project/compiler-rt/trunk ${CLANG_TARGET}/projects/compiler-rt &&
       ${SVN} export --force http://llvm.org/svn/llvm-project/cfe/trunk ${CLANG_TARGET}/tools/clang
   CMAKE_ARGS
@@ -875,7 +875,7 @@ add_external_project(
   ${CURL_ASIO_TARGET}
   PREFIX ${CURL_ASIO_PREFIX}
   DOWNLOAD_COMMAND
-      ${GIT} clone --depth 1 https://github.com/QuentinFiard/curl-asio.git
+      ${GIT} clone --depth 1 git://github.com/QuentinFiard/curl-asio.git
           ${CURL_ASIO_TARGET}
   CMAKE_ARGS
       -DBOOST_ROOT=${BOOST_PREFIX}
@@ -1259,7 +1259,7 @@ add_external_project(
   ${HTTPXX_TARGET}
   PREFIX ${HTTPXX_PREFIX}
   DOWNLOAD_COMMAND
-      ${GIT} clone --recursive --depth 1 https://github.com/QuentinFiard/httpxx.git
+      ${GIT} clone --recursive --depth 1 git://github.com/QuentinFiard/httpxx.git
           ${HTTPXX_TARGET}
   CMAKE_ARGS
       -DBUILD_EXAMPLES=OFF
@@ -1882,7 +1882,7 @@ if (IS_IOS)
     ${DOWNLOAD_TARGET}
     PREFIX ${NJK_WEB_VIEW_PROGRESS_PREFIX}
     DOWNLOAD_COMMAND
-        ${GIT} clone --depth 1 https://github.com/QuentinFiard/NJKWebViewProgress
+        ${GIT} clone --depth 1 git://github.com/QuentinFiard/NJKWebViewProgress
             ${DOWNLOAD_TARGET}
     CONFIGURE_COMMAND ${NOP}
     BUILD_COMMAND ${NOP}
@@ -2312,7 +2312,7 @@ add_external_project(
   ${SHARK_TARGET}
   PREFIX ${SHARK_PREFIX}
   DOWNLOAD_COMMAND
-      ${GIT} clone --depth 1 https://github.com/QuentinFiard/shark.git ${SHARK_TARGET}
+      ${GIT} clone --depth 1 git://github.com/QuentinFiard/shark.git ${SHARK_TARGET}
   CONFIGURE_COMMAND
       BOOST_ROOT=${BOOST_PREFIX} ${CMAKE_COMMAND} <SOURCE_DIR>
           -DOPT_MAKE_TESTS=OFF
@@ -2349,7 +2349,7 @@ if (IS_IOS)
     ${SSTOOLKIT_TARGET}
     PREFIX ${SSTOOLKIT_PREFIX}
     DOWNLOAD_COMMAND
-        ${GIT} clone --depth 1 https://github.com/soffes/sstoolkit.git
+        ${GIT} clone --depth 1 git://github.com/soffes/sstoolkit.git
             ${SSTOOLKIT_TARGET}
     CONFIGURE_COMMAND ${NOP}
     BUILD_COMMAND
@@ -2370,7 +2370,7 @@ if (IS_IOS)
     ${DOWNLOAD_TARGET}
     PREFIX ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}
     DOWNLOAD_COMMAND
-        ${GIT} clone --depth 1 https://github.com/John-Lluch/SWRevealViewController.git
+        ${GIT} clone --depth 1 git://github.com/John-Lluch/SWRevealViewController.git
             ${DOWNLOAD_TARGET}
     CONFIGURE_COMMAND echo ""
     BUILD_COMMAND echo ""
