@@ -116,7 +116,7 @@ endmacro()
 function(add_external_project NAME)
   ExternalProject_Add(${NAME} ${ARGN})
   set_target_properties(${NAME} PROPERTIES EXCLUDE_FROM_ALL TRUE)
-  if (NOT NAME MATCHES "^third_party.libcxx")
+  if (NOT IS_IOS AND NOT NAME MATCHES "^third_party.libcxx")
     add_dependencies(${NAME} ${LIBCXX_TARGET})
   endif ()
 endfunction()
@@ -552,14 +552,16 @@ set(MVN ${MAVEN_PREFIX}/bin/mvn)
 set(PCREGREP ${PCRE_PREFIX}/bin/pcregrep)
 set(XZ ${XZ_PREFIX}/bin/xz)
 
-# Bypassing default C++ library.
-set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -I${LIBCXX_PREFIX}/include/c++/v1")
-set(LINKER_FLAGS
-    "-L${LIBCXX_PREFIX}/lib -lc++ -L${LIBCXXABI_PREFIX}/lib -lc++abi")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAGS}")
-set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${LINKER_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINKER_FLAGS}")
+if (NOT IS_IOS)
+  # Bypassing default C++ library.
+  set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -I${LIBCXX_PREFIX}/include/c++/v1")
+  set(LINKER_FLAGS
+      "-L${LIBCXX_PREFIX}/lib -lc++ -L${LIBCXXABI_PREFIX}/lib -lc++abi")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAGS}")
+  set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${LINKER_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINKER_FLAGS}")
+endif ()
 
 
 # Escaping architectures.
@@ -1491,6 +1493,8 @@ add_dependencies(${LIBCXX_TARGET} ${LIBCXXABI_TARGET})
 
 ################################################################################
 # libcxxabi.
+ExternalProject_Get_Property(${LIBCXX_HEADERS_TARGET} SOURCE_DIR)
+set(LIBCXXABI_OPTIONS "-I${SOURCE_DIR}/include")
 add_external_project(
   ${LIBCXXABI_TARGET}
   PREFIX ${LIBCXXABI_PREFIX}
@@ -1501,7 +1505,8 @@ add_external_project(
   CONFIGURE_COMMAND ${NOP}
   BUILD_COMMAND
     cd <INSTALL_DIR>/lib &&
-    CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ./buildit &&
+    CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
+    OPTIONS=${LIBCXXABI_OPTIONS} ./buildit &&
     ln -s libc++abi.1.0.dylib libc++abi.dylib
   INSTALL_COMMAND ${NOP})
 add_external_project_step(${LIBCXXABI_TARGET} set_install_names
