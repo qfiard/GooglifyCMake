@@ -1493,7 +1493,7 @@ add_dependencies(${LIBCXX_TARGET} ${LIBCXXABI_TARGET})
 
 ################################################################################
 # libcxxabi.
-ExternalProject_Get_Property(${LIBCXX_HEADERS_TARGET} SOURCE_DIR)
+ExternalProject_Get_Property(${LIBCXX_TARGET} SOURCE_DIR)
 set(LIBCXXABI_OPTIONS "-I${SOURCE_DIR}/include")
 add_external_project(
   ${LIBCXXABI_TARGET}
