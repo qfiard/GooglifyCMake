@@ -439,6 +439,7 @@ add_library_dependencies(libcurl third_party.openssl third_party.zlib)
 add_library_dependencies(curl-asio third_party.boost_system third_party.libcurl)
 add_library_dependencies(readline ncurses)
 add_library_dependencies(shark third_party.boost_serialization)
+add_library_dependencies(protobuf third_party.zlib)
 
 # Aliases.
 add_library_dependencies(boost_asio third_party.boost_system)
@@ -2257,6 +2258,7 @@ add_external_project(
           ${CONFIGURE_LIB_TYPE}
   BUILD_IN_SOURCE 1)
   add_dependencies(${PROTOBUF_TARGET} ${PROTOC_TARGET})
+  add_dependencies(${PROTOBUF_TARGET} ${ZLIB_TARGET})
 if (PYTHON_SUPPORTED)
   add_external_project_step(${PROTOBUF_TARGET} build_python_runtime
     COMMAND /usr/bin/env python setup.py build
