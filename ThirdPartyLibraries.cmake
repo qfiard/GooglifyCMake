@@ -822,22 +822,17 @@ add_external_project(
   ${CLANG_OMP_TARGET}
   PREFIX ${CLANG_OMP_PREFIX}
   DOWNLOAD_COMMAND
-      ${GIT} clone --depth 1 https://github.com/clang-omp/llvm clang_omp &&
-      ${GIT} clone --depth 1 https://github.com/clang-omp/compiler-rt clang_omp/projects/compiler-rt &&
-      ${GIT} clone --depth 1 -b clang-omp https://github.com/clang-omp/clang clang_omp/tools/clang
-  PATCH_COMMAND
-      patch -p0 < ${THIRD_PARTY_SOURCE_DIR}/clang_omp.patch
+      ${GIT} clone --depth 1 https://github.com/clang-omp/llvm ${CLANG_OMP_TARGET} &&
+      ${GIT} clone --depth 1 https://github.com/clang-omp/compiler-rt ${CLANG_OMP_TARGET}/projects/compiler-rt &&
+      ${GIT} clone --depth 1 -b clang-omp https://github.com/clang-omp/clang ${CLANG_OMP_TARGET}/tools/clang
   CMAKE_ARGS
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
       -DCMAKE_BUILD_TYPE=RELEASE
-      -DCMAKE_C_FLAGS=${RELEASE_FLAGS}
-      -DCMAKE_CXX_FLAGS=${RELEASE_FLAGS}
-      -DBUILD_SHARED_LIBS=ON
+      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
       -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
-  INSTALL_COMMAND
-      echo "This will replace your clang compiler with Clang/OpenMP." &&
-      sudo make install)
+      -DCMAKE_INSTALL_PREFIX=${CLANG_OMP_PREFIX})
 
 ################################################################################
 # curl-asio, an asynchronous CURL wrapper based on Boost Asio.
