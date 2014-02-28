@@ -39,6 +39,11 @@ if (${IOS_BUILD} OR ${IOS_SIMULATOR_BUILD})
   set(JAVA_SUPPORTED FALSE)
 endif ()
 
+set (PYTHON_SUPPORTED TRUE)
+if (${IOS_BUILD} OR ${IOS_SIMULATOR_BUILD})
+  set(PYTHON_SUPPORTED FALSE)
+endif ()
+
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_BINARY_DIR}/src)
 
@@ -678,6 +683,12 @@ function(link_third_party_with_full_targets_c TARGET LIB)
   endif ()
   if (NOT "${INCLUDE_DIRECTORIES}" STREQUAL "")
     target_include_directories(${TARGET} PUBLIC ${INCLUDE_DIRECTORIES})
+  endif ()
+  get_target_property(
+      COMPILE_DEFINITIONS ${LIB_TARGET} INTERFACE_COMPILE_DEFINITIONS)
+  if (COMPILE_DEFINITIONS)
+    set_target_properties(
+        ${TARGET} PROPERTIES COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS})
   endif ()
 endfunction()
 

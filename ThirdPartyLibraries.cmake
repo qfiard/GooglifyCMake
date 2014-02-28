@@ -145,6 +145,7 @@ add_target(CLANG_OMP clang_omp)
 add_target(CURL_ASIO curl-asio)
 add_target(DLIB dlib)
 add_target(EIGEN eigen)
+add_target(EXTRAE extrae)
 add_target(FLEX flex)
 add_target(FREETYPE freetype)
 add_target(G2LOG g2log)
@@ -190,6 +191,7 @@ add_target(NTP ntp)
 add_target(OPENCV opencv)
 add_target(OPENMP openmp)
 add_target(OPENSSL openssl)
+add_target(PAPI papi)
 add_target(PCRE pcre)
 add_target(PHP php)
 add_target(PROTOBUF protobuf)
@@ -440,6 +442,7 @@ add_library_dependencies(curl-asio third_party.boost_system third_party.libcurl)
 add_library_dependencies(readline ncurses)
 add_library_dependencies(shark third_party.boost_serialization)
 add_library_dependencies(protobuf third_party.zlib)
+add_library_dependencies(arabica third_party.boost_thread)
 
 # Aliases.
 add_library_dependencies(boost_asio third_party.boost_system)
@@ -547,6 +550,10 @@ add_include_dependencies(arabica third_party.libxml)
 
 
 # 3rd-party executables.
+set(CLANG_OMP_C_COMPILER ${CLANG_OMP_PREFIX}/bin/clang)
+set(CLANG_OMP_CXX_COMPILER ${CLANG_OMP_PREFIX}/bin/clang++)
+set(GCC_C_COMPILER ${GCC_PREFIX}/bin/gcc)
+set(GCC_CXX_COMPILER ${GCC_PREFIX}/bin/g++)
 set(GNUGREP ${GNUGREP_PREFIX}/bin/grep)
 set(GNUTAR ${GNUTAR_PREFIX}/bin/tar)
 set(MVN ${MAVEN_PREFIX}/bin/mvn)
@@ -676,6 +683,9 @@ add_external_project_step(${ARABICA_TARGET} set_install_names
   WORKING_DIRECTORY ${ARABICA_PREFIX}/lib)
 add_dependencies(${ARABICA_TARGET} ${BOOST_TARGET})
 add_dependencies(${ARABICA_TARGET} ${LIBXML_TARGET})
+set_target_properties(
+    ${ARABICA_TARGET} PROPERTIES INTERFACE_COMPILE_DEFINITIONS
+    "BOOST_SPIRIT_THREADSAFE")
 
 ################################################################################
 # BerkeleyDB.
@@ -853,9 +863,9 @@ add_external_project(
   ${CLANG_OMP_TARGET}
   PREFIX ${CLANG_OMP_PREFIX}
   DOWNLOAD_COMMAND
-      ${GIT} clone --depth 1 https://github.com/clang-omp/llvm ${CLANG_OMP_TARGET} &&
-      ${GIT} clone --depth 1 https://github.com/clang-omp/compiler-rt ${CLANG_OMP_TARGET}/projects/compiler-rt &&
-      ${GIT} clone --depth 1 -b clang-omp https://github.com/clang-omp/clang ${CLANG_OMP_TARGET}/tools/clang
+      ${GIT} clone --depth 1 git://github.com/clang-omp/llvm ${CLANG_OMP_TARGET} &&
+      ${GIT} clone --depth 1 git://github.com/clang-omp/compiler-rt ${CLANG_OMP_TARGET}/projects/compiler-rt &&
+      ${GIT} clone --depth 1 -b clang-omp git://github.com/clang-omp/clang ${CLANG_OMP_TARGET}/tools/clang
   CMAKE_ARGS
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
@@ -961,6 +971,33 @@ add_external_project(
       -DMPFR_LIBRARIES=${MPFR_PREFIX}/lib)
 add_dependencies(${EIGEN_TARGET} ${GMP_TARGET})
 add_dependencies(${EIGEN_TARGET} ${MPFR_TARGET})
+
+################################################################################
+# Extrae.
+add_external_project(
+  ${EXTRAE_TARGET}
+  PREFIX ${EXTRAE_PREFIX}
+  DOWNLOAD_DIR ${EXTRAE_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O extrae-2.5.0.tar.bz2 https://docs.google.com/uc?authuser=0&id=0BySPYa0lPpaYUjQwcWcxV1JVZEk&export=download&revid=0BySPYa0lPpaYdTlISFRhVW02RFd5TWcyL00yZWRZbWdlZzFNPQ &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/extrae-2.5.0.tar.bz2.sig
+          extrae-2.5.0.tar.bz2 &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf
+          ${EXTRAE_PREFIX}/download/extrae-2.5.0.tar.bz2
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${EXTRAE_PREFIX}
+      CC=${CMAKE_C_COMPILER}
+      CXX=${CMAKE_CXX_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+      CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+      LDFLAGS=${LDFLAGS_WITH_ARCHS}
+      ${CONFIGURE_LIB_TYPE}
+      --with-boost=${BOOST_PREFIX}
+      --with-libz=${ZLIB_PREFIX}
+      --with-papi=${PAPI_PREFIX})
+add_dependencies(${EXTRAE_TARGET} ${BOOST_TARGET})
+add_dependencies(${EXTRAE_TARGET} ${PAPI_TARGET})
+add_dependencies(${EXTRAE_TARGET} ${ZLIB_PREFIX})
 
 ################################################################################
 # Flex.
@@ -2029,7 +2066,6 @@ add_external_project_step(${OPENMP_TARGET} set_install_names
   WORKING_DIRECTORY ${OPENMP_PREFIX}/lib)
 set(OPENMP_COMPILE_FLAG "-fopenmp")
 add_dependencies(${OPENMP_TARGET} ${GCC_TARGET})
-# add_dependencies(${OPENMP_TARGET} ${CLANG_OMP_TARGET})
 
 ################################################################################
 # OpenSSL.
@@ -2134,6 +2170,33 @@ endif ()
 add_dependencies(${OPENSSL_TARGET} ${GMP_TARGET})
 
 ################################################################################
+# papi.
+set(PAPI_C_FLAGS "-I${OPENMP_PREFIX}/include")
+set(PAPI_LINKER_FLAGS)
+foreach (FLAG ${third_party.openmp})
+  set(PAPI_LINKER_FLAGS "${PAPI_LINKER_FLAGS} ${FLAG}")
+endforeach ()
+add_external_project(
+  ${PAPI_TARGET}
+  PREFIX ${PAPI_PREFIX}
+  DOWNLOAD_DIR ${PAPI_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O papi-5.3.0.tar.gz http://icl.cs.utk.edu/projects/papi/downloads/papi-5.3.0.tar.gz &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/papi-5.3.0.tar.gz.sig
+          papi-5.3.0.tar.gz &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 2 -xvf
+          ${PAPI_PREFIX}/download/papi-5.3.0.tar.gz papi-5.3.0/src
+  CONFIGURE_COMMAND CC=${GCC_C_COMPILER}
+          CXX=${GCC_CXX_COMPILER} CFLAGS=${PAPI_C_FLAGS}
+          LDFLAGS=${PAPI_LINKER_FLAGS}
+          <SOURCE_DIR>/configure --prefix=${PAPI_PREFIX} ${HOST}
+          ${CONFIGURE_LIB_TYPE}
+  BUILD_IN_SOURCE 1)
+add_dependencies(${PAPI_TARGET} ${GCC_TARGET})
+add_dependencies(${PAPI_TARGET} ${OPENMP_TARGET})
+
+################################################################################
 # pcre.
 add_external_project(
   ${PCRE_TARGET}
@@ -2146,9 +2209,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${PCRE_PREFIX}/download/pcre-8.33.tar.bz2
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${PCRE_PREFIX}
-  BUILD_COMMAND make
-  INSTALL_COMMAND make install)
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${PCRE_PREFIX})
 
 ################################################################################
 # PHP.
@@ -2580,9 +2641,6 @@ function(protobuf_generate_java SRCS)
 endfunction()
 
 function(protobuf_generate_py SRCS)
-  if (NOT PYTHON_SUPPORTED)
-    return()
-  endif ()
   if(NOT ARGN)
     message(SEND_ERROR
             "Error: protobuf_generate_py() called without any proto files")
