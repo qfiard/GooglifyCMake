@@ -2521,7 +2521,7 @@ if (PYTHON_SUPPORTED)
     INSTALL_COMMAND
         cd ${VIRTUALENV_PREFIX} && ./bin/virtualenv env
     BUILD_IN_SOURCE 1)
-  set(LINE "source ${PROJECT_SOURCE_DIR}/.profile")
+  set(LINE "source ${CMAKE_CURRENT_LIST_DIR}/.profile")
   add_custom_command(TARGET ${VIRTUALENV_TARGET} POST_BUILD
     COMMAND
         grep -q "${LINE}" $ENV{HOME}/.profile && exit 0 ||
