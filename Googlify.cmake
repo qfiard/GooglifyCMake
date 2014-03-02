@@ -82,10 +82,31 @@ endfunction(add_linkflags)
 
 function(add_data TARGET)
   get_current_prefix(PREFIX)
+  get_full_target(${TARGET} FULL_TARGET)
   foreach (DATA ${ARGN})
-    add_custom_command(
-      TARGET "${PREFIX}${TARGET}" POST_BUILD
-      COMMAND ln -sf ${DATA} ${CMAKE_CURRENT_BINARY_DIR})
+    get_filename_component(DIRNAME ${DATA} PATH)
+    get_filename_component(NAME ${DATA} NAME)
+    get_source_file_property(GENERATED ${DATA} GENERATED)
+    if (EXISTS "${DATA}" OR GENERATED)
+      if (GENERATED)
+        set(GENERATE_TARGET ${FULL_TARGET}._${NAME})
+        add_custom_target(${GENERATE_TARGET} DEPENDS ${DATA})
+        add_dependencies(${FULL_TARGET} ${GENERATE_TARGET})
+      endif ()
+      add_custom_command(
+        TARGET ${FULL_TARGET} POST_BUILD
+        COMMAND ln -sf ${DATA} ${CMAKE_CURRENT_BINARY_DIR})
+    else ()
+      if (DATA MATCHES "^third_party\\.")
+        set(DATA ${DATA}_target)
+      endif ()
+      get_output_file(${DATA} OUTPUT_FILE)
+      add_custom_command(
+        TARGET ${FULL_TARGET} POST_BUILD
+        COMMAND ln -sf ${OUTPUT_FILE} ${CMAKE_CURRENT_BINARY_DIR}
+        VERBATIM)
+      add_dependencies(${FULL_TARGET} ${DATA})
+    endif ()
   endforeach ()
 endfunction(add_data)
 

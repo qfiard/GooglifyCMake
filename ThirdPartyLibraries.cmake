@@ -142,7 +142,10 @@ add_target(BSDIFF bsdiff)
 add_target(BZIP2 bzip2)
 add_target(CLANG clang)
 add_target(CLANG_OMP clang_omp)
+add_target(CLOSURE_COMPILER closure-compiler)
+add_target(CLOSURE_LIBRARY closure-library)
 add_target(CURL_ASIO curl-asio)
+add_target(DIFF_MATCH_PATCH diff_match_patch)
 add_target(DLIB dlib)
 add_target(EIGEN eigen)
 add_target(EXTRAE extrae)
@@ -243,6 +246,7 @@ set_libraries(boost_test ${BOOST_LIB_DIR} boost_test)
 set_libraries(boost_thread ${BOOST_LIB_DIR} boost_thread)
 set_libraries(boost_timer ${BOOST_LIB_DIR} boost_timer)
 set_libraries(boost_wave ${BOOST_LIB_DIR} boost_wave)
+set_libraries(bzip2 ${BZIP2_PREFIX}/lib bz2)
 set_libraries(clang ${CLANG_LIB_DIR} clang)
 set_libraries(clang_analysis ${CLANG_LIB_DIR} clangAnalysis)
 set_libraries(clang_arcmigrate ${CLANG_LIB_DIR} clangARCMigrate)
@@ -272,6 +276,7 @@ set_libraries(
     clang_static_analyzer_frontend ${CLANG_LIB_DIR} clangStaticAnalyzerFrontend)
 set_libraries(clang_tooling ${CLANG_LIB_DIR} clangTooling)
 set_libraries(curl-asio ${CURL_ASIO_PREFIX}/lib curlasio)
+set_libraries(diff_match_patch ${DIFF_MATCH_PATCH_PREFIX}/lib diff_match_patch)
 set_libraries(dlib ${DLIB_PREFIX}/lib dlib)
 set_libraries(flex ${FLEX_PREFIX}/lib fl)
 set_libraries(g2log ${G2LOG_PREFIX}/lib lib_activeobject lib_g2logger)
@@ -436,6 +441,11 @@ set_libraries(zlib ${ZLIB_PREFIX}/lib z)
 
 # Dependencies. We must be careful to define a DAG.
 add_library_dependencies(boost_filesystem third_party.boost_system)
+if (IS_IOS)
+  add_library_dependencies(boost_iostreams bz2)
+else ()
+  add_library_dependencies(boost_iostreams third_party.bzip2)
+endif ()
 add_library_dependencies(openssl third_party.gmp)
 add_library_dependencies(libcurl third_party.openssl third_party.zlib)
 add_library_dependencies(curl-asio third_party.boost_system third_party.libcurl)
@@ -510,8 +520,10 @@ set(EIGEN_INCLUDE_PATH ${EIGEN_PREFIX}/include/eigen3)
 set_include_directories(
     arabica ${ARABICA_PREFIX}/include ${ARABICA_PREFIX}/include/arabica)
 set_include_directories(boost ${BOOST_PREFIX}/include)
+set_include_directories(bzip2 ${BZIP2_PREFIX}/include)
 set_include_directories(clang ${CLANG_PREFIX}/include)
 set_include_directories(curl-asio ${CURL_ASIO_PREFIX}/include)
+set_include_directories(diff_match_patch ${DIFF_MATCH_PATCH_PREFIX}/include)
 set_include_directories(dlib ${DLIB_PREFIX}/include)
 set_include_directories(eigen ${EIGEN_INCLUDE_PATH})
 set_include_directories(flex ${FLEX_PREFIX}/include)
@@ -876,6 +888,33 @@ add_external_project(
       -DCMAKE_INSTALL_PREFIX=${CLANG_OMP_PREFIX})
 
 ################################################################################
+# Closure Compiler.
+add_external_project(
+  ${CLOSURE_COMPILER_TARGET}
+  PREFIX ${CLOSURE_COMPILER_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone https://code.google.com/p/closure-compiler ${CLOSURE_COMPILER_TARGET}
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${ANT} jar
+  INSTALL_COMMAND
+      ${CMAKE_COMMAND} -E make_directory ${CLOSURE_COMPILER_PREFIX}/bin &&
+      cp -f <BINARY_DIR>/build/compiler.jar ${CLOSURE_COMPILER_PREFIX}/bin
+  BUILD_IN_SOURCE 1)
+set(CLOSURE_COMPILER_JAR ${CLOSURE_COMPILER_PREFIX}/bin/compiler.jar)
+
+################################################################################
+# Closure Library.
+add_external_project(
+  ${CLOSURE_LIBRARY_TARGET}
+  PREFIX ${CLOSURE_LIBRARY_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone https://code.google.com/p/closure-library <INSTALL_DIR>/lib/closure-library
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND ${NOP})
+set(CLOSURE_LIBRARY ${CLOSURE_LIBRARY_PREFIX}/lib/closure-library)
+
+################################################################################
 # curl-asio, an asynchronous CURL wrapper based on Boost Asio.
 # See https://github.com/mologie/curl-asio.
 set(CURL_ASIO_C_FLAGS "-I${LIBCURL_PREFIX}/include ${CMAKE_C_FLAGS}")
@@ -913,6 +952,36 @@ add_external_project_step(
   WORKING_DIRECTORY ${CURL_ASIO_PREFIX}/lib)
 add_dependencies(${CURL_ASIO_TARGET} ${BOOST_TARGET})
 add_dependencies(${CURL_ASIO_TARGET} ${LIBCURL_TARGET})
+
+################################################################################
+# diff_match_patch.
+add_external_project(
+  ${DIFF_MATCH_PATCH_TARGET}
+  PREFIX ${DIFF_MATCH_PATCH_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --depth 1 git://github.com/QuentinFiard/diff_match_patch ${DIFF_MATCH_PATCH_TARGET}
+  CMAKE_ARGS
+      -DBUILD_EXAMPLES=OFF
+      -DBUILD_TESTS=OFF
+
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_BUILD_TYPE=RELEASE
+      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+      -DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}
+      -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_INSTALL_PREFIX=${DIFF_MATCH_PATCH_PREFIX}
+      -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT})
+add_external_project_step(
+  ${DIFF_MATCH_PATCH_TARGET} set_install_names
+  COMMAND ${SET_INSTALL_NAMES} ${CMAKE_INSTALL_NAME_TOOL}
+      ${CMAKE_SHARED_LIBRARY_SUFFIX}
+  DEPENDEES install
+  DEPENDS ${SET_INSTALL_NAMES}
+  WORKING_DIRECTORY ${DIFF_MATCH_PATCH_PREFIX}/lib)
 
 ################################################################################
 # dlib.
@@ -1058,6 +1127,8 @@ add_external_project(
       -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
       -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
+
       -DLIBRARY_OUTPUT_PATH=<INSTALL_DIR>/lib
   INSTALL_COMMAND
       ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/include/g2log &&
@@ -2710,6 +2781,31 @@ function(bison_generate_parser YAC SRC_ HDR_)
   set(${SRC_} ${SRC} PARENT_SCOPE)
   set(${HDR_} ${HDR} PARENT_SCOPE)
 endfunction()
+
+function (closure_library TARGET)
+  set(SRCS)
+  get_full_target(${TARGET} FULL_TARGET)
+  foreach (SRC ${ARGN})
+    set(OUT ${CMAKE_CURRENT_BINARY_DIR}/${SRC})
+    set(TMP ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${SRC})
+    set(SRC ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
+    add_custom_command(
+        OUTPUT ${OUT}
+        COMMAND /usr/bin/env python ${CLOSURE_LIBRARY}/closure/bin/build/closurebuilder.py
+        ARGS --root=${CLOSURE_LIBRARY} --root=${CMAKE_CURRENT_SOURCE_DIR}
+            --namespace=${FULL_TARGET} --output_mode=compiled
+            --compiler_jar=${CLOSURE_COMPILER_JAR}
+            # --compiler_flags=--compilation_level=ADVANCED_OPTIMIZATIONS # Breaks other javascript code.
+            > ${TMP} && mv ${TMP} ${OUT}
+        DEPENDS ${CLOSURE_COMPILER_TARGET} ${CLOSURE_LIBRARY_TARGET} ${SRC}
+        COMMENT "Compiling ${SRC} with Closure compiler"
+        VERBATIM)
+    list(APPEND SRCS ${OUT})
+  endforeach ()
+  get_full_target(${TARGET} FULL_TARGET)
+  add_custom_target(${FULL_TARGET} ALL SOURCES ${SRCS})
+  set_target_properties(${FULL_TARGET} PROPERTIES TARGET_FILE ${SRCS})
+endfunction ()
 
 ################################################################################
 # Other functions.
