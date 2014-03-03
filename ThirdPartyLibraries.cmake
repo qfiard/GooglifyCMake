@@ -162,6 +162,7 @@ add_target(GNUGREP gnugrep)
 add_target(GNUTAR gnutar)
 add_target(GTEST gtest)
 add_target(HAPROXY haproxy)
+add_target(HTTPD httpd)
 add_target(HTTPXX httpxx)
 add_target(ICU icu)
 add_target(IMAP_2007F imap-2007f)
@@ -184,6 +185,7 @@ add_target(MAVEN maven)
 add_target(MAVEN_LIBS maven_libs)
 add_target(MCRYPT mcrypt)
 add_target(MILI mili)
+add_target(MOD_JK mod_jk)
 add_target(MPC mpc)
 add_target(MPFR mpfr)
 add_target(MYSQL mysql)
@@ -1365,6 +1367,36 @@ add_external_project(
   BUILD_IN_SOURCE 1)
 
 ################################################################################
+# httpd.
+add_external_project(
+  ${HTTPD_TARGET}
+  PREFIX ${HTTPD_PREFIX}
+  DOWNLOAD_DIR ${HTTPD_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O httpd-2.4.7.tar.bz2 http://mirrors.ukfast.co.uk/sites/ftp.apache.org//httpd/httpd-2.4.7.tar.bz2 &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/httpd-2.4.7.tar.bz2.asc
+          httpd-2.4.7.tar.bz2 &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf
+          ${HAPROXY_PREFIX}/download/httpd-2.4.7.tar.bz2
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure
+      --with-apr=${APR_PREFIX}
+      --with-apr-util=${APR_UTIL_PREFIX}
+      --with-libxml2=${LIBXML_PREFIX}
+      --with-ssl=${OPENSSL_PREFIX}
+      --with-pcre=${PCRE_PREFIX}
+      --with-z=${ZLIB_PREFIX}
+  INSTALL_COMMAND
+      echo "This will install httpd in /usr/local/apache." &&
+      sudo make install)
+add_dependencies(${HTTPD_TARGET} ${APR_TARGET})
+add_dependencies(${HTTPD_TARGET} ${APR_UTIL_TARGET})
+add_dependencies(${HTTPD_TARGET} ${LIBXML_TARGET})
+add_dependencies(${HTTPD_TARGET} ${OPENSSL_TARGET})
+add_dependencies(${HTTPD_TARGET} ${PCRE_TARGET})
+add_dependencies(${HTTPD_TARGET} ${ZLIB_TARGET})
+
+################################################################################
 # httpxx.
 add_external_project(
   ${HTTPXX_TARGET}
@@ -1874,6 +1906,24 @@ add_dependencies(${MPC_TARGET} ${GMP_TARGET})
 add_dependencies(${MPC_TARGET} ${MPFR_TARGET})
 
 ################################################################################
+# mod_jk.
+ExternalProject_Get_Property(${HTTPD_TARGET} SOURCE_DIR)
+set(HTTPD_SOURCE_DIR ${SOURCE_DIR})
+add_external_project(
+  ${MOD_JK_TARGET}
+  PREFIX ${MOD_JK_PREFIX}
+  DOWNLOAD_DIR ${MOD_JK_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O tomcat-connectors-1.2.37-src.tar.gz http://www.apache.org/dist/tomcat/tomcat-connectors/jk/tomcat-connectors-1.2.37-src.tar.gz &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/tomcat-connectors-1.2.37-src.tar.gz.sig
+          tomcat-connectors-1.2.37-src.tar.gz &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf
+          ${MPC_PREFIX}/download/tomcat-connectors-1.2.37-src.tar.gz
+  CONFIGURE_COMMAND
+      <SOURCE_DIR>/configure --with-apache=${HTTPD_SOURCE_DIR})
+
+################################################################################
 # MPFR.
 add_external_project(
   ${MPFR_TARGET}
@@ -2287,6 +2337,13 @@ add_external_project(
       tar --strip-components 1 -xvf
           ${PCRE_PREFIX}/download/pcre-8.33.tar.bz2
   CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${PCRE_PREFIX})
+add_external_project_step(${PCRE_TARGET} set_install_names
+  COMMAND
+      ${SET_INSTALL_NAMES} ${CMAKE_INSTALL_NAME_TOOL}
+          ${CMAKE_SHARED_LIBRARY_SUFFIX}
+  DEPENDEES install
+  DEPENDS ${SET_INSTALL_NAMES}
+  WORKING_DIRECTORY ${PCRE_PREFIX}/lib)
 
 ################################################################################
 # PHP.
