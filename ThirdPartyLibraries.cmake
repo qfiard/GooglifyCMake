@@ -1377,7 +1377,7 @@ add_external_project(
 
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-      -DCMAKE_BUILD_TYPE=DEBUG
+      -DCMAKE_BUILD_TYPE=RELEASE
       -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
       -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
@@ -1724,6 +1724,7 @@ add_external_project(
       ${GIT} clone --depth 1 git://git.gnome.org/libxml2 ${LIBXML_TARGET}
   CONFIGURE_COMMAND
       <SOURCE_DIR>/autogen.sh --prefix=${LIBXML_PREFIX} ${HOST}
+          --with-icu=${ICU_PREFIX}
           --with-lzma=${XZ_PREFIX}
           --with-zlib=${ZLIB_PREFIX}
           CC=${CMAKE_C_COMPILER}
@@ -1732,6 +1733,7 @@ add_external_project(
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${WITH_PYTHON}
           ${CONFIGURE_LIB_TYPE})
+add_dependencies(${LIBXML_TARGET} ${ICU_TARGET})
 add_dependencies(${LIBXML_TARGET} ${XZ_TARGET})
 add_dependencies(${LIBXML_TARGET} ${ZLIB_TARGET})
 
@@ -1946,7 +1948,7 @@ add_external_project(
   CMAKE_ARGS
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-      -DCMAKE_BUILD_TYPE=DEBUG
+      -DCMAKE_BUILD_TYPE=RELEASE
       -DCMAKE_C_FLAGS=${MYSQLCPPCONN_C_FLAGS}
       -DCMAKE_CXX_FLAGS=${MYSQLCPPCONN_CXX_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${MYSQLCPPCONN_LINKER_FLAGS}
