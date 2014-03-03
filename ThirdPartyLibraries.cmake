@@ -1429,8 +1429,11 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${IMAP_2007F_PREFIX}/download/imap-2007f.tar.gz
+  PATCH_COMMAND
+      patch -Np0 < ${THIRD_PARTY_SOURCE_DIR}/imap-2007f.patch
   CONFIGURE_COMMAND ${NOP}
-  BUILD_COMMAND make osx SSLTYPE=unix.nopwd EXTRACFLAGS=-fPIC
+  BUILD_COMMAND
+      make osx SSLTYPE=unix.nopwd SSLDIR=${OPENSSL_PREFIX} EXTRACFLAGS=-fPIC
   INSTALL_COMMAND
       cd <SOURCE_DIR> &&
       ${CMAKE_COMMAND} -E make_directory ${IMAP_2007F_PREFIX}/lib &&
@@ -1439,6 +1442,7 @@ add_external_project(
       cd c-client &&
       find . -name "*.h" | cpio -dp ${IMAP_2007F_PREFIX}/include/
   BUILD_IN_SOURCE 1)
+add_dependencies(${IMAP_2007F_TARGET} ${OPENSSL_TARGET})
 
 ################################################################################
 # iwyu.

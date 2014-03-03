@@ -1,0 +1,11 @@
+--- Makefile	2014-03-03 00:57:49.000000000 +0000
++++ Makefile	2014-03-03 00:57:55.000000000 +0000
+@@ -425,7 +425,7 @@ oxp:	an
+ osx:	osxok an
+ 	$(TOUCH) ip6
+ 	$(BUILD) BUILDTYPE=$@ IP=$(IP6) EXTRAAUTHENTICATORS="$(EXTRAAUTHENTICATORS) gss" \
+-	SPECIALS="SSLINCLUDE=/usr/include/openssl SSLLIB=/usr/lib SSLCERTS=/System/Library/OpenSSL/certs SSLKEYS=/System/Library/OpenSSL/private GSSINCLUDE=/usr/include GSSLIB=/usr/lib"
++	# SPECIALS="SSLINCLUDE=/usr/include/openssl SSLLIB=/usr/lib SSLCERTS=/System/Library/OpenSSL/certs SSLKEYS=/System/Library/OpenSSL/private GSSINCLUDE=/usr/include GSSLIB=/usr/lib"
+ 
+ osxok:
+ 	@$(SH) -c '(test ! -f /usr/include/pam/pam_appl.h ) || make osxwarn'
