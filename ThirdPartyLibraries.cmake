@@ -93,6 +93,12 @@ macro(set_target_for_libraries TARGET)
   endforeach ()
 endmacro()
 
+macro(add_framework_dependencies NAME)
+  foreach (FRAMEWORK ${ARGN})
+    list(APPEND third_party.${NAME} "-framework ${FRAMEWORK}")
+  endforeach ()
+endmacro()
+
 macro(add_library_dependencies NAME)
   foreach (LIB ${ARGN})
     if (NOT DEFINED ${LIB})
@@ -442,6 +448,9 @@ set_libraries(tbb ${TBB_PREFIX}/lib tbb)
 set_libraries(zlib ${ZLIB_PREFIX}/lib z)
 
 # Dependencies. We must be careful to define a DAG.
+
+add_framework_dependencies(sw_reveal_view_controller CoreGraphics)
+
 add_library_dependencies(boost_filesystem third_party.boost_system)
 if (IS_IOS)
   add_library_dependencies(boost_iostreams bz2)
@@ -969,12 +978,12 @@ add_external_project(
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
       -DCMAKE_BUILD_TYPE=RELEASE
-      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
       -DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
       -DCMAKE_INSTALL_PREFIX=${DIFF_MATCH_PATCH_PREFIX}
       -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT})
 add_external_project_step(
@@ -1120,11 +1129,13 @@ add_external_project(
       cp -r g2log/g2log <SOURCE_DIR>
   PATCH_COMMAND patch -Np0 < ${THIRD_PARTY_SOURCE_DIR}/g2log.patch
   CMAKE_ARGS
+      -DUSE_SIMPLE_EXAMPLE=OFF
+
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
       -DCMAKE_BUILD_TYPE=RELEASE
-      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
       -DCMAKE_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
@@ -1341,6 +1352,7 @@ add_external_project(
 
 ################################################################################
 # HAProxy. TODO(qfiard): Make portable.
+set(HAPROXY_LINKER_FLAGS "-L${PCRE_PREFIX}")
 add_external_project(
   ${HAPROXY_TARGET}
   PREFIX ${HAPROXY_PREFIX}
@@ -1354,7 +1366,7 @@ add_external_project(
           ${HAPROXY_PREFIX}/download/haproxy-1.5-dev22.tar.gz
   CONFIGURE_COMMAND ${NOP}
   BUILD_COMMAND make TARGET=osx CPU_CFLAGS=${CMAKE_C_FLAGS}
-      USE_PCRE=1 USE_OPENSSL=1 USE_LIBCRYPT=
+      USE_PCRE=1 USE_OPENSSL=1 USE_LIBCRYPT= USE_ZLIB=1
   INSTALL_COMMAND
       echo "This will install haproxy in /usr/local/haproxy." &&
       sudo make install DESTDIR=${HAPROXY_PREFIX} &&

@@ -325,20 +325,22 @@ function(generated_file TARGET FILE SCRIPT)
     string(REGEX REPLACE "^:" "" SCRIPT ${SCRIPT})
     set(SCRIPT ${PREFIX}${SCRIPT})
   endif ()
-  add_custom_target(${FULL_TARGET})
+  set_source_files_properties(${FILE} PROPERTIES GENERATED TRUE)
+  add_custom_target(${FULL_TARGET} SOURCES ${FILE})
   set_target_properties(${FULL_TARGET} PROPERTIES TARGET_FILE ${FILE})
   if (EXISTS SCRIPT)
     add_custom_command(
-        TARGET ${FULL_TARGET} POST_BUILD
+        OUTPUT ${FILE}
         COMMAND ${SCRIPT} ${FILE} ${ARGN}
+        DEPENDS ${SCRIPT} ${ARGN}
         VERBATIM)
   else ()
     get_output_file(${SCRIPT} OUTPUT_FILE)
     add_custom_command(
-        TARGET ${FULL_TARGET} POST_BUILD
+        OUTPUT ${FILE}
         COMMAND ${OUTPUT_FILE} ${FILE} ${ARGN}
+        DEPENDS ${ARGN} ${SCRIPT}
         VERBATIM)
-    add_dependencies(${FULL_TARGET} ${SCRIPT})
   endif ()
 endfunction()
 

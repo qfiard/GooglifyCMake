@@ -4,7 +4,7 @@ fi
 
 alias build-all='list-all-targets | while read target; do echo "Building $target..."; make $target 2>&1 || echo $target 1>&2; done'
 alias buildify-all='find . -name "CMakeLists.txt" -exec sh -c "buildifier -f {}" \;'
-alias clang-format-all='find . \( -name "*.h" -o -name "*.cc" -o -name "*.m" -o -name "*.mm" \) -exec sh -c "clang-format -style=Google {} > {}.new && mv {}.new {}" \;'
+alias clang-format-all='find . \( -name "*.h" -o -name "*.c" -o -name "*.cc" -o -name "*.m" -o -name "*.mm" -o -name "*.cpp" -o -name "*.hpp" \) -exec sh -c "clang-format -style=Google {} > {}.new && mv {}.new {}" \;'
 alias dev="cd $DEV_ROOT"
 alias list-all-targets='make help|grep "\.\.\. "|sed "s/\.\.\. //g"|grep "\."|grep -v "third_party"'
 alias rfb='dir=`echo \`pwd\`|sed "s@\($DEV_ROOT\)/build\(.*\)@\1\2@"`; cd $dir'
