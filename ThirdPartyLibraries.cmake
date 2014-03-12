@@ -194,6 +194,7 @@ add_target(MAVEN maven)
 add_target(MAVEN_LIBS maven_libs)
 add_target(MCRYPT mcrypt)
 add_target(MILI mili)
+add_target(MOBILE_COMMERCE_IOS mobile_commerce_ios)
 add_target(MOD_JK mod_jk)
 add_target(MPC mpc)
 add_target(MPFR mpfr)
@@ -411,6 +412,16 @@ set_libraries(llvm_xcore_disassembler ${LLVM_LIB_DIR} LLVMXCoreDisassembler)
 set_libraries(llvm_xcore_info ${LLVM_LIB_DIR} LLVMXCoreInfo)
 set_libraries(marisa_trie ${MARISA_TRIE_PREFIX}/lib marisa)
 set_libraries(mili "")  # Mili is header only.
+set_libraries(mobile_commerce_ios_atg_mobile_client
+              ${MOBILE_COMMERCE_IOS_PREFIX}/lib ATGMobileClient)
+set_libraries(mobile_commerce_ios_atg_gui_elements
+              ${MOBILE_COMMERCE_IOS_PREFIX}/lib ATGUIElements)
+set_libraries(mobile_commerce_ios_ios_rest_client
+              ${MOBILE_COMMERCE_IOS_PREFIX}/lib iOS-rest-client)
+set_libraries(mobile_commerce_ios_atg_mobile_common
+              ${MOBILE_COMMERCE_IOS_PREFIX}/lib ATGMobileCommon)
+set_libraries(mobile_commerce_ios_em_mobile_client
+              ${MOBILE_COMMERCE_IOS_PREFIX}/lib EMMobileClient)
 set_libraries(mpc ${MPC_PREFIX}/lib mpc)
 set_libraries(mpfr ${MPFR_PREFIX}/lib mpfr)
 set_libraries(mysqlcppconn ${MYSQLCPPCONN_PREFIX}/lib mysqlcppconn)
@@ -476,6 +487,11 @@ add_library_dependencies(shark third_party.boost_serialization)
 add_library_dependencies(protobuf third_party.zlib)
 add_library_dependencies(arabica third_party.boost_thread)
 
+add_library_dependencies(mobile_commerce_ios_atg_mobile_common
+                         third_party.mobile_commerce_ios_ios_rest_client)
+add_framework_dependencies(
+    mobile_commerce_ios_atg_mobile_common CoreData SystemConfiguration)
+
 # Aliases.
 add_library_dependencies(boost_asio third_party.boost_system)
 
@@ -527,6 +543,13 @@ set_target_for_libraries(
     llvm_x86_utils llvm_xcore_asm_printer llvm_xcore_code_gen llvm_xcore_desc
     llvm_xcore_disassembler llvm_xcore_info)
 set_target_for_libraries(
+    ${MOBILE_COMMERCE_IOS_TARGET}
+    mobile_commerce_ios_atg_mobile_client
+    mobile_commerce_ios_atg_gui_elements
+    mobile_commerce_ios_ios_rest_client
+    mobile_commerce_ios_atg_mobile_common
+    mobile_commerce_ios_em_mobile_client)
+set_target_for_libraries(
     ${OPENCV_TARGET} opencv_bioinspired opencv_calib3d opencv_contrib
     opencv_core opencv_cuda opencv_cudaarithm opencv_cudabgsegm
     opencv_cudafeatures2d opencv_cudafilters opencv_cudaimgproc
@@ -565,6 +588,8 @@ set_include_directories(
     libxml ${LIBXML_PREFIX}/include ${LIBXML_PREFIX}/include/libxml2)
 set_include_directories(marisa_trie ${MARISA_TRIE_PREFIX}/include)
 set_include_directories(mili ${MILI_PREFIX}/include)
+set_include_directories(
+    mobile_commerce_ios ${MOBILE_COMMERCE_IOS_PREFIX}/include)
 set_include_directories(mpc ${MPC_PREFIX}/include)
 set_include_directories(mpfr ${MPFR_PREFIX}/include)
 set_include_directories(mysql ${MYSQL_PREFIX}/include)
@@ -1946,6 +1971,26 @@ add_external_project(
   BUILD_COMMAND ${NOP}
   INSTALL_COMMAND find mili | cpio -dp <INSTALL_DIR>/include
   BUILD_IN_SOURCE 1)
+
+################################################################################
+# MobileCommerceiOS.
+if (IS_IOS)
+  string(REGEX REPLACE "^-" "" SDK ${CMAKE_XCODE_EFFECTIVE_PLATFORMS})
+  add_external_project(
+    ${MOBILE_COMMERCE_IOS_TARGET}
+    PREFIX ${MOBILE_COMMERCE_IOS_PREFIX}
+    DOWNLOAD_COMMAND
+        ${GIT} clone --depth 1 git://github.com/QuentinFiard/MobileCommerceiOS
+            ${MOBILE_COMMERCE_IOS_TARGET}
+    CONFIGURE_COMMAND ${NOP}
+    BUILD_COMMAND
+        find .. -name "*.xcodeproj" |
+        xargs -I{} xcodebuild -project {} -configuration Release -sdk ${SDK}
+    INSTALL_COMMAND
+        cd <SOURCE_DIR>/build/Release-${SDK} &&
+        find . -name "*.h" | cpio -dp <INSTALL_DIR>/include &&
+        find . -name "*.a" | cpio -dp <INSTALL_DIR>/lib)
+endif ()
 
 ################################################################################
 # MPC.
