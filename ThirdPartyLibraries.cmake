@@ -148,6 +148,7 @@ add_target(BSDIFF bsdiff)
 add_target(BZIP2 bzip2)
 add_target(CLANG clang)
 add_target(CLANG_OMP clang_omp)
+add_target(CLDR cldr)
 add_target(CLOSURE_COMPILER closure-compiler)
 add_target(CLOSURE_LIBRARY closure-library)
 add_target(CURL_ASIO curl-asio)
@@ -172,6 +173,8 @@ add_target(HTTPD httpd)
 add_target(HTTPXX httpxx)
 add_target(ICU icu)
 add_target(IMAP_2007F imap-2007f)
+add_target(ISO_3166 iso_3166)
+add_target(ISO_639 iso_639)
 add_target(IWYU iwyu)
 add_target(JSONCPP jsoncpp)
 add_target(LDAP ldap)
@@ -293,6 +296,14 @@ set_libraries(gmock ${GMOCK_PREFIX}/lib gmock gmock_main)
 set_libraries(gmp ${GMP_PREFIX}/lib gmp)
 set_libraries(gtest ${GTEST_PREFIX}/lib gtest gtest_main)
 set_libraries(httpxx ${HTTPXX_PREFIX}/lib http_parser httpxx)
+set_libraries(icu_data ${ICU_PREFIX}/lib icudata)
+set_libraries(icu_i18n ${ICU_PREFIX}/lib icui18n)
+set_libraries(icu_io ${ICU_PREFIX}/lib icuio)
+set_libraries(icu_le ${ICU_PREFIX}/lib icule)
+set_libraries(icu_lx ${ICU_PREFIX}/lib iculx)
+set_libraries(icu_test ${ICU_PREFIX}/lib icutest)
+set_libraries(icu_tu ${ICU_PREFIX}/lib icutu)
+set_libraries(icu_uc ${ICU_PREFIX}/lib icuuc)
 set_libraries(jsoncpp ${JSONCPP_PREFIX}/lib jsoncpp)
 set_libraries(libcurl ${LIBCURL_PREFIX}/lib curl)
 set_libraries(libcxx ${LIBCXX_PREFIX}/lib c++)
@@ -484,6 +495,8 @@ set_target_for_libraries(
     clang_rewrite_frontend clang_sema clang_serialization
     clang_static_analyzer_checkers clang_static_analyzer_core
     clang_static_analyzer_frontend clang_tooling)
+set_target_for_libraries(${ICU_TARGET} icu_data icu_i18n icu_io icu_le icu_lx
+                         icu_test icu_tu icu_uc)
 set_target_for_libraries(
     ${CLANG_TARGET} llvm_aarch64_asm_parser llvm_aarch64_asm_printer
     llvm_aarch64_code_gen llvm_aarch64_desc llvm_aarch64_disassembler
@@ -544,6 +557,7 @@ set_include_directories(gmock ${GMOCK_PREFIX}/include)
 set_include_directories(gmp ${GMP_PREFIX}/include)
 set_include_directories(gtest ${GTEST_PREFIX}/include)
 set_include_directories(httpxx ${HTTPXX_PREFIX}/include)
+set_include_directories(icu ${ICU_PREFIX}/include)
 set_include_directories(jsoncpp ${JSONCPP_PREFIX}/include)
 set_include_directories(libcurl ${LIBCURL_PREFIX}/include)
 set_include_directories(libcxx ${LIBCXX_PREFIX}/include/c++/v1)
@@ -897,6 +911,22 @@ add_external_project(
       -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
       -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${CLANG_OMP_PREFIX})
+
+################################################################################
+# Common Locale Data Repository.
+set(CLDR_ROOT ${CLDR_PREFIX}/cldr)
+add_external_project(
+  ${CLDR_TARGET}
+  PREFIX ${CLDR_PREFIX}
+  DOWNLOAD_DIR ${CLDR_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O json.zip http://unicode.org/Public/cldr/latest/json.zip &&
+      ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/cldr &&
+      cd <INSTALL_DIR>/cldr &&
+      unzip ${CLDR_PREFIX}/download/json.zip
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND ${NOP})
 
 ################################################################################
 # Closure Compiler.
@@ -1487,6 +1517,31 @@ add_external_project(
       find . -name "*.h" | cpio -dp ${IMAP_2007F_PREFIX}/include/
   BUILD_IN_SOURCE 1)
 add_dependencies(${IMAP_2007F_TARGET} ${OPENSSL_TARGET})
+
+################################################################################
+# iso_3166.
+set(ISO_3166_CSV ${ISO_3166_PREFIX}/iso_3166.csv)
+add_external_project(
+  ${ISO_3166_TARGET}
+  PREFIX ${ISO_3166_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --depth 1 git://github.com/lukes/ISO-3166-Countries-with-Regional-Codes.git ${ISO_3166_TARGET}
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND
+      cp -f <SOURCE_DIR>/all/all.csv ${ISO_3166_CSV})
+
+################################################################################
+# iso_3166.
+set(ISO_639_CSV ${ISO_639_PREFIX}/iso_639.csv)
+add_external_project(
+  ${ISO_639_TARGET}
+  PREFIX ${ISO_639_PREFIX}
+  DOWNLOAD_COMMAND
+      wget -O <INSTALL_DIR>/iso_6399.csv http://www.loc.gov/standards/iso639-2/ISO-639-2_utf-8.txt
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND ${NOP})
 
 ################################################################################
 # iwyu.

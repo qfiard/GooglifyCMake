@@ -87,7 +87,7 @@ function(add_data TARGET)
     get_filename_component(DIRNAME ${DATA} PATH)
     get_filename_component(NAME ${DATA} NAME)
     get_source_file_property(GENERATED ${DATA} GENERATED)
-    if (EXISTS "${DATA}" OR GENERATED)
+    if (EXISTS "${DATA}" OR GENERATED OR "${DATA}" MATCHES "/")
       if (GENERATED)
         set(GENERATE_TARGET ${FULL_TARGET}._${NAME})
         add_custom_target(${GENERATE_TARGET} DEPENDS ${DATA})
@@ -325,22 +325,23 @@ function(generated_file TARGET FILE SCRIPT)
     string(REGEX REPLACE "^:" "" SCRIPT ${SCRIPT})
     set(SCRIPT ${PREFIX}${SCRIPT})
   endif ()
-  set_source_files_properties(${FILE} PROPERTIES GENERATED TRUE)
-  add_custom_target(${FULL_TARGET} SOURCES ${FILE})
-  set_target_properties(${FULL_TARGET} PROPERTIES TARGET_FILE ${FILE})
   if (EXISTS SCRIPT)
-    add_custom_command(
-        OUTPUT ${FILE}
-        COMMAND ${SCRIPT} ${FILE} ${ARGN}
-        DEPENDS ${SCRIPT} ${ARGN}
-        VERBATIM)
+    set(GENERATE_COMMAND ${SCRIPT} ${FILE} ${ARGN})
   else ()
     get_output_file(${SCRIPT} OUTPUT_FILE)
-    add_custom_command(
-        OUTPUT ${FILE}
-        COMMAND ${OUTPUT_FILE} ${FILE} ${ARGN}
-        DEPENDS ${ARGN} ${SCRIPT}
-        VERBATIM)
+    set(GENERATE_COMMAND ${OUTPUT_FILE} ${FILE} ${ARGN})
+  endif ()
+  add_custom_command(
+      OUTPUT ${FILE}
+      COMMAND ${GENERATE_COMMAND}
+      VERBATIM)
+  add_custom_target(${FULL_TARGET} ALL SOURCES ${FILE})
+  add_custom_target(${FULL_TARGET}_force COMMAND ${GENERATE_COMMAND} VERBATIM)
+  set_target_properties(${FULL_TARGET} PROPERTIES TARGET_FILE ${FILE})
+  set_target_properties(${FULL_TARGET}_force PROPERTIES TARGET_FILE ${FILE})
+  if (NOT EXISTS SCRIPT)
+    add_dependencies(${FULL_TARGET} ${SCRIPT})
+    add_dependencies(${FULL_TARGET}_force ${SCRIPT})
   endif ()
 endfunction()
 
@@ -901,30 +902,25 @@ function(py_binary TARGET SRC)
   get_current_prefix(PREFIX)
   get_full_target(${TARGET} FULL_TARGET)
   prepare_python_package(${PREFIX} INIT_PY)
-  add_custom_target(${FULL_TARGET} ALL SOURCES ${ARGN};${INIT_PY})
-  set(exe ${CMAKE_CURRENT_BINARY_DIR}/${TARGET})
-  set(src ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
-  set_target_properties(
-      ${FULL_TARGET} PROPERTIES IS_PYTHON TRUE TARGET_FILE ${exe})
-  add_custom_command(
-    TARGET ${FULL_TARGET} POST_BUILD
-    COMMAND echo "#!/usr/bin/env python" > ${exe}
-    COMMAND echo "import sys" >> ${exe}
-    DEPENDS ${exe}
-    VERBATIM)
+  set(EXE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET})
+  set(FULL_SRC ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
+  set(COMMANDS
+      COMMAND echo "#!/usr/bin/env python" > ${EXE}
+      COMMAND echo "import sys" >> ${EXE})
   foreach (python_path ${PYTHON_PATH})
-  add_custom_command(
-    TARGET ${FULL_TARGET} POST_BUILD
-    COMMAND echo "sys.path.append(\"${python_path}\")" >> ${exe}
-    DEPENDS ${exe}
-    VERBATIM)
+    set(COMMANDS ${COMMANDS}
+        COMMAND echo "sys.path.append(\"${python_path}\")" >> ${EXE})
   endforeach ()
+  set(COMMANDS ${COMMANDS}
+      COMMAND echo "execfile(\"${FULL_SRC}\")" >> ${EXE}
+      COMMAND chmod +x ${EXE})
   add_custom_command(
-    TARGET ${FULL_TARGET} POST_BUILD
-    COMMAND echo "execfile(\"${src}\")" >> ${exe}
-    COMMAND chmod +x ${exe}
-    DEPENDS ${exe}
+    OUTPUT ${EXE}
+    ${COMMANDS}
     VERBATIM)
+  add_custom_target(${FULL_TARGET} ALL SOURCES ${FULL_SRC};${INIT_PY};${EXE})
+  set_target_properties(
+      ${FULL_TARGET} PROPERTIES IS_PYTHON TRUE TARGET_FILE ${EXE})
   link(${TARGET} third_party.virtualenv)
 endfunction(py_binary)
 
@@ -936,11 +932,11 @@ function(py_library TARGET)
   set_target_properties(${FULL_TARGET} PROPERTIES IS_PYTHON TRUE)
   foreach (SRC ${ARGN})
     if (NOT SRC MATCHES "^${PROJECT_BINARY_DIR}")
-      set(src ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
+      set(FULL_SRC ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
       set(link ${CMAKE_CURRENT_BINARY_DIR}/${SRC})
       add_custom_command(
         TARGET ${FULL_TARGET} POST_BUILD
-        COMMAND ln -sf ${src} ${link}
+        COMMAND ln -sf ${FULL_SRC} ${link}
         DEPENDS ${link}
         VERBATIM)
     endif ()
@@ -952,14 +948,14 @@ function(r_binary TARGET SRC)
   get_full_target(${TARGET} FULL_TARGET)
   add_custom_target("${FULL_TARGET}" ALL SOURCES ${SRC})
   set_target_properties("${FULL_TARGET}" PROPERTIES IS_R TRUE)
-  set(exe ${CMAKE_CURRENT_BINARY_DIR}/${TARGET})
-  set(src ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
+  set(EXE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET})
+  set(FULL_SRC ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
   add_custom_command(
     TARGET "${FULL_TARGET}" POST_BUILD
-    COMMAND echo "#!/usr/bin/env Rscript" > ${exe}
-    COMMAND echo "source(\"${src}\")" >> ${exe}
-    COMMAND chmod +x ${exe}
-    DEPENDS ${exe}
+    COMMAND echo "#!/usr/bin/env Rscript" > ${EXE}
+    COMMAND echo "source(\"${FULL_SRC}\")" >> ${EXE}
+    COMMAND chmod +x ${EXE}
+    DEPENDS ${EXE}
     VERBATIM)
 endfunction(r_binary)
 
