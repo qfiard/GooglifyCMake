@@ -187,7 +187,7 @@ set(CMAKE_CXX_FLAGS "-isysroot ${CMAKE_IOS_SDK_ROOT} ${CMAKE_CXX_FLAGS}")
 
 # set the architecture for iOS
 if (${IOS_PLATFORM} STREQUAL "OS")
-  set(IOS_ARCH armv6 armv7)
+  set(IOS_ARCH armv7 armv7s)
 else ()
   set(IOS_ARCH i386)
 endif ()

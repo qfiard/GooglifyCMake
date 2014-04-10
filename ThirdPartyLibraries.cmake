@@ -309,7 +309,9 @@ set_libraries(jsoncpp ${JSONCPP_PREFIX}/lib jsoncpp)
 set_libraries(libcurl ${LIBCURL_PREFIX}/lib curl)
 set_libraries(libcxx ${LIBCXX_PREFIX}/lib c++)
 set_libraries(libcxxabi ${LIBCXXABI_PREFIX}/lib c++abi)
-set_libraries(libxml ${LIBXML_PREFIX}/lib xml2)
+if (NOT IS_IOS)
+  set_libraries(libxml ${CMAKE_IOS_SDK_ROOT}/usr/lib xml2)
+endif ()
 set_libraries(llvm_aarch64_asm_parser ${LLVM_LIB_DIR} LLVMAArch64AsmParser)
 set_libraries(llvm_aarch64_asm_printer ${LLVM_LIB_DIR} LLVMAArch64AsmPrinter)
 set_libraries(llvm_aarch64_code_gen ${LLVM_LIB_DIR} LLVMAArch64CodeGen)
@@ -470,7 +472,6 @@ set_libraries(tbb ${TBB_PREFIX}/lib tbb)
 set_libraries(zlib ${ZLIB_PREFIX}/lib z)
 
 # Dependencies. We must be careful to define a DAG.
-
 add_framework_dependencies(sw_reveal_view_controller CoreGraphics)
 
 add_library_dependencies(boost_filesystem third_party.boost_system)
@@ -480,12 +481,20 @@ else ()
   add_library_dependencies(boost_iostreams third_party.bzip2)
 endif ()
 add_library_dependencies(openssl third_party.gmp)
-add_library_dependencies(libcurl third_party.openssl third_party.zlib)
+add_library_dependencies(libcurl third_party.zlib)
+if (NOT APPLE)
+  add_library_dependencies(libcurl third_party.openssl)
+endif ()
 add_library_dependencies(curl-asio third_party.boost_system third_party.libcurl)
 add_library_dependencies(readline ncurses)
 add_library_dependencies(shark third_party.boost_serialization)
 add_library_dependencies(protobuf third_party.zlib)
-add_library_dependencies(arabica third_party.boost_thread)
+if (IS_IOS)
+  add_library_dependencies(libxml xml2)
+endif ()
+add_library_dependencies(
+    arabica third_party.boost_thread third_party.boost_system
+    third_party.libxml)
 
 add_library_dependencies(mobile_commerce_ios_atg_mobile_common
                          third_party.mobile_commerce_ios_ios_rest_client)
@@ -584,8 +593,14 @@ set_include_directories(icu ${ICU_PREFIX}/include)
 set_include_directories(jsoncpp ${JSONCPP_PREFIX}/include)
 set_include_directories(libcurl ${LIBCURL_PREFIX}/include)
 set_include_directories(libcxx ${LIBCXX_PREFIX}/include/c++/v1)
-set_include_directories(
-    libxml ${LIBXML_PREFIX}/include ${LIBXML_PREFIX}/include/libxml2)
+if (IS_IOS)
+  set_include_directories(
+      libxml ${CMAKE_IOS_SDK_ROOT}/usr/include
+      ${CMAKE_IOS_SDK_ROOT}/usr/include/libxml2)
+else ()
+  set_include_directories(
+      libxml ${LIBXML_PREFIX}/include ${LIBXML_PREFIX}/include/libxml2)
+endif ()
 set_include_directories(marisa_trie ${MARISA_TRIE_PREFIX}/include)
 set_include_directories(mili ${MILI_PREFIX}/include)
 set_include_directories(
@@ -608,7 +623,7 @@ set_include_directories(
 set_include_directories(tbb ${TBB_PREFIX}/include)
 
 # Fixing implicit header dependencies. Again we must be careful to define a DAG.
-add_include_dependencies(arabica third_party.libxml)
+add_include_dependencies(arabica third_party.boost_headers third_party.libxml)
 
 
 # 3rd-party executables.
@@ -636,6 +651,7 @@ endif ()
 
 # Escaping architectures.
 string(REPLACE ";" "$<SEMICOLON>" ARCHS "${CMAKE_OSX_ARCHITECTURES}")
+string(REPLACE ";" " " SPACE_SEP_ARCHS "${CMAKE_OSX_ARCHITECTURES}")
 string(REPLACE ";" " -arch " ARCHS_AS_FLAGS "${CMAKE_OSX_ARCHITECTURES}")
 if (NOT "${ARCHS_AS_FLAGS}" STREQUAL "")
   set(ARCHS_AS_FLAGS "-arch ${ARCHS_AS_FLAGS}")
@@ -715,6 +731,12 @@ add_dependencies(${APR_UTIL_TARGET} ${BERKELEY_DB_TARGET})
 # Arabica, an XML and HTML processing toolkit, providing SAX2, DOM, XPath, and
 # XSLT implementations, written in Standard C++.
 # See https://github.com/jezhiggins/arabica.
+set(ADDITIONAL_CMAKE_ARGS)
+if (NOT IS_IOS)
+  set(ADDITIONAL_CMAKE_ARGS
+      -DCMAKE_INCLUDE_PATH=${LIBXML_PREFIX}/include
+      -DCMAKE_LIBRARY_PATH=${LIBXML_PREFIX}/lib)
+endif ()
 add_external_project(
   ${ARABICA_TARGET}
   PREFIX ${ARABICA_PREFIX}
@@ -723,17 +745,17 @@ add_external_project(
           ${ARABICA_TARGET}
   CMAKE_ARGS
       -DBOOST_ROOT=${BOOST_PREFIX}
-      -DCMAKE_INCLUDE_PATH=${LIBXML_PREFIX}/include
-      -DCMAKE_LIBRARY_PATH=${LIBXML_PREFIX}/lib
+      ${ADDITIONAL_CMAKE_ARGS}
 
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
       -DCMAKE_BUILD_TYPE=RELEASE
-      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
       -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_OSX_ARCHITECTURES=${CMAKE_OSX_ARCHITECTURES}
       -DCMAKE_INSTALL_PREFIX=${ARABICA_PREFIX}
       -DBUILD_ARABICA_EXAMPLES=OFF)
 add_external_project_step(${ARABICA_TARGET} set_install_names
@@ -744,7 +766,9 @@ add_external_project_step(${ARABICA_TARGET} set_install_names
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${ARABICA_PREFIX}/lib)
 add_dependencies(${ARABICA_TARGET} ${BOOST_TARGET})
-add_dependencies(${ARABICA_TARGET} ${LIBXML_TARGET})
+if (NOT IS_IOS)
+  add_dependencies(${ARABICA_TARGET} ${LIBXML_TARGET})
+endif ()
 set_target_properties(
     ${ARABICA_TARGET} PROPERTIES INTERFACE_COMPILE_DEFINITIONS
     "BOOST_SPIRIT_THREADSAFE")
@@ -1504,7 +1528,14 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${ICU_PREFIX}/download/icu4c-52_1-src.tgz
-  CONFIGURE_COMMAND <SOURCE_DIR>/source/runConfigureICU MacOSX --prefix=${ICU_PREFIX}
+  CONFIGURE_COMMAND echo "\
+      CC=\"${CMAKE_C_COMPILER}\"\
+      CXX=\"${CMAKE_CXX_COMPILER}\"\
+      CFLAGS=\"${CMAKE_C_FLAGS_WITH_ARCHS}\"\
+      CXXFLAGS=\"${CMAKE_CXX_FLAGS_WITH_ARCHS}\"\
+      LDFLAGS=\"${CMAKE_SHARED_LINKER_FLAGS}\"\
+      <SOURCE_DIR>/source/configure --prefix=${ICU_PREFIX}\
+      ${CONFIGURE_LIB_TYPE} ${HOST}" | sh
   BUILD_COMMAND make CXXFLAGS="--std=c++11"
   INSTALL_COMMAND make install)
 add_external_project_step(${ICU_TARGET} set_install_names
@@ -1818,7 +1849,7 @@ add_external_project(
       gpg --verify ${THIRD_PARTY_SOURCE_DIR}/mhash-0.9.9.9.tar.bz2.sig
           mhash-0.9.9.9.tar.bz2 &&
       cd <SOURCE_DIR> &&
-      tar --strip-components 1 -xvf
+      unzip --strip-components 1 -xvf
           ${LIBMHASH_PREFIX}/download/mhash-0.9.9.9.tar.bz2
   CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${LIBMHASH_PREFIX} ${HOST}
   BUILD_IN_SOURCE 1)
@@ -1843,27 +1874,28 @@ add_dependencies(${LIBPNG_TARGET} ${GNUAUTOMAKE_TARGET})
 ################################################################################
 # libxml.
 if (IOS_BUILD OR IOS_SIMULATOR_BUILD)
-  set(WITH_PYTHON "--with-python=no")
+  add_custom_target(${LIBXML_TARGET})
+else ()
+  add_external_project(
+    ${LIBXML_TARGET}
+    PREFIX ${LIBXML_PREFIX}
+    DOWNLOAD_COMMAND
+        ${GIT} clone --depth 1 git://git.gnome.org/libxml2 ${LIBXML_TARGET}
+    CONFIGURE_COMMAND
+        <SOURCE_DIR>/autogen.sh --prefix=${LIBXML_PREFIX} ${HOST}
+            --with-icu=${ICU_PREFIX}
+            --with-lzma=${XZ_PREFIX}
+            --with-zlib=${ZLIB_PREFIX}
+            CC=${CMAKE_C_COMPILER}
+            CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+            CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+            LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+            ${WITH_PYTHON}
+            ${CONFIGURE_LIB_TYPE})
+  add_dependencies(${LIBXML_TARGET} ${ICU_TARGET})
+  add_dependencies(${LIBXML_TARGET} ${XZ_TARGET})
+  add_dependencies(${LIBXML_TARGET} ${ZLIB_TARGET})
 endif ()
-add_external_project(
-  ${LIBXML_TARGET}
-  PREFIX ${LIBXML_PREFIX}
-  DOWNLOAD_COMMAND
-      ${GIT} clone --depth 1 git://git.gnome.org/libxml2 ${LIBXML_TARGET}
-  CONFIGURE_COMMAND
-      <SOURCE_DIR>/autogen.sh --prefix=${LIBXML_PREFIX} ${HOST}
-          --with-icu=${ICU_PREFIX}
-          --with-lzma=${XZ_PREFIX}
-          --with-zlib=${ZLIB_PREFIX}
-          CC=${CMAKE_C_COMPILER}
-          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
-          CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
-          LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
-          ${WITH_PYTHON}
-          ${CONFIGURE_LIB_TYPE})
-add_dependencies(${LIBXML_TARGET} ${ICU_TARGET})
-add_dependencies(${LIBXML_TARGET} ${XZ_TARGET})
-add_dependencies(${LIBXML_TARGET} ${ZLIB_TARGET})
 
 ################################################################################
 # MarisaTrie.
@@ -1984,8 +2016,9 @@ if (IS_IOS)
             ${MOBILE_COMMERCE_IOS_TARGET}
     CONFIGURE_COMMAND ${NOP}
     BUILD_COMMAND
-        find .. -name "*.xcodeproj" |
-        xargs -I{} xcodebuild -project {} -configuration Release -sdk ${SDK}
+        find <SOURCE_DIR> -path <SOURCE_DIR>/ATGMobileStore -prune -o
+            -name "*.xcodeproj" -print |
+        xargs -I{} xcodebuild -project {} -configuration Release -sdk ${SDK} clean build DSTROOT=<INSTALL_DIR> INSTALL_PATH=/lib
     INSTALL_COMMAND
         cd <SOURCE_DIR>/build/Release-${SDK} &&
         find . -name "*.h" | cpio -dp <INSTALL_DIR>/include &&
@@ -2870,7 +2903,7 @@ function(protobuf_generate_java SRCS)
     get_filename_component(FIL_WE ${FIL} NAME_WE)
     underscores_to_camel_case(${FIL_WE} FIL_WE)
 
-    set(SRC "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.java")
+    set(SRC "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}Protos.java")
     list(APPEND ${SRCS} ${SRC})
     add_custom_command(
       OUTPUT ${SRC}

@@ -856,23 +856,24 @@ function(objc_test TARGET)
 endfunction()
 
 function(prepare_python_package PREFIX OUT)
-  if ("${PREFIX}" STREQUAL "" OR "${PREFIX}" STREQUAL ".")
-    set(INIT_PY "${PROJECT_BINARY_DIR}/src/__init__.py")
-    add_custom_command(
-        OUTPUT ${INIT_PY}
-        COMMAND touch ${INIT_PY}
-        COMMENT "Creating empty package file ${INIT_PY}")
-  else ()
+  if (NOT "${PREFIX}" STREQUAL "" AND NOT "${PREFIX}" STREQUAL ".")
     get_parent_prefix(${PREFIX} PARENT_PREFIX)
     get_directory_for_prefix(${PREFIX} PREFIX_DIRECTORY)
-    set(INIT_PY "${PREFIX_DIRECTORY}/__init__.py")
     prepare_python_package("${PARENT_PREFIX}" PARENT_INIT_PY)
-    add_custom_command(
-        OUTPUT ${INIT_PY}
-        COMMAND touch ${INIT_PY}
-        MAIN_DEPENDENCY ${PARENT_INIT_PY}
-        COMMENT "Creating empty package file ${INIT_PY}")
+    set(DEPENDS MAIN_DEPENDENCY ${PARENT_INIT_PY})
+    set(INIT_PY "${PREFIX_DIRECTORY}/__init__.py")
+  else ()
+    set(DEPENDS)
+    set(INIT_PY "${PROJECT_BINARY_DIR}/src/__init__.py")
   endif ()
+  add_custom_command(
+      OUTPUT ${INIT_PY}
+      COMMAND echo "\
+from pkgutil import extend_path\\n\
+__path__ = extend_path(__path__, __name__)" > ${INIT_PY}
+      ${DEPENDS}
+      COMMENT "Creating empty package file ${INIT_PY}"
+      VERBATIM)
   set(${OUT} ${INIT_PY} PARENT_SCOPE)
 endfunction()
 
