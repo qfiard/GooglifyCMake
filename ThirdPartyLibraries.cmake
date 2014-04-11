@@ -475,6 +475,7 @@ set_libraries(zlib ${ZLIB_PREFIX}/lib z)
 add_framework_dependencies(sw_reveal_view_controller CoreGraphics)
 
 add_library_dependencies(boost_filesystem third_party.boost_system)
+add_library_dependencies(boost_thread third_party.boost_atomic)
 if (IS_IOS)
   add_library_dependencies(boost_iostreams bz2)
 else ()
@@ -2098,12 +2099,12 @@ add_external_project(
   PREFIX ${MYSQL_PREFIX}
   DOWNLOAD_DIR ${MYSQL_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O mysql-5.6.15.tar.gz http://dev.mysql.com/get/Downloads/MySQL-5.6/mysql-5.6.15.tar.gz &&
-      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/mysql-5.6.15.tar.gz.sig
-          mysql-5.6.15.tar.gz &&
+      wget -O mysql-5.6.17.tar.gz http://dev.mysql.com/get/Downloads/MySQL-5.6/mysql-5.6.17.tar.gz &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/mysql-5.6.17.tar.gz.sig
+          mysql-5.6.17.tar.gz &&
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
-          ${MYSQL_PREFIX}/download/mysql-5.6.15.tar.gz
+          ${MYSQL_PREFIX}/download/mysql-5.6.17.tar.gz
   PATCH_COMMAND
       patch -p0 < ${THIRD_PARTY_SOURCE_DIR}/mysql.patch
   CMAKE_ARGS
