@@ -661,7 +661,7 @@ set(LDFLAGS_WITH_ARCHS "${ARCHS_AS_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 
 # Sets the --host flag to the appropriate value if necessary.
 if (IOS_BUILD)
-  set(HOST "--host=arm")
+  set(HOST "--host=arm-apple-darwin")
 endif ()
 
 # Generic configure flags to select static or shared library compilation.
