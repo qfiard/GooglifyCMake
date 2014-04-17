@@ -896,6 +896,10 @@ add_external_project(
 
 ################################################################################
 # bzip2.
+set(BZIP2_MAKEFILE Makefile)
+if (BUILD_SHARED_LIBS)
+  set(BZIP2_MAKEFILE Makefile-libbz2_so)
+endif ()
 add_external_project(
   ${BZIP2_TARGET}
   PREFIX ${BZIP2_PREFIX}
@@ -908,8 +912,12 @@ add_external_project(
       tar --strip-components 1 -xvf
           ${BZIP2_PREFIX}/download/bzip2-1.0.6.tar.gz
   CONFIGURE_COMMAND ${NOP}
-  BUILD_COMMAND make
-  INSTALL_COMMAND make install PREFIX=${BZIP2_PREFIX}
+  BUILD_COMMAND make -f ${BZIP2_MAKEFILE} bzip2 bzip2recover
+      CC=${CMAKE_C_COMPILER}
+      CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+      CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+  INSTALL_COMMAND make -f ${BZIP2_MAKEFILE} install PREFIX=${BZIP2_PREFIX}
   BUILD_IN_SOURCE 1)
 
 ################################################################################
