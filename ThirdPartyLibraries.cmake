@@ -633,6 +633,7 @@ set_include_directories(tbb ${TBB_PREFIX}/include)
 
 # Fixing implicit header dependencies. Again we must be careful to define a DAG.
 add_include_dependencies(arabica third_party.boost_headers third_party.libxml)
+add_include_dependencies(curl-asio third_party.libcurl)
 
 
 # 3rd-party executables.
