@@ -5,6 +5,12 @@ option(SKIP_PORTABILITY_WARNINGS "Skip portability warnings" OFF)
 # Set the following two values to use external Boost libraries.
 set(BOOST_ROOT "" CACHE STRING "Boost install directory")
 set(BOOST_TIME_ZONE_CSV "" CACHE STRING "Boost time zone csv datafile")
+if (IS_IOS)
+  set(ICU_CROSS_BUILD "" CACHE STRING "ICU executable build")
+  if (NOT ICU_CROSS_BUILD)
+    message(WARNING "Please define ICU_CROSS_BUILD if you intend to compile ICU.")
+  endif ()
+endif ()
 
 
 set(SUPPORT_DIR ${CMAKE_CURRENT_LIST_DIR}/support)
@@ -1541,6 +1547,18 @@ add_external_project_step(${HTTPXX_TARGET} set_install_names
 
 ################################################################################
 # ICU. TODO(qfiard): Make portable.
+set(ICU_BUILD_COMMAND "\
+  CC=\"${CMAKE_C_COMPILER}\"\
+  CXX=\"${CMAKE_CXX_COMPILER}\"\
+  CFLAGS=\"${CMAKE_C_FLAGS_WITH_ARCHS}\"\
+  CXXFLAGS=\"${CMAKE_CXX_FLAGS_WITH_ARCHS}\"\
+  LDFLAGS=\"${CMAKE_SHARED_LINKER_FLAGS}\"\
+  <SOURCE_DIR>/source/configure --prefix=${ICU_PREFIX}\
+  ${CONFIGURE_LIB_TYPE} ${HOST}")
+if (IS_IOS)
+  set(ICU_BUILD_COMMAND
+      "${ICU_BUILD_COMMAND} --with-cross-build=${ICU_CROSS_BUILD}")
+endif ()
 add_external_project(
   ${ICU_TARGET}
   PREFIX ${ICU_PREFIX}
@@ -1552,14 +1570,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${ICU_PREFIX}/download/icu4c-52_1-src.tgz
-  CONFIGURE_COMMAND echo "\
-      CC=\"${CMAKE_C_COMPILER}\"\
-      CXX=\"${CMAKE_CXX_COMPILER}\"\
-      CFLAGS=\"${CMAKE_C_FLAGS_WITH_ARCHS}\"\
-      CXXFLAGS=\"${CMAKE_CXX_FLAGS_WITH_ARCHS}\"\
-      LDFLAGS=\"${CMAKE_SHARED_LINKER_FLAGS}\"\
-      <SOURCE_DIR>/source/configure --prefix=${ICU_PREFIX}\
-      ${CONFIGURE_LIB_TYPE} ${HOST}" | sh
+  CONFIGURE_COMMAND echo "${ICU_BUILD_COMMAND}" | sh
   BUILD_COMMAND make CXXFLAGS="--std=c++11"
   INSTALL_COMMAND make install)
 add_external_project_step(${ICU_TARGET} set_install_names
