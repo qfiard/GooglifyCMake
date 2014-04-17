@@ -1664,7 +1664,7 @@ add_external_project(
       cp -f <SOURCE_DIR>/all/all.csv ${ISO_3166_CSV})
 
 ################################################################################
-# iso_3166.
+# iso_639.
 set(ISO_639_CSV ${ISO_639_PREFIX}/iso_639.csv)
 add_external_project(
   ${ISO_639_TARGET}
