@@ -1785,7 +1785,22 @@ add_dependencies(${LIBCXX_TARGET} ${LIBCXXABI_TARGET})
 ################################################################################
 # libcxxabi.
 ExternalProject_Get_Property(${LIBCXX_TARGET} SOURCE_DIR)
-set(LIBCXXABI_OPTIONS "-I${SOURCE_DIR}/include")
+set(LIBCXXABI_OPTIONS "-I${SOURCE_DIR}/include ${ARCHS_AS_FLAGS}")
+if (APPLE AND NOT "${CMAKE_OSX_SYSROOT}" STREQUAL "")
+  set(LIBCXXABI_OPTIONS "${LIBCXXABI_OPTIONS} --sysroot ${CMAKE_OSX_SYSROOT}")
+endif ()
+set(LIBCXXABI_BUILD_COMMAND
+    "cd <INSTALL_DIR>/lib &&\
+     CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}\
+     OPTIONS=\"${LIBCXXABI_OPTIONS}\"")
+set(LIBCXXABI_BUILD_COMMAND_END "./buildit")
+if (BUILD_SHARED_LIBS)
+  set(LIBCXXABI_BUILD_COMMAND_END
+      "${LIBCXXABI_BUILD_COMMAND_END} && ln -sf libcxxabi.1.0.dylib libcxxabi.dylib")
+else ()
+  set(LIBCXXABI_BUILD_COMMAND "${LIBCXXABI_BUILD_COMMAND} BUILD_STATIC=1")
+endif ()
+set(LIBCXXABI_BUILD_COMMAND "${LIBCXXABI_BUILD_COMMAND} ${LIBCXXABI_BUILD_COMMAND_END}")
 add_external_project(
   ${LIBCXXABI_TARGET}
   PREFIX ${LIBCXXABI_PREFIX}
@@ -1794,11 +1809,7 @@ add_external_project(
   PATCH_COMMAND
     cd <INSTALL_DIR>/lib && patch -p0 < ${THIRD_PARTY_SOURCE_DIR}/libcxxabi.patch
   CONFIGURE_COMMAND ${NOP}
-  BUILD_COMMAND
-    cd <INSTALL_DIR>/lib &&
-    CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
-    OPTIONS=${LIBCXXABI_OPTIONS} ./buildit &&
-    ln -s libc++abi.1.0.dylib libc++abi.dylib
+  BUILD_COMMAND echo ${LIBCXXABI_BUILD_COMMAND} | sh
   INSTALL_COMMAND ${NOP})
 add_external_project_step(${LIBCXXABI_TARGET} set_install_names
   COMMAND
