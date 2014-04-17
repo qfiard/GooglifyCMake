@@ -1914,7 +1914,12 @@ add_external_project(
       cd <SOURCE_DIR> &&
       ./autogen.sh &&
       cd <BINARY_DIR> &&
-      <SOURCE_DIR>/configure --prefix=${LIBPNG_PREFIX} ${HOST})
+      <SOURCE_DIR>/configure --prefix=${LIBPNG_PREFIX} ${HOST}
+          CC=${CMAKE_C_COMPILER}
+          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+          CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+          LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+          ${CONFIGURE_LIB_TYPE})
 add_dependencies(${LIBPNG_TARGET} ${GNUAUTOMAKE_TARGET})
 
 ################################################################################
