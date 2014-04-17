@@ -769,9 +769,7 @@ add_dependencies(${ARABICA_TARGET} ${BOOST_TARGET})
 if (NOT IS_IOS)
   add_dependencies(${ARABICA_TARGET} ${LIBXML_TARGET})
 endif ()
-set_target_properties(
-    ${ARABICA_TARGET} PROPERTIES INTERFACE_COMPILE_DEFINITIONS
-    "BOOST_SPIRIT_THREADSAFE")
+add_definitions(-DBOOST_SPIRIT_THREADSAFE)
 
 ################################################################################
 # BerkeleyDB.
