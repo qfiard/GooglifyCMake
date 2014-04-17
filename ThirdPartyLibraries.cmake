@@ -1183,18 +1183,34 @@ add_external_project(
   PREFIX ${FREETYPE_PREFIX}
   DOWNLOAD_DIR ${FREETYPE_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O freetype-2.5.1.tar.bz2 http://download.savannah.gnu.org/releases/freetype/freetype-2.5.1.tar.bz2 &&
-      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/freetype-2.5.1.tar.bz2.sig
-          freetype-2.5.1.tar.bz2 &&
+      wget -O freetype-2.5.3.tar.bz2 https://docs.google.com/uc?authuser=0&id=0BySPYa0lPpaYNldReHU4dUMwWk0&export=download&revid=0BySPYa0lPpaYd0UxeGdMN0NZOHlGd0c0ZGozSWZ0bDNaMzl3PQ &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/freetype-2.5.3.tar.bz2.sig
+          freetype-2.5.3.tar.bz2 &&
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
-          ${FREETYPE_PREFIX}/download/freetype-2.5.1.tar.bz2
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${FREETYPE_PREFIX} ${HOST}
-  BUILD_COMMAND make
+          ${FREETYPE_PREFIX}/download/freetype-2.5.3.tar.bz2
+  CONFIGURE_COMMAND
+      <SOURCE_DIR>/configure --prefix=${FREETYPE_PREFIX} ${HOST}
+          CC=${CMAKE_C_COMPILER}
+          CC_BUILD=${CMAKE_C_COMPILER}
+          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+          CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+          LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+          ${CONFIGURE_LIB_TYPE}
+
+          BZIP2_CFLAGS=-I${BZIP2_PREFIX}/include
+          BZIP2_LIBS="-L${BZIP2_PREFIX}/lib -lbz2"
+          LIBPNG_CFLAGS=-I${LIBPNG_PREFIX}/include
+          LIBPNG_LIBS="-L${LIBPNG_PREFIX}/lib -lpng"
+          ZLIB_CFLAGS=-I${ZLIB_PREFIX}/include
+          ZLIB_LIBS="-L${ZLIB_PREFIX}/lib -lz"
   INSTALL_COMMAND
       make install &&
       ln -s ${FREETYPE_PREFIX}/include/freetype2
           ${FREETYPE_PREFIX}/include/freetype2/freetype)
+add_dependencies(${FREETYPE_TARGET} ${BZIP2_TARGET})
+add_dependencies(${FREETYPE_TARGET} ${LIBPNG_TARGET})
+add_dependencies(${FREETYPE_TARGET} ${ZLIB_TARGET})
 
 ################################################################################
 # g2log.
