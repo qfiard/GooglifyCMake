@@ -178,6 +178,7 @@ add_target(HAPROXY haproxy)
 add_target(HTTPD httpd)
 add_target(HTTPXX httpxx)
 add_target(ICU icu)
+add_target(IMAGEMAGICK imagemagick)
 add_target(IMAP_2007F imap-2007f)
 add_target(ISO_3166 iso_3166)
 add_target(ISO_639 iso_639)
@@ -1580,6 +1581,45 @@ add_external_project_step(${ICU_TARGET} set_install_names
   DEPENDEES install
   DEPENDS ${SET_INSTALL_NAMES}
   WORKING_DIRECTORY ${ICU_PREFIX}/lib)
+
+################################################################################
+# ImageMagick. TODO(qfiard): Make portable.
+if (APPLE AND NOT "${CMAKE_OSX_SYSROOT}" STREQUAL "" AND
+    NOT EXISTS ${CMAKE_OSX_SYSROOT}/usr/include/crt_externs.h)
+  message(WARNING "crt_externs.h is missing from ${CMAKE_OSX_SYSROOT}/usr/include, please copy it from somewhere to compile ImageMagick")
+endif ()
+set(IMAGEMAGICK_CONFIGURE_COMMAND
+    <SOURCE_DIR>/configure --prefix=${IMAGEMAGICK_PREFIX} ${HOST}
+        CC=${CMAKE_C_COMPILER}
+        CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+        CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+        LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+        FREETYPE_CFLAGS=-I${FREETYPE_PREFIX}/include
+        FREETYPE_LIBS="-L${FREETYPE_PREFIX}/lib -lfreetype"
+        ${CONFIGURE_LIB_TYPE}
+        PKG_CONFIG=)
+set(IMAGEMAGICK_CXX_FLAGS "${CMAKE_CXX_FLAGS_WITH_ARCHS}")
+if (NOT "${CMAKE_OSX_SYSROOT}" STREQUAL "")
+  set(IMAGEMAGICK_CONFIGURE_COMMAND ${IMAGEMAGICK_CONFIGURE_COMMAND}
+      --with-sysroot=${CMAKE_OSX_SYSROOT})
+endif ()
+if (IOS_BUILD)
+  set(IMAGEMAGICK_CONFIGURE_COMMAND ${IMAGEMAGICK_CONFIGURE_COMMAND}
+      --without-x)
+endif ()
+add_external_project(
+  ${IMAGEMAGICK_TARGET}
+  PREFIX ${IMAGEMAGICK_PREFIX}
+  DOWNLOAD_DIR ${IMAGEMAGICK_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O ImageMagick-6.8.9-0.tar.bz2 http://www.imagemagick.org/download/ImageMagick-6.8.9-0.tar.bz2 &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/ImageMagick-6.8.9-0.tar.bz2.sig
+          ImageMagick-6.8.9-0.tar.bz2 &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf
+          ${IMAGEMAGICK_PREFIX}/download/ImageMagick-6.8.9-0.tar.bz2
+  CONFIGURE_COMMAND ${IMAGEMAGICK_CONFIGURE_COMMAND})
+add_dependencies(${IMAGEMAGICK_TARGET} ${FREETYPE_TARGET})
 
 ################################################################################
 # IMAP-2007f. TODO(qfiard): Make portable.
