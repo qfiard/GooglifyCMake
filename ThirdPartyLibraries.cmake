@@ -1014,8 +1014,8 @@ set(CLOSURE_LIBRARY ${CLOSURE_LIBRARY_PREFIX}/lib/closure-library)
 ################################################################################
 # curl-asio, an asynchronous CURL wrapper based on Boost Asio.
 # See https://github.com/mologie/curl-asio.
-set(CURL_ASIO_C_FLAGS "-I${LIBCURL_PREFIX}/include ${CMAKE_C_FLAGS}")
-set(CURL_ASIO_CXX_FLAGS "-I${LIBCURL_PREFIX}/include ${CMAKE_CXX_FLAGS}")
+set(CURL_ASIO_C_FLAGS "-I${LIBCURL_PREFIX}/include ${CMAKE_C_FLAGS_WITH_ARCHS}")
+set(CURL_ASIO_CXX_FLAGS "-I${LIBCURL_PREFIX}/include ${CMAKE_CXX_FLAGS_WITH_ARCHS}")
 set(CURL_ASIO_LINKER_FLAGS "${LINKER_FLAGS}")
 foreach (FLAG ${third_party.libcurl})
   set(CURL_ASIO_LINKER_FLAGS "${CURL_ASIO_LINKER_FLAGS} ${FLAG}")
@@ -1028,18 +1028,20 @@ add_external_project(
           ${CURL_ASIO_TARGET}
   CMAKE_ARGS
       -DBOOST_ROOT=${BOOST_PREFIX}
+      -DCURL_INCLUDE_DIR=${LIBCURL_PREFIX}/include
+      -DCURL_LIBRARY=${LIBCURL_PREFIX}/lib/libcurl.dylib
       -DBUILD_EXAMPLES=OFF
 
       -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
       -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
       -DCMAKE_BUILD_TYPE=RELEASE
       -DCMAKE_C_FLAGS=${CURL_ASIO_C_FLAGS}
       -DCMAKE_CXX_FLAGS=${CURL_ASIO_CXX_FLAGS}
       -DCMAKE_SHARED_LINKER_FLAGS=${CURL_ASIO_LINKER_FLAGS}
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
       -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
-      -DCMAKE_INSTALL_PREFIX=${CURL_ASIO_PREFIX}
-      -DCURL_ROOT=${LIBCURL_PREFIX})
+      -DCMAKE_INSTALL_PREFIX=${CURL_ASIO_PREFIX})
 add_external_project_step(
   ${CURL_ASIO_TARGET} set_install_names
   COMMAND ${SET_INSTALL_NAMES} ${CMAKE_INSTALL_NAME_TOOL}
