@@ -177,11 +177,8 @@ endif ()
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINKER_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAGS}")
 
-
-
-# Set the sysroot default to the most recent SDK
-set(CMAKE_OSX_SYSROOT ${CMAKE_IOS_SDK_ROOT} CACHE PATH
-    "Sysroot used for iOS support")
+# Set the sysroot to the most recent SDK
+set(CMAKE_OSX_SYSROOT ${CMAKE_IOS_SDK_ROOT})
 set(CMAKE_C_FLAGS "-isysroot ${CMAKE_IOS_SDK_ROOT} ${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "-isysroot ${CMAKE_IOS_SDK_ROOT} ${CMAKE_CXX_FLAGS}")
 
