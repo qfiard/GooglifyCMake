@@ -475,6 +475,7 @@ set_libraries(zlib ${ZLIB_PREFIX}/lib z)
 add_framework_dependencies(sw_reveal_view_controller CoreGraphics)
 
 add_library_dependencies(boost_filesystem third_party.boost_system)
+add_library_dependencies(boost_log third_party.boost_filesystem)
 add_library_dependencies(boost_thread third_party.boost_atomic)
 if (IS_IOS)
   add_library_dependencies(boost_iostreams bz2)
