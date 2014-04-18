@@ -182,6 +182,7 @@ add_target(IMAGEMAGICK imagemagick)
 add_target(IMAP_2007F imap-2007f)
 add_target(ISO_3166 iso_3166)
 add_target(ISO_639 iso_639)
+add_target(ISO_COUNTRY_FLAGS iso-country-flags)
 add_target(IWYU iwyu)
 add_target(JSONCPP jsoncpp)
 add_target(LDAP ldap)
@@ -1672,6 +1673,18 @@ add_external_project(
   PREFIX ${ISO_639_PREFIX}
   DOWNLOAD_COMMAND
       wget -O <INSTALL_DIR>/iso_6399.csv http://www.loc.gov/standards/iso639-2/ISO-639-2_utf-8.txt
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND ${NOP})
+
+################################################################################
+# iso-country-flags.
+add_external_project(
+  ${ISO_COUNTRY_FLAGS_TARGET}
+  PREFIX ${ISO_COUNTRY_FLAGS_PREFIX}
+  DOWNLOAD_DIR ${ISO_COUNTRY_FLAGS_PREFIX}
+  DOWNLOAD_COMMAND
+      ${SVN} export --force https://github.com/koppi/iso-country-flags-svg-collection/trunk/svg/country-squared data
   CONFIGURE_COMMAND ${NOP}
   BUILD_COMMAND ${NOP}
   INSTALL_COMMAND ${NOP})
