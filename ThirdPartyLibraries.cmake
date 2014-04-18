@@ -1188,7 +1188,7 @@ add_external_project(
   PREFIX ${EXTRAE_PREFIX}
   DOWNLOAD_DIR ${EXTRAE_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O extrae-2.5.0.tar.bz2 https://docs.google.com/uc?authuser=0&id=0BySPYa0lPpaYUjQwcWcxV1JVZEk&export=download&revid=0BySPYa0lPpaYdTlISFRhVW02RFd5TWcyL00yZWRZbWdlZzFNPQ &&
+      wget -O extrae-2.5.0.tar.bz2 https://docs.google.com/uc?id=0BySPYa0lPpaYUjQwcWcxV1JVZEk&export=download &&
       gpg --verify ${THIRD_PARTY_SOURCE_DIR}/extrae-2.5.0.tar.bz2.sig
           extrae-2.5.0.tar.bz2 &&
       cd <SOURCE_DIR> &&
@@ -1232,7 +1232,7 @@ add_external_project(
   PREFIX ${FREETYPE_PREFIX}
   DOWNLOAD_DIR ${FREETYPE_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O freetype-2.5.3.tar.bz2 https://docs.google.com/uc?authuser=0&id=0BySPYa0lPpaYNldReHU4dUMwWk0&export=download&revid=0BySPYa0lPpaYd0UxeGdMN0NZOHlGd0c0ZGozSWZ0bDNaMzl3PQ &&
+      wget -O freetype-2.5.3.tar.bz2 https://docs.google.com/uc?id=0BySPYa0lPpaYNldReHU4dUMwWk0&export=download &&
       gpg --verify ${THIRD_PARTY_SOURCE_DIR}/freetype-2.5.3.tar.bz2.sig
           freetype-2.5.3.tar.bz2 &&
       cd <SOURCE_DIR> &&
