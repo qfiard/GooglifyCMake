@@ -157,6 +157,7 @@ add_target(CLANG_OMP clang_omp)
 add_target(CLDR cldr)
 add_target(CLOSURE_COMPILER closure-compiler)
 add_target(CLOSURE_LIBRARY closure-library)
+add_target(COUNTRY_INFOS country_infos)
 add_target(CURL_ASIO curl-asio)
 add_target(DIFF_MATCH_PATCH diff_match_patch)
 add_target(DLIB dlib)
@@ -1018,6 +1019,18 @@ add_external_project(
   BUILD_COMMAND ${NOP}
   INSTALL_COMMAND ${NOP})
 set(CLOSURE_LIBRARY ${CLOSURE_LIBRARY_PREFIX}/lib/closure-library)
+
+################################################################################
+# Country Infos.
+add_external_project(
+  ${COUNTRY_INFOS_TARGET}
+  PREFIX ${COUNTRY_INFOS_PREFIX}
+  DOWNLOAD_COMMAND
+      mkdir -p <INSTALL_DIR>/data &&
+      wget -O <INSTALL_DIR>/data/country_infos.txt http://download.geonames.org/export/dump/countryInfo.txt
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND ${NOP})
 
 ################################################################################
 # curl-asio, an asynchronous CURL wrapper based on Boost Asio.
