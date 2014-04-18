@@ -171,7 +171,7 @@ function(add_file_ios_app TARGET SRC DEST)
     COMMAND mkdir -p ${DEST_DIR}
     VERBATIM)
   get_source_file_property(GENERATED ${FULL_SRC} GENERATED)
-  if (EXISTS "${FULL_SRC}" OR GENERATED)
+  if ("${SRC}" MATCHES "^/" OR EXISTS "${FULL_SRC}" OR GENERATED)
     add_custom_command(
       TARGET ${FULL_TARGET} POST_BUILD
       COMMAND ditto ${FULL_SRC} ${DEST}
