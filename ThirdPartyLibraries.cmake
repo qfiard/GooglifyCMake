@@ -1634,7 +1634,14 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${IMAGEMAGICK_PREFIX}/download/ImageMagick-6.8.9-0.tar.bz2
-  CONFIGURE_COMMAND ${IMAGEMAGICK_CONFIGURE_COMMAND})
+  CONFIGURE_COMMAND ${IMAGEMAGICK_CONFIGURE_COMMAND}
+  INSTALL_COMMAND
+      make install &&
+      cd <INSTALL_DIR>/lib &&
+      echo "\
+      for f in *${LIBRARY_SUFFIX}$<SEMICOLON> do\
+        echo $f| sed 's/\\(\\(^.*\\)-.*\\.\\(.*$\\)\\)/ln -sf \\1 \\2.\\3/'|sh$<SEMICOLON>\
+      done" | sh)
 add_dependencies(${IMAGEMAGICK_TARGET} ${FREETYPE_TARGET})
 
 ################################################################################
