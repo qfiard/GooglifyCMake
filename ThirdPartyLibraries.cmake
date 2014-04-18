@@ -680,8 +680,10 @@ endif ()
 
 # Generic configure flags to select static or shared library compilation.
 if (${BUILD_SHARED_LIBS})
+  set(LIBRARY_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
   set(CONFIGURE_LIB_TYPE --enable-shared --disable-static)
 else ()
+  set(LIBRARY_SUFFIX ${CMAKE_STATIC_LIBRARY_SUFFIX})
   set(CONFIGURE_LIB_TYPE --disable-shared --enable-static)
 endif ()
 
@@ -908,12 +910,8 @@ add_external_project(
 
 ################################################################################
 # bzip2.
-set(BZIP2_MAKEFILE Makefile)
-if (BUILD_SHARED_LIBS)
-  set(BZIP2_MAKEFILE Makefile-libbz2_so)
-endif ()
 add_external_project(
-  ${BZIP2_TARGET}
+  ${BZIP2_TARGET}_download
   PREFIX ${BZIP2_PREFIX}
   DOWNLOAD_DIR ${BZIP2_PREFIX}/download
   DOWNLOAD_COMMAND
@@ -924,13 +922,31 @@ add_external_project(
       tar --strip-components 1 -xvf
           ${BZIP2_PREFIX}/download/bzip2-1.0.6.tar.gz
   CONFIGURE_COMMAND ${NOP}
-  BUILD_COMMAND make -f ${BZIP2_MAKEFILE} bzip2 bzip2recover
-      CC=${CMAKE_C_COMPILER}
-      CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
-      CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
-      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
-  INSTALL_COMMAND make -f ${BZIP2_MAKEFILE} install PREFIX=${BZIP2_PREFIX}
-  BUILD_IN_SOURCE 1)
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND ${NOP})
+ExternalProject_Get_Property(${BZIP2_TARGET}_download SOURCE_DIR)
+set(BZIP2_SRCS
+    ${SOURCE_DIR}/blocksort.c
+    ${SOURCE_DIR}/huffman.c
+    ${SOURCE_DIR}/crctable.c
+    ${SOURCE_DIR}/randtable.c
+    ${SOURCE_DIR}/compress.c
+    ${SOURCE_DIR}/decompress.c
+    ${SOURCE_DIR}/bzlib.c)
+set_source_files_properties(${BZIP2_SRCS} PROPERTIES GENERATED TRUE)
+cc_library(${BZIP2_TARGET}
+           ${SOURCE_DIR}/blocksort.c
+           ${SOURCE_DIR}/huffman.c
+           ${SOURCE_DIR}/crctable.c
+           ${SOURCE_DIR}/randtable.c
+           ${SOURCE_DIR}/compress.c
+           ${SOURCE_DIR}/decompress.c
+           ${SOURCE_DIR}/bzlib.c)
+set_target_properties(
+    ${BZIP2_TARGET} PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${BZIP2_PREFIX}/lib
+    OUTPUT_NAME bz2)
+add_dependencies(${BZIP2_TARGET} ${BZIP2_TARGET}_download)
 
 ################################################################################
 # Clang compiler.
