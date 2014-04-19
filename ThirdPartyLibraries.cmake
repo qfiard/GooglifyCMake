@@ -1606,9 +1606,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${ICU_PREFIX}/download/icu4c-52_1-src.tgz
-  CONFIGURE_COMMAND echo "${ICU_BUILD_COMMAND}" | sh
-  BUILD_COMMAND make CXXFLAGS="--std=c++11"
-  INSTALL_COMMAND make install)
+  CONFIGURE_COMMAND echo "${ICU_BUILD_COMMAND}" | sh)
 add_external_project_step(${ICU_TARGET} set_install_names
   COMMAND
       ${SET_INSTALL_NAMES} ${CMAKE_INSTALL_NAME_TOOL}
