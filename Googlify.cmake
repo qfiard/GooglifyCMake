@@ -770,6 +770,7 @@ function(link_with_full_cmake_target_c FULL_TARGET LIB)
   if (IS_OBJC AND IS_TEST AND NOT OBJC_TEST_SUPPORTED)
     return()
   endif ()
+  get_target_property(TYPE ${FULL_TARGET} TYPE)
   target_link_libraries(${FULL_TARGET} ${LIB})
 endfunction()
 
