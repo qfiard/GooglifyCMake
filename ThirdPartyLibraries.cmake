@@ -176,6 +176,7 @@ add_target(DIFF_MATCH_PATCH diff_match_patch)
 add_target(DLIB dlib)
 add_target(EIGEN eigen)
 add_target(EXTRAE extrae)
+add_target(FAST_IMAGE_CACHE fast_image_cache)
 add_target(FLEX flex)
 add_target(FREETYPE freetype)
 add_target(G2LOG g2log)
@@ -323,6 +324,7 @@ set_libraries(clang_tooling ${CLANG_LIB_DIR} clangTooling)
 set_libraries(curl-asio ${CURL_ASIO_PREFIX}/lib curlasio)
 set_libraries(diff_match_patch ${DIFF_MATCH_PATCH_PREFIX}/lib diff_match_patch)
 set_libraries(dlib ${DLIB_PREFIX}/lib dlib)
+set_libraries(fast_image_cache ${FAST_IMAGE_CACHE_PREFIX}/lib fast_image_cache)
 set_libraries(flex ${FLEX_PREFIX}/lib fl)
 set_libraries(freetype ${FREETYPE_PREFIX}/lib freetype)
 set_libraries(g2log ${G2LOG_PREFIX}/lib lib_activeobject lib_g2logger)
@@ -630,6 +632,7 @@ set_include_directories(curl-asio ${CURL_ASIO_PREFIX}/include)
 set_include_directories(diff_match_patch ${DIFF_MATCH_PATCH_PREFIX}/include)
 set_include_directories(dlib ${DLIB_PREFIX}/include)
 set_include_directories(eigen ${EIGEN_INCLUDE_PATH})
+set_include_directories(fast_image_cache ${FAST_IMAGE_CACHE_PREFIX}/include)
 set_include_directories(flex ${FLEX_PREFIX}/include)
 set_include_directories(freetype ${FREETYPE_PREFIX}/include)
 set_include_directories(g2log ${G2LOG_PREFIX}/include)
@@ -1252,6 +1255,38 @@ add_external_project(
 add_dependencies(${EXTRAE_TARGET} ${BOOST_TARGET})
 add_dependencies(${EXTRAE_TARGET} ${PAPI_TARGET})
 add_dependencies(${EXTRAE_TARGET} ${ZLIB_PREFIX})
+
+################################################################################
+# FastImageCache.
+add_external_project(
+  ${FAST_IMAGE_CACHE_TARGET}_download
+  PREFIX ${FAST_IMAGE_CACHE_PREFIX}
+  SOURCE_DIR ${FAST_IMAGE_CACHE_PREFIX}/src/${FAST_IMAGE_CACHE_TARGET}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --depth 1 git://github.com/path/FastImageCache.git ${FAST_IMAGE_CACHE_TARGET}
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND
+      cd <SOURCE_DIR> &&
+      find FastImageCache -name "*.h" | cpio -dp <INSTALL_DIR>/include)
+ExternalProject_Get_Property(${FAST_IMAGE_CACHE_TARGET}_download SOURCE_DIR)
+set(SOURCE_DIR ${SOURCE_DIR}/FastImageCache)
+set(FAST_IMAGE_CACHE_SRCS
+    ${SOURCE_DIR}/FICImageCache.m
+    ${SOURCE_DIR}/FICImageFormat.m
+    ${SOURCE_DIR}/FICImageTable.m
+    ${SOURCE_DIR}/FICImageTableChunk.m
+    ${SOURCE_DIR}/FICImageTableEntry.m
+    ${SOURCE_DIR}/FICUtilities.m)
+set_source_files_properties(${FAST_IMAGE_CACHE_SRCS} PROPERTIES GENERATED TRUE)
+objc_library(${FAST_IMAGE_CACHE_TARGET} ${FAST_IMAGE_CACHE_SRCS})
+link_framework(${FAST_IMAGE_CACHE_TARGET} CoreGraphics UIKit)
+set_target_properties(
+    ${FAST_IMAGE_CACHE_TARGET} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${FAST_IMAGE_CACHE_PREFIX}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${FAST_IMAGE_CACHE_PREFIX}/lib
+    OUTPUT_NAME fast_image_cache)
+add_dependencies(${FAST_IMAGE_CACHE_TARGET} ${FAST_IMAGE_CACHE_TARGET}_download)
 
 ################################################################################
 # Flex.
