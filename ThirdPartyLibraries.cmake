@@ -181,6 +181,7 @@ add_target(FREETYPE freetype)
 add_target(G2LOG g2log)
 add_target(GCC gcc)
 add_target(GDK_PIXBUF gdk-pixbuf)
+add_target(GETTEXT gettext)
 add_target(GFLAGS gflags)
 add_target(GLIB glib)
 add_target(GMOCK gmock)
@@ -242,6 +243,7 @@ add_target(PIXMAN pixman)
 add_target(PKG_CONFIG pkg-config)
 add_target(PROTOBUF protobuf)
 add_target(PROTOC protoc)
+add_target(PROXY_LIBINTL proxy-libintl)
 add_target(RAPIDXML rapidxml)
 add_target(READLINE readline)
 add_target(SHARK shark)
@@ -322,6 +324,7 @@ set_libraries(curl-asio ${CURL_ASIO_PREFIX}/lib curlasio)
 set_libraries(diff_match_patch ${DIFF_MATCH_PATCH_PREFIX}/lib diff_match_patch)
 set_libraries(dlib ${DLIB_PREFIX}/lib dlib)
 set_libraries(flex ${FLEX_PREFIX}/lib fl)
+set_libraries(freetype ${FREETYPE_PREFIX}/lib freetype)
 set_libraries(g2log ${G2LOG_PREFIX}/lib lib_activeobject lib_g2logger)
 set_libraries(gflags ${GFLAGS_PREFIX}/lib gflags)
 set_libraries(glib ${GLIB_PREFIX}/lib
@@ -539,7 +542,7 @@ add_library_dependencies(
     third_party.libxml)
 add_library_dependencies(
     imagemagick third_party.libpng third_party.libxml ${BZ2_LIB}
-    third_party.zlib)
+    third_party.freetype third_party.zlib)
 
 add_library_dependencies(mobile_commerce_ios_atg_mobile_common
                          third_party.mobile_commerce_ios_ios_rest_client)
@@ -628,6 +631,7 @@ set_include_directories(diff_match_patch ${DIFF_MATCH_PATCH_PREFIX}/include)
 set_include_directories(dlib ${DLIB_PREFIX}/include)
 set_include_directories(eigen ${EIGEN_INCLUDE_PATH})
 set_include_directories(flex ${FLEX_PREFIX}/include)
+set_include_directories(freetype ${FREETYPE_PREFIX}/include)
 set_include_directories(g2log ${G2LOG_PREFIX}/include)
 set_include_directories(gflags ${GFLAGS_PREFIX}/include)
 set_include_directories(glib ${GLIB_PREFIX}/include)
@@ -972,16 +976,10 @@ set(BZIP2_SRCS
     ${SOURCE_DIR}/decompress.c
     ${SOURCE_DIR}/bzlib.c)
 set_source_files_properties(${BZIP2_SRCS} PROPERTIES GENERATED TRUE)
-cc_library(${BZIP2_TARGET}
-           ${SOURCE_DIR}/blocksort.c
-           ${SOURCE_DIR}/huffman.c
-           ${SOURCE_DIR}/crctable.c
-           ${SOURCE_DIR}/randtable.c
-           ${SOURCE_DIR}/compress.c
-           ${SOURCE_DIR}/decompress.c
-           ${SOURCE_DIR}/bzlib.c)
+cc_library(${BZIP2_TARGET} ${BZIP2_SRCS})
 set_target_properties(
     ${BZIP2_TARGET} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${BZIP2_PREFIX}/lib
     LIBRARY_OUTPUT_DIRECTORY ${BZIP2_PREFIX}/lib
     OUTPUT_NAME bz2)
 add_dependencies(${BZIP2_TARGET} ${BZIP2_TARGET}_download)
@@ -1399,6 +1397,27 @@ add_dependencies(${GDK_PIXBUF_TARGET} ${GLIB_TARGET})
 add_dependencies(${GDK_PIXBUF_TARGET} ${LIBPNG_TARGET})
 
 ################################################################################
+# gettext.
+add_external_project(
+  ${GETTEXT_TARGET}
+  PREFIX ${GETTEXT_PREFIX}
+  DOWNLOAD_DIR ${GETTEXT_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O gettext-0.18.3.2.tar.gz http://ftp.gnu.org/pub/gnu/gettext/gettext-0.18.3.2.tar.gz &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/gettext-0.18.3.2.tar.gz.sig
+          gettext-0.18.3.2.tar.gz &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf
+          ${GETTEXT_PREFIX}/download/gettext-0.18.3.2.tar.gz
+  CONFIGURE_COMMAND
+      <SOURCE_DIR>/configure --prefix=${LIBPNG_PREFIX} ${HOST} ${SYSROOT}
+          CC=${CMAKE_C_COMPILER}
+          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+          CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+          LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+          ${CONFIGURE_LIB_TYPE})
+
+################################################################################
 # gflags.
 add_external_project(
   ${GFLAGS_TARGET}
@@ -1423,16 +1442,19 @@ add_external_project(
   CONFIGURE_COMMAND
       echo "<SOURCE_DIR>/autogen.sh --prefix=${GLIB_PREFIX} ${HOST} ${SYSROOT}\
       CC=${CMAKE_C_COMPILER}\
-      CXX=${CMAKE_CXX_COMPILER} CFLAGS=\"${CMAKE_C_FLAGS_WITH_ARCHS}\"\
-      CXXFLAGS=\"${CMAKE_CXX_FLAGS_WITH_ARCHS}\"\
-      LDFLAGS=\"${CMAKE_SHARED_LINKER_FLAGS}\"\
+      CXX=${CMAKE_CXX_COMPILER} CFLAGS=\"${CMAKE_C_FLAGS_WITH_ARCHS} -I${LIBFFI_PREFIX}/include -I${PROXY_LIBINTL_PREFIX}/include\"\
+      CXXFLAGS=\"${CMAKE_CXX_FLAGS_WITH_ARCHS} -I${PROXY_LIBINTL_PREFIX}/include\"\
+      LDFLAGS=\"${CMAKE_SHARED_LINKER_FLAGS} -L${PROXY_LIBINTL_PREFIX}/lib\"\
       ${CONFIGURE_LIB_TYPE_STR}\
       --disable-carbon\
       --disable-cocoa\
+      --disable-dtrace\
+      --disable-compile-warnings\
       PKG_CONFIG_PATH=\"${LIBFFI_PREFIX}/lib/pkgconfig:${ZLIB_PREFIX}/lib/pkgconfig\"\
       LIBFFI_LIBS=\"${third_party.libffi}\"" | sh)
 add_dependencies(${GLIB_TARGET} ${GNUTAR_TARGET})
 add_dependencies(${GLIB_TARGET} ${LIBFFI_TARGET})
+add_dependencies(${GLIB_TARGET} ${PROXY_LIBINTL_TARGET})
 add_dependencies(${GLIB_TARGET} ${ZLIB_TARGET})
 
 ################################################################################
@@ -1723,24 +1745,28 @@ if (APPLE AND NOT "${CMAKE_OSX_SYSROOT}" STREQUAL "" AND
     NOT EXISTS ${CMAKE_OSX_SYSROOT}/usr/include/crt_externs.h)
   message(WARNING "crt_externs.h is missing from ${CMAKE_OSX_SYSROOT}/usr/include, please copy it from somewhere to compile ImageMagick")
 endif ()
-set(IMAGEMAGICK_CONFIGURE_COMMAND
-    "<SOURCE_DIR>/configure --prefix=${IMAGEMAGICK_PREFIX} ${HOST} ${SYSROOT}\
+set(IMAGEMAGICK_CONFIGURE_COMMAND "\
+    <SOURCE_DIR>/configure --prefix=${IMAGEMAGICK_PREFIX} ${HOST} ${SYSROOT}\
         CC=${CMAKE_C_COMPILER}\
-        CXX=${CMAKE_CXX_COMPILER} CFLAGS=\"-g ${CMAKE_C_FLAGS_WITH_ARCHS}\"\
-        CXXFLAGS=\"-g ${CMAKE_CXX_FLAGS_WITH_ARCHS}\"\
-        LDFLAGS=\"${CMAKE_SHARED_LINKER_FLAGS} -L${LIBPNG_PREFIX}/lib\"\
+        CXX=${CMAKE_CXX_COMPILER} CFLAGS=\"${CMAKE_C_FLAGS_WITH_ARCHS} -I${LIBPNG_PREFIX}/include\"\
+        CXXFLAGS=\"${CMAKE_CXX_FLAGS_WITH_ARCHS} -I${LIBPNG_PREFIX}/include \"\
+        LDFLAGS=\"${CMAKE_SHARED_LINKER_FLAGS} -L${LIBPNG_PREFIX}/lib -L${FREETYPE_PREFIX}/lib\"\
         ${CONFIGURE_LIB_TYPE_STR}\
+        --without-x")
+if (BUILD_SHARED_LIBS)
+  set(IMAGEMAGICK_CONFIGURE_COMMAND
+      "${IMAGEMAGICK_CONFIGURE_COMMAND}\
         --with-rsvg\
         --with-pango\
-        --without-x\
         PKG_CONFIG_PATH=\"${FREETYPE_PREFIX}/lib/pkgconfig:${LIBRSVG_PREFIX}/lib/pkgconfig:${LIBPNG_PREFIX}/lib/pkgconfig:${PANGO_PREFIX}/lib/pkgconfig:${CAIRO_PREFIX}/lib/pkgconfig:${GDK_PIXBUF_PREFIX}/lib/pkgconfig:${GLIB_PREFIX}/lib/pkgconfig:${CAIRO_PREFIX}/lib/pkgconfig:${LIBCROCO_PREFIX}/lib/pkgconfig:${PIXMAN_PREFIX}/lib/pkgconfig\"")
+else ()
+  set(IMAGEMAGICK_CONFIGURE_COMMAND
+      "${IMAGEMAGICK_CONFIGURE_COMMAND}\
+        PKG_CONFIG_PATH=\"${FREETYPE_PREFIX}/lib/pkgconfig:${LIBPNG_PREFIX}/lib/pkgconfig:\"")
+endif ()
 if (NOT "${CMAKE_OSX_SYSROOT}" STREQUAL "")
   set(IMAGEMAGICK_CONFIGURE_COMMAND "${IMAGEMAGICK_CONFIGURE_COMMAND}\
       --with-sysroot=${CMAKE_OSX_SYSROOT}")
-endif ()
-if (IS_IOS)
-  set(IMAGEMAGICK_CONFIGURE_COMMAND "${IMAGEMAGICK_CONFIGURE_COMMAND}\
-      --without-x")
 endif ()
 add_external_project(
   ${IMAGEMAGICK_TARGET}
@@ -1762,8 +1788,11 @@ add_external_project(
         echo $f| sed 's/\\(\\(^.*\\)-.*\\.\\(.*$\\)\\)/ln -sf \\1 \\2.\\3/'|grep ln|sh$<SEMICOLON>\
       done" | sh)
 add_dependencies(${IMAGEMAGICK_TARGET} ${FREETYPE_TARGET})
+add_dependencies(${IMAGEMAGICK_TARGET} ${LIBPNG_TARGET})
+if (BUILD_SHARED_LIBS)
 add_dependencies(${IMAGEMAGICK_TARGET} ${LIBRSVG_TARGET})
 add_dependencies(${IMAGEMAGICK_TARGET} ${PANGO_TARGET})
+endif ()
 
 ################################################################################
 # IMAP-2007f. TODO(qfiard): Make portable.
@@ -1938,9 +1967,10 @@ add_external_project(
       CXX=${CMAKE_CXX_COMPILER} CFLAGS=\"${CMAKE_C_FLAGS_WITH_ARCHS}\"\
       CXXFLAGS=\"${CMAKE_CXX_FLAGS_WITH_ARCHS}\"\
       LDFLAGS=\"${CMAKE_SHARED_LINKER_FLAGS}\"\
-      ${CONFIGURE_LIB_TYPE_STR}
+      ${CONFIGURE_LIB_TYPE_STR}\
       --disable-Bsymbolic\
       PKG_CONFIG_PATH=\"${GLIB_PREFIX}/lib/pkgconfig\"" | sh)
+add_dependencies(${LIBCROCO_TARGET} ${GLIB_TARGET})
 add_dependencies(${LIBCROCO_TARGET} ${GNUTAR_TARGET})
 
 ################################################################################
@@ -2925,19 +2955,19 @@ add_external_project(
           ${PIXMAN_PREFIX}/download/pixman-0.32.4.tar.gz
   PATCH_COMMAND
       patch -p0 < ${THIRD_PARTY_SOURCE_DIR}/pixman.patch
-  CONFIGURE_COMMAND
-      cd <SOURCE_DIR> &&
-      automake --add-missing &&
-      autoreconf &&
-      cd <BINARY_DIR> &&
-      <SOURCE_DIR>/configure --prefix=${PIXMAN_PREFIX} ${HOST}
-      ${SYSROOT}
-      CC=${CMAKE_C_COMPILER}
-      CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
-      CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
-      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
-      ${CONFIGURE_LIB_TYPE}
-      PKG_CONFIG_PATH=${LIBPNG_PREFIX}/lib/pkgconfig)
+  CONFIGURE_COMMAND echo "\
+      cd <SOURCE_DIR> &&\
+      aclocal &&\
+      automake --add-missing$<SEMICOLON>\
+      cd <BINARY_DIR> &&\
+      <SOURCE_DIR>/configure --prefix=${PIXMAN_PREFIX} ${HOST}\
+      ${SYSROOT}\
+      CC=${CMAKE_C_COMPILER}\
+      CXX=${CMAKE_CXX_COMPILER} CFLAGS=\"${CMAKE_C_FLAGS_WITH_ARCHS}\"\
+      CXXFLAGS=\"${CMAKE_CXX_FLAGS_WITH_ARCHS}\"\
+      LDFLAGS=\"${CMAKE_SHARED_LINKER_FLAGS}\"\
+      ${CONFIGURE_LIB_TYPE_STR}\
+      PKG_CONFIG_PATH=${LIBPNG_PREFIX}/lib/pkgconfig" | sh)
 add_dependencies(${PIXMAN_TARGET} ${LIBPNG_TARGET})
 
 ################################################################################
@@ -3000,6 +3030,32 @@ add_external_project(
   BUILD_IN_SOURCE 1)
 # This is required for protobuf_generate_* rules.
 set(PROTOBUF_PROTOC_EXECUTABLE ${PROTOC_PREFIX}/bin/protoc)
+
+################################################################################
+# proxy-libintl - Google's Protocol Buffers compiler.
+add_external_project(
+  ${PROXY_LIBINTL_TARGET}_download
+  PREFIX ${PROXY_LIBINTL_PREFIX}
+  SOURCE_DIR ${PROXY_LIBINTL_PREFIX}/src/${PROXY_LIBINTL_TARGET}
+  DOWNLOAD_COMMAND
+      ${SVN} export --force https://github.com/frida/glib/trunk/proxy-libintl ${PROXY_LIBINTL_TARGET}
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND
+      mkdir -p <INSTALL_DIR>/include &&
+      cp -f <SOURCE_DIR>/libintl.h <INSTALL_DIR>/include)
+ExternalProject_Get_Property(${PROXY_LIBINTL_TARGET}_download SOURCE_DIR)
+set(PROXY_LIBINTL_SRCS ${PROXY_LIBINTL_PREFIX}/src/${PROXY_LIBINTL_TARGET}/libintl.c)
+set_source_files_properties(${PROXY_LIBINTL_SRCS} PROPERTIES GENERATED TRUE)
+cc_library(${PROXY_LIBINTL_TARGET} ${PROXY_LIBINTL_SRCS})
+set_target_properties(
+    ${PROXY_LIBINTL_TARGET} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${PROXY_LIBINTL_PREFIX}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${PROXY_LIBINTL_PREFIX}/lib
+    OUTPUT_NAME intl)
+target_include_directories(
+    ${PROXY_LIBINTL_TARGET} PUBLIC ${PROXY_LIBINTL_PREFIX}/include)
+add_dependencies(${PROXY_LIBINTL_TARGET} ${PROXY_LIBINTL_TARGET}_download)
 
 ################################################################################
 # Readline.

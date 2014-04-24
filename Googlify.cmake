@@ -290,7 +290,7 @@ endfunction()
 function(cc_library TARGET)
   get_full_target(${TARGET} FULL_TARGET)
   prepare_sources_for_c(SRCS ${ARGN})
-  string(REGEX MATCHALL "[^;]+\\.(cc|m|mm)($|;)" HAS_CC_FILE "${SRCS}")
+  string(REGEX MATCHALL "[^;]+\\.(c|cc|m|mm)($|;)" HAS_CC_FILE "${SRCS}")
   if ("${HAS_CC_FILE}" STREQUAL "")
     # An empty cc file is required to link a header only library (which
     # although unnecessary is more simple to handle - e.g. if the library was to
