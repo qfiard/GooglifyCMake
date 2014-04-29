@@ -1788,11 +1788,15 @@ if (APPLE AND NOT "${CMAKE_OSX_SYSROOT}" STREQUAL "" AND
   message(WARNING "crt_externs.h is missing from ${CMAKE_OSX_SYSROOT}/usr/include, please copy it from somewhere to compile ImageMagick")
 endif ()
 set(IMAGEMAGICK_CONFIGURE_COMMAND "\
-    <SOURCE_DIR>/configure --prefix=${IMAGEMAGICK_PREFIX} ${HOST} ${SYSROOT}\
+    cd <SOURCE_DIR> &&\
+    autoreconf &&\
+    cd <BINARY_DIR> &&\
+    <SOURCE_DIR>/configure --prefix=${IMAGEMAGICK_PREFIX} ${HOST}\
         CC=${CMAKE_C_COMPILER}\
-        CXX=${CMAKE_CXX_COMPILER} CFLAGS=\"${CMAKE_C_FLAGS_WITH_ARCHS} -I${LIBPNG_PREFIX}/include\"\
-        CXXFLAGS=\"${CMAKE_CXX_FLAGS_WITH_ARCHS} -I${LIBPNG_PREFIX}/include \"\
+        CXX=${CMAKE_CXX_COMPILER} CFLAGS=\"${CMAKE_C_FLAGS_WITH_ARCHS}\"\
+        CXXFLAGS=\"${CMAKE_CXX_FLAGS_WITH_ARCHS}\"\
         LDFLAGS=\"${CMAKE_SHARED_LINKER_FLAGS} -L${LIBPNG_PREFIX}/lib -L${FREETYPE_PREFIX}/lib\"\
+        CPPFLAGS=\"-I${LIBPNG_PREFIX}/include\"\
         ${CONFIGURE_LIB_TYPE_STR}\
         --without-x")
 if (BUILD_SHARED_LIBS)
@@ -1804,11 +1808,7 @@ if (BUILD_SHARED_LIBS)
 else ()
   set(IMAGEMAGICK_CONFIGURE_COMMAND
       "${IMAGEMAGICK_CONFIGURE_COMMAND}\
-        PKG_CONFIG_PATH=\"${FREETYPE_PREFIX}/lib/pkgconfig:${LIBPNG_PREFIX}/lib/pkgconfig:\"")
-endif ()
-if (NOT "${CMAKE_OSX_SYSROOT}" STREQUAL "")
-  set(IMAGEMAGICK_CONFIGURE_COMMAND "${IMAGEMAGICK_CONFIGURE_COMMAND}\
-      --with-sysroot=${CMAKE_OSX_SYSROOT}")
+        PKG_CONFIG_PATH=\"${FREETYPE_PREFIX}/lib/pkgconfig\"")
 endif ()
 add_external_project(
   ${IMAGEMAGICK_TARGET}
@@ -1831,6 +1831,7 @@ add_external_project(
       done" | sh)
 add_dependencies(${IMAGEMAGICK_TARGET} ${FREETYPE_TARGET})
 add_dependencies(${IMAGEMAGICK_TARGET} ${LIBPNG_TARGET})
+add_dependencies(${IMAGEMAGICK_TARGET} ${LIBXML_TARGET})
 if (BUILD_SHARED_LIBS)
 add_dependencies(${IMAGEMAGICK_TARGET} ${LIBRSVG_TARGET})
 add_dependencies(${IMAGEMAGICK_TARGET} ${PANGO_TARGET})
