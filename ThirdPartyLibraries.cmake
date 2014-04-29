@@ -1763,7 +1763,9 @@ set(ICU_BUILD_COMMAND "\
   ${CONFIGURE_LIB_TYPE} ${HOST} ${SYSROOT}")
 if (IS_IOS)
   set(ICU_BUILD_COMMAND
-      "${ICU_BUILD_COMMAND} --with-cross-build=${ICU_CROSS_BUILD}")
+      "${ICU_BUILD_COMMAND} --with-cross-build=${ICU_CROSS_BUILD}\
+       --with-data-packaging=archive")
+  set(ICU_DATA_ARCHIVE ${ICU_PREFIX}/share/icu/52.1/icudt52l.dat)
 endif ()
 add_external_project(
   ${ICU_TARGET}
