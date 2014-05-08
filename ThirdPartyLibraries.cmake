@@ -242,6 +242,7 @@ add_target(PCRE pcre)
 add_target(PHP php)
 add_target(PIXMAN pixman)
 add_target(PKG_CONFIG pkg-config)
+add_target(PRETTY_KIT pretty_kit)
 add_target(PROTOBUF protobuf)
 add_target(PROTOC protoc)
 add_target(PROXY_LIBINTL proxy-libintl)
@@ -509,6 +510,7 @@ set_libraries(opencv_video ${OPENCV_LIB_DIR} opencv_video)
 set_libraries(opencv_videostab ${OPENCV_LIB_DIR} opencv_videostab)
 set_libraries(openmp ${OPENMP_PREFIX}/lib iomp5)
 set_libraries(openssl ${OPENSSL_PREFIX}/lib crypto ssl)
+set_libraries(pretty_kit ${PRETTY_KIT_PREFIX}/lib pretty_kit)
 set_libraries(protobuf ${PROTOBUF_PREFIX}/lib protobuf)
 set_libraries(readline ${READLINE_PREFIX}/lib readline history)
 set_libraries(shark ${SHARK_PREFIX}/lib shark)
@@ -675,6 +677,9 @@ set_include_directories(
 set_include_directories(opencv ${OPENCV_PREFIX}/include)
 set_include_directories(openmp ${OPENMP_PREFIX}/include)
 set_include_directories(openssl ${OPENSSL_PREFIX}/include)
+set_include_directories(
+    pretty_kit ${PRETTY_KIT_PREFIX}/include ${PRETTY_KIT_PREFIX}/include/PrettyKit
+    ${PRETTY_KIT_PREFIX}/include/PrettyKit/Cells)
 set_include_directories(protobuf ${PROTOBUF_PREFIX}/include)
 set_include_directories(readline ${READLINE_PREFIX}/include)
 set_include_directories(shark ${SHARK_PREFIX}/include)
@@ -1686,11 +1691,15 @@ add_external_project(
       tar --strip-components 1 -xvf
           ${HAPROXY_PREFIX}/download/haproxy-1.5-dev22.tar.gz
   CONFIGURE_COMMAND ${NOP}
-  BUILD_COMMAND make TARGET=osx CPU_CFLAGS=${CMAKE_C_FLAGS}
-      USE_PCRE=1 USE_OPENSSL=1 USE_LIBCRYPT= USE_ZLIB=1
+  BUILD_COMMAND
+      make TARGET=osx CPU_CFLAGS=${CMAKE_C_FLAGS}
+      CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
+      USE_PCRE=1 USE_PCRE_JIT=1 USE_OPENSSL=1 USE_LIBCRYPT= USE_ZLIB=1
+      SSL_INC=${OPENSSL_PREFIX}/include SSL_LIB=${OPENSSL_PREFIX}/lib
+      PCRE_INC=${PCRE_PREFIX}/include PCRE_LIB=${PCRE_PREFIX}/lib
   INSTALL_COMMAND
       echo "This will install haproxy in /usr/local/haproxy." &&
-      sudo make install DESTDIR=${HAPROXY_PREFIX} &&
+      make install DESTDIR=${HAPROXY_PREFIX} &&
       sudo ${CMAKE_COMMAND} -E make_directory /usr/local/haproxy &&
       sudo ditto ${HAPROXY_PREFIX}/usr/local/doc /usr/local/haproxy/doc &&
       sudo ditto ${HAPROXY_PREFIX}/usr/local/sbin /usr/local/haproxy/sbin &&
@@ -1698,6 +1707,8 @@ add_external_project(
       sudo rm -rf ${HAPROXY_PREFIX}/usr &&
       sudo ${CMAKE_COMMAND} -E make_directory /usr/local/haproxy/logs
   BUILD_IN_SOURCE 1)
+add_dependencies(${HAPROXY_TARGET} ${OPENSSL_TARGET})
+add_dependencies(${HAPROXY_TARGET} ${PCRE_TARGET})
 
 ################################################################################
 # httpd.
@@ -2890,7 +2901,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
           ${PCRE_PREFIX}/download/pcre-8.33.tar.bz2
-  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${PCRE_PREFIX})
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${PCRE_PREFIX} --enable-jit)
 add_install_name_step(PCRE)
 
 ################################################################################
@@ -3027,6 +3038,46 @@ add_external_project(
       tar --strip-components 1 -xvf
           ${PKG_CONFIG_PREFIX}/download/pkg-config-0.28.tar.gz
   CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${PKG_CONFIG_PREFIX})
+
+################################################################################
+# PrettyKit.
+set(DOWNLOAD_TARGET ${PRETTY_KIT_TARGET}_download)
+add_external_project(
+  ${DOWNLOAD_TARGET}
+  PREFIX ${PRETTY_KIT_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --depth 1 git://github.com/QuentinFiard/PrettyKit.git
+          ${DOWNLOAD_TARGET}
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND
+    cd <SOURCE_DIR> &&
+    ${CMAKE_COMMAND} -E make_directory ${PRETTY_KIT_PREFIX}/include &&
+    find PrettyKit -name "*.h" |
+    cpio -dp ${PRETTY_KIT_PREFIX}/include)
+ExternalProject_Get_Property(${DOWNLOAD_TARGET} INSTALL_DIR)
+ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+set(SOURCE_DIR ${SOURCE_DIR}/PrettyKit)
+set(SRCS
+    ${SOURCE_DIR}/Cells/PrettyCustomViewTableViewCell.m
+    ${SOURCE_DIR}/Cells/PrettyGridTableViewCell.m
+    ${SOURCE_DIR}/Cells/PrettySegmentedControlTableViewCell.m
+    ${SOURCE_DIR}/Cells/PrettyTableViewCell.m
+    ${SOURCE_DIR}/PrettyDrawing.m
+    ${SOURCE_DIR}/PrettyNavigationBar.m
+    ${SOURCE_DIR}/PrettyShadowPlainTableview.m
+    ${SOURCE_DIR}/PrettyTabBar.m
+    ${SOURCE_DIR}/PrettyToolbar.m)
+set_source_files_properties(${SRCS} PROPERTIES GENERATED TRUE)
+objc_library(${PRETTY_KIT_TARGET} ${SRCS})
+set_target_properties(
+    ${PRETTY_KIT_TARGET} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
+    COMPILE_FLAGS -fno-objc-arc
+    OUTPUT_NAME pretty_kit)
+target_include_directories(${PRETTY_KIT_TARGET} PUBLIC ${SOURCE_DIR})
+add_dependencies(${PRETTY_KIT_TARGET} ${DOWNLOAD_TARGET})
 
 ################################################################################
 # protobuf - Google's Protocol Buffers library.
@@ -3178,36 +3229,34 @@ endif ()
 
 ################################################################################
 # SWRevealViewController.
-if (IS_IOS)
-  set(DOWNLOAD_TARGET ${SW_REVEAL_VIEW_CONTROLLER_TARGET}_download)
-  add_external_project(
-    ${DOWNLOAD_TARGET}
-    PREFIX ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}
-    DOWNLOAD_COMMAND
-        ${GIT} clone --depth 1 git://github.com/John-Lluch/SWRevealViewController.git
-            ${DOWNLOAD_TARGET}
-    CONFIGURE_COMMAND echo ""
-    BUILD_COMMAND echo ""
-    INSTALL_COMMAND
-      cd <SOURCE_DIR> &&
-      ${CMAKE_COMMAND} -E make_directory ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/include &&
-      find SWRevealViewController -name "*.h" |
-      cpio -dp ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/include)
-  ExternalProject_Get_Property(${DOWNLOAD_TARGET} INSTALL_DIR)
-  ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
-  set(SOURCE_DIR ${SOURCE_DIR}/SWRevealViewController)
-  set(SRCS ${SOURCE_DIR}/SWRevealViewController.h
-      ${SOURCE_DIR}/SWRevealViewController.m)
-  set_source_files_properties(${SRCS} PROPERTIES GENERATED TRUE)
-  add_custom_command(OUTPUT ${SRCS} COMMAND echo "")
-  objc_library(${SW_REVEAL_VIEW_CONTROLLER_TARGET} ${SRCS})
-  set_target_properties(
-      ${SW_REVEAL_VIEW_CONTROLLER_TARGET} PROPERTIES
-      ARCHIVE_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
-      LIBRARY_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
-      OUTPUT_NAME sw_reveal_view_controller)
-  add_dependencies(${SW_REVEAL_VIEW_CONTROLLER_TARGET} ${DOWNLOAD_TARGET})
-endif ()
+set(DOWNLOAD_TARGET ${SW_REVEAL_VIEW_CONTROLLER_TARGET}_download)
+add_external_project(
+  ${DOWNLOAD_TARGET}
+  PREFIX ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --depth 1 git://github.com/John-Lluch/SWRevealViewController.git
+          ${DOWNLOAD_TARGET}
+  CONFIGURE_COMMAND echo ""
+  BUILD_COMMAND echo ""
+  INSTALL_COMMAND
+    cd <SOURCE_DIR> &&
+    ${CMAKE_COMMAND} -E make_directory ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/include &&
+    find SWRevealViewController -name "*.h" |
+    cpio -dp ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/include)
+ExternalProject_Get_Property(${DOWNLOAD_TARGET} INSTALL_DIR)
+ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+set(SOURCE_DIR ${SOURCE_DIR}/SWRevealViewController)
+set(SRCS ${SOURCE_DIR}/SWRevealViewController.h
+    ${SOURCE_DIR}/SWRevealViewController.m)
+set_source_files_properties(${SRCS} PROPERTIES GENERATED TRUE)
+add_custom_command(OUTPUT ${SRCS} COMMAND echo "")
+objc_library(${SW_REVEAL_VIEW_CONTROLLER_TARGET} ${SRCS})
+set_target_properties(
+    ${SW_REVEAL_VIEW_CONTROLLER_TARGET} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
+    OUTPUT_NAME sw_reveal_view_controller)
+add_dependencies(${SW_REVEAL_VIEW_CONTROLLER_TARGET} ${DOWNLOAD_TARGET})
 
 ################################################################################
 # TBB.
