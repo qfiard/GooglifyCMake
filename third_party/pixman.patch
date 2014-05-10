@@ -1,0 +1,8 @@
+--- Makefile.am.old	2014-04-23 22:20:29.000000000 +0200
++++ Makefile.am	2014-04-23 22:20:37.000000000 +0200
+@@ -1,4 +1,4 @@
+-SUBDIRS = pixman demos test
++SUBDIRS = pixman demos
+ 
+ pkgconfigdir=$(libdir)/pkgconfig
+ pkgconfig_DATA=pixman-1.pc

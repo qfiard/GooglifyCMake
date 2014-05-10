@@ -1,6 +1,33 @@
 --- buildit	2013-12-20 23:07:47.000000000 +0100
 +++ buildit	2013-12-20 23:10:06.000000000 +0100
-@@ -67,10 +67,10 @@ case $TRIPLE in
+@@ -22,6 +22,11 @@ then
+     CC=clang
+ fi
+ 
++if [ -z "$AR" ]
++then
++    AR=ar
++fi
++
+ if [ -z $RC_ProjectSourceVersion ]
+ then
+   RC_ProjectSourceVersion=1
+@@ -41,6 +46,7 @@ case $TRIPLE in
+       RC_CFLAGS="-arch i386 -arch x86_64"
+     fi
+     SOEXT=dylib
++    AEXT=a
+     if [ -n "$SDKROOT" ]
+     then
+         EXTRA_FLAGS+="-isysroot ${SDKROOT}"
+@@ -61,37 +67,46 @@ case $TRIPLE in
+   *-*-mingw*)
+     # FIXME: removing libgcc and libsupc++ dependencies means porting libcxxrt and LLVM/compiler-rt
+     SOEXT=dll
++    AEXT=a
+     LDSHARED_FLAGS="-o libc++abi.dll \
+         -shared -nodefaultlibs -Wl,--export-all-symbols -Wl,--allow-multiple-definition -Wl,--out-implib,libc++abi.dll.a \
+         -lsupc++ -lpthread -lmingw32 -lgcc_s -lgcc -lmoldname -lmingwex -lmsvcr100 -ladvapi32 -lshell32 -luser32 -lkernel32 -lmingw32 -lgcc_s -lgcc -lmoldname -lmingwex -lmsvcrt"
  	;;
    *)
      RC_CFLAGS="-fPIC"
@@ -9,13 +36,20 @@
 -        -shared -nodefaultlibs -Wl,-soname,libc++abi.so.1 \
 -        -lpthread -lrt -lc -lstdc++"
 +    SOEXT=dylib
++    AEXT=a
 +    LDSHARED_FLAGS="-o libc++abi.1.0.dylib \
 +        -shared -nodefaultlibs -Wl,-install_name,libc++abi.1.dylib \
 +        -lpthread -lc"
++    LDSTATIC_FLAGS="-lpthread -lc"
      ;;
  esac
  
-@@ -82,12 +82,12 @@ fi
+ if [ -z $RC_XBS ]
+ then
+     rm -f libc++abi.1.$SOEXT*
++    rm -f libc++abi.1.$AEXT*
+ fi
+ 
  set -x
  
  for FILE in ../src/*.cpp; do
@@ -30,3 +64,13 @@
    done
    ;;
  esac
+-$CC *.o $RC_CFLAGS $LDSHARED_FLAGS $EXTRA_FLAGS
++if [ -z "$BUILD_STATIC" ]
++then
++  $CC *.o $RC_CFLAGS $LDSHARED_FLAGS $EXTRA_FLAGS $OPTIONS
++else
++  $AR crs libc++abi.a *.o
++fi
+ 
+ if [ -z $RC_XBS ]
+ then

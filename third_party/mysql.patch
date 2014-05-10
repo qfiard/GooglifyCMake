@@ -2778,3 +2778,16 @@ diff -rupN storage/innobase/trx/trx0trx.cc ./storage/innobase/trx/trx0trx.cc
  				trx->undo_no);
  
  			count++;
+--- sql/sql_acl.cc 2013-12-21 02:00:54.000000000 +0100
++++ sql/sql_acl.cc 2013-12-21 02:14:42.000000000 +0100
+@@ -3176,8 +3176,8 @@ static int replace_user_table(THD *thd, 
+   if old_passwords == 2, error.
+       * An empty password is considered to be of mysql_native type.
+     */
+-    
+-    if (combo->plugin.str == NULL || combo->plugin.str == '\0')
++
++    if (combo->plugin.str == NULL || *combo->plugin.str == '\0')
+     {
+       if (combo->uses_identified_by_password_clause)
+       {

@@ -1,10 +1,12 @@
 --- CMakeLists.txt  2013-10-16 22:51:58.000000000 +0100
 +++ CMakeLists_mod.txt  2013-10-16 23:18:58.000000000 +0100
 
-@@ -77,10 +77,15 @@ endif()
+@@ -76,11 +76,16 @@ endif()
+ 
  #cmake -DCMAKE_CXX_COMPILER=clang++ ..
  #VERBOSE=1 make
- IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+-IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
++IF ("${CMAKE_CXX_COMPILER}" MATCHES "clang")
 -   MESSAGE("")
 -   MESSAGE("cmake for Clang ")
 -  set(PLATFORM_LINK_LIBRIES rt  c++abi)

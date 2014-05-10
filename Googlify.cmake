@@ -39,6 +39,11 @@ if (${IOS_BUILD} OR ${IOS_SIMULATOR_BUILD})
   set(JAVA_SUPPORTED FALSE)
 endif ()
 
+set (PYTHON_SUPPORTED TRUE)
+if (${IOS_BUILD} OR ${IOS_SIMULATOR_BUILD})
+  set(PYTHON_SUPPORTED FALSE)
+endif ()
+
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_BINARY_DIR}/src)
 
@@ -75,15 +80,40 @@ function(add_linkflags TARGET)
       "${FULL_TARGET}" PROPERTIES LINK_FLAGS "${FLAGS} ${ARGN}")
 endfunction(add_linkflags)
 
-function(add_data TARGET DATA)
+function(add_data TARGET)
   get_current_prefix(PREFIX)
-  add_custom_command(
-    TARGET "${PREFIX}${TARGET}" POST_BUILD
-    COMMAND ln -sf ${DATA} ${CMAKE_CURRENT_BINARY_DIR})
+  get_full_target(${TARGET} FULL_TARGET)
+  foreach (DATA ${ARGN})
+    get_filename_component(DIRNAME ${DATA} PATH)
+    get_filename_component(NAME ${DATA} NAME)
+    get_source_file_property(GENERATED ${DATA} GENERATED)
+    if (EXISTS "${DATA}" OR GENERATED OR "${DATA}" MATCHES "/")
+      if (GENERATED)
+        set(GENERATE_TARGET ${FULL_TARGET}._${NAME})
+        add_custom_target(${GENERATE_TARGET} DEPENDS ${DATA})
+        add_dependencies(${FULL_TARGET} ${GENERATE_TARGET})
+      endif ()
+      add_custom_command(
+        TARGET ${FULL_TARGET} POST_BUILD
+        COMMAND ln -sf ${DATA} ${CMAKE_CURRENT_BINARY_DIR})
+    else ()
+      if (DATA MATCHES "^third_party\\.")
+        set(DATA ${DATA}_target)
+      endif ()
+      get_output_file(${DATA} OUTPUT_FILE)
+      add_custom_command(
+        TARGET ${FULL_TARGET} POST_BUILD
+        COMMAND ln -sf ${OUTPUT_FILE} ${CMAKE_CURRENT_BINARY_DIR}
+        VERBATIM)
+      add_dependencies(${FULL_TARGET} ${DATA})
+    endif ()
+  endforeach ()
 endfunction(add_data)
 
-function(add_local_data TARGET DATA)
-  add_data(${TARGET} "${CMAKE_CURRENT_SOURCE_DIR}/${DATA}")
+function(add_local_data TARGET)
+  foreach (DATA ${ARGN})
+    add_data(${TARGET} "${CMAKE_CURRENT_SOURCE_DIR}/${DATA}")
+  endforeach ()
 endfunction(add_local_data)
 
 #! @brief Adds a file specified by its absolute path to a J2E archive or an iOS
@@ -126,7 +156,11 @@ function(add_file_ios_app TARGET SRC DEST)
 
   get_target_property(DIR_PATH ${FULL_TARGET} TARGET_FILE)
   set(DEST "${DIR_PATH}/${DEST}")
-  set(FULL_SRC "${PROJECT_SOURCE_DIR}/${SRC}")
+  if ("${SRC}" MATCHES "^/")
+    set(FULL_SRC "${SRC}")
+  else ()
+    set(FULL_SRC "${PROJECT_SOURCE_DIR}/${SRC}")
+  endif ()
   if (DEST MATCHES "/$")
     set(DEST_DIR ${DEST})
   else ()
@@ -137,7 +171,7 @@ function(add_file_ios_app TARGET SRC DEST)
     COMMAND mkdir -p ${DEST_DIR}
     VERBATIM)
   get_source_file_property(GENERATED ${FULL_SRC} GENERATED)
-  if (EXISTS "${FULL_SRC}" OR GENERATED)
+  if ("${SRC}" MATCHES "^/" OR EXISTS "${FULL_SRC}" OR GENERATED)
     add_custom_command(
       TARGET ${FULL_TARGET} POST_BUILD
       COMMAND ditto ${FULL_SRC} ${DEST}
@@ -242,8 +276,12 @@ endfunction(add_subdirectory_if)
 #! @param ARGN List of C++ sources.
 function(cc_binary TARGET)
   get_full_target(${TARGET} FULL_TARGET)
-  add_executable(${FULL_TARGET} ${ARGN})
+  prepare_sources_for_c(SRCS ${ARGN})
+  add_executable(${FULL_TARGET} ${SRCS})
   set_target_properties(${FULL_TARGET} PROPERTIES OUTPUT_NAME ${TARGET})
+  if (NOT IS_IOS)
+    link(${TARGET} third_party.libcxx)
+  endif ()
 endfunction()
 
 #! @brief Creates a new target for a C++ executable in the current package.
@@ -251,7 +289,8 @@ endfunction()
 #! @param ARGN List of C++ sources.
 function(cc_library TARGET)
   get_full_target(${TARGET} FULL_TARGET)
-  string(REGEX MATCHALL "[^;]+\\.(cc|m|mm)($|;)" HAS_CC_FILE "${ARGN}")
+  prepare_sources_for_c(SRCS ${ARGN})
+  string(REGEX MATCHALL "[^;]+\\.(c|cc|m|mm)($|;)" HAS_CC_FILE "${SRCS}")
   if ("${HAS_CC_FILE}" STREQUAL "")
     # An empty cc file is required to link a header only library (which
     # although unnecessary is more simple to handle - e.g. if the library was to
@@ -266,13 +305,16 @@ function(cc_library TARGET)
       COMMAND > ${EMPTY_CC_FILE}
       COMMENT "Generating empty c++ file required for header only library")
     set_source_files_properties(${EMPTY_CC_FILE} PROPERTIES GENERATED TRUE)
-    add_library(${FULL_TARGET} ${ARGN} ${EMPTY_CC_FILE})
+    add_library(${FULL_TARGET} ${SRCS} ${EMPTY_CC_FILE})
     add_dependencies(${FULL_TARGET} _empty_cc_file)
     set_target_properties(${FULL_TARGET} PROPERTIES LINKER_LANGUAGE CXX)
   else ()
-    add_library(${FULL_TARGET} ${ARGN})
+    add_library(${FULL_TARGET} ${SRCS})
   endif ()
   set_target_properties(${FULL_TARGET} PROPERTIES OUTPUT_NAME ${TARGET})
+  if (NOT IS_IOS)
+    link(${TARGET} third_party.libcxx)
+  endif ()
 endfunction(cc_library)
 
 function(cc_test TARGET)
@@ -287,20 +329,23 @@ function(generated_file TARGET FILE SCRIPT)
     string(REGEX REPLACE "^:" "" SCRIPT ${SCRIPT})
     set(SCRIPT ${PREFIX}${SCRIPT})
   endif ()
-  add_custom_target(${FULL_TARGET})
-  set_target_properties(${FULL_TARGET} PROPERTIES TARGET_FILE ${FILE})
   if (EXISTS SCRIPT)
-    add_custom_command(
-        TARGET ${FULL_TARGET} POST_BUILD
-        COMMAND ${SCRIPT} ${FILE} ${ARGN}
-        VERBATIM)
+    set(GENERATE_COMMAND ${SCRIPT} ${FILE} ${ARGN})
   else ()
     get_output_file(${SCRIPT} OUTPUT_FILE)
-    add_custom_command(
-        TARGET ${FULL_TARGET} POST_BUILD
-        COMMAND ${OUTPUT_FILE} ${FILE} ${ARGN}
-        VERBATIM)
+    set(GENERATE_COMMAND ${OUTPUT_FILE} ${FILE} ${ARGN})
+  endif ()
+  add_custom_command(
+      OUTPUT ${FILE}
+      COMMAND ${GENERATE_COMMAND}
+      VERBATIM)
+  add_custom_target(${FULL_TARGET} ALL SOURCES ${FILE})
+  add_custom_target(${FULL_TARGET}_force COMMAND ${GENERATE_COMMAND} VERBATIM)
+  set_target_properties(${FULL_TARGET} PROPERTIES TARGET_FILE ${FILE})
+  set_target_properties(${FULL_TARGET}_force PROPERTIES TARGET_FILE ${FILE})
+  if (NOT EXISTS SCRIPT)
     add_dependencies(${FULL_TARGET} ${SCRIPT})
+    add_dependencies(${FULL_TARGET}_force ${SCRIPT})
   endif ()
 endfunction()
 
@@ -309,7 +354,7 @@ endfunction()
 #!     stored.
 function(get_current_prefix RESULT)
   string(
-      REGEX REPLACE ${PROJECT_SOURCE_DIR}/src "" TARGET_PATH
+      REGEX REPLACE "${PROJECT_SOURCE_DIR}(/src)?" "" TARGET_PATH
       ${CMAKE_CURRENT_SOURCE_DIR})
   if ("${TARGET_PATH}" STREQUAL "")
     set(${RESULT} "" PARENT_SCOPE)
@@ -667,6 +712,12 @@ function(link_third_party_with_full_targets_c TARGET LIB)
   if (NOT "${INCLUDE_DIRECTORIES}" STREQUAL "")
     target_include_directories(${TARGET} PUBLIC ${INCLUDE_DIRECTORIES})
   endif ()
+  get_target_property(
+      COMPILE_DEFINITIONS ${LIB_TARGET} INTERFACE_COMPILE_DEFINITIONS)
+  if (COMPILE_DEFINITIONS)
+    set_target_properties(
+        ${TARGET} PROPERTIES COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS})
+  endif ()
 endfunction()
 
 function(link_third_party_with_full_targets_java TARGET LIB)
@@ -719,6 +770,7 @@ function(link_with_full_cmake_target_c FULL_TARGET LIB)
   if (IS_OBJC AND IS_TEST AND NOT OBJC_TEST_SUPPORTED)
     return()
   endif ()
+  get_target_property(TYPE ${FULL_TARGET} TYPE)
   target_link_libraries(${FULL_TARGET} ${LIB})
 endfunction()
 
@@ -809,24 +861,36 @@ function(objc_test TARGET)
 endfunction()
 
 function(prepare_python_package PREFIX OUT)
-  if ("${PREFIX}" STREQUAL "" OR "${PREFIX}" STREQUAL ".")
-    set(INIT_PY "${PROJECT_BINARY_DIR}/src/__init__.py")
-    add_custom_command(
-        OUTPUT ${INIT_PY}
-        COMMAND touch ${INIT_PY}
-        COMMENT "Creating empty package file ${INIT_PY}")
-  else ()
+  if (NOT "${PREFIX}" STREQUAL "" AND NOT "${PREFIX}" STREQUAL ".")
     get_parent_prefix(${PREFIX} PARENT_PREFIX)
     get_directory_for_prefix(${PREFIX} PREFIX_DIRECTORY)
-    set(INIT_PY "${PREFIX_DIRECTORY}/__init__.py")
     prepare_python_package("${PARENT_PREFIX}" PARENT_INIT_PY)
-    add_custom_command(
-        OUTPUT ${INIT_PY}
-        COMMAND touch ${INIT_PY}
-        MAIN_DEPENDENCY ${PARENT_INIT_PY}
-        COMMENT "Creating empty package file ${INIT_PY}")
+    set(DEPENDS MAIN_DEPENDENCY ${PARENT_INIT_PY})
+    set(INIT_PY "${PREFIX_DIRECTORY}/__init__.py")
+  else ()
+    set(DEPENDS)
+    set(INIT_PY "${PROJECT_BINARY_DIR}/src/__init__.py")
   endif ()
+  add_custom_command(
+      OUTPUT ${INIT_PY}
+      COMMAND echo "\
+from pkgutil import extend_path\\n\
+__path__ = extend_path(__path__, __name__)" > ${INIT_PY}
+      ${DEPENDS}
+      COMMENT "Creating empty package file ${INIT_PY}"
+      VERBATIM)
   set(${OUT} ${INIT_PY} PARENT_SCOPE)
+endfunction()
+
+function(prepare_sources_for_c OUT)
+  set(SRCS)
+  foreach (SRC ${ARGN})
+    get_source_file_property(GENERATED ${SRC} GENERATED)
+    if (NOT SRC MATCHES "\\.h$" OR GENERATED)
+      list(APPEND SRCS ${SRC})
+    endif ()
+  endforeach ()
+  set(${OUT} ${SRCS} PARENT_SCOPE)
 endfunction()
 
 function(prepare_sources_for_objc)
@@ -844,30 +908,25 @@ function(py_binary TARGET SRC)
   get_current_prefix(PREFIX)
   get_full_target(${TARGET} FULL_TARGET)
   prepare_python_package(${PREFIX} INIT_PY)
-  add_custom_target(${FULL_TARGET} ALL SOURCES ${ARGN};${INIT_PY})
-  set(exe ${CMAKE_CURRENT_BINARY_DIR}/${TARGET})
-  set(src ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
-  set_target_properties(
-      ${FULL_TARGET} PROPERTIES IS_PYTHON TRUE TARGET_FILE ${exe})
-  add_custom_command(
-    TARGET ${FULL_TARGET} POST_BUILD
-    COMMAND echo "#!/usr/bin/env python" > ${exe}
-    COMMAND echo "import sys" >> ${exe}
-    DEPENDS ${exe}
-    VERBATIM)
+  set(EXE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET})
+  set(FULL_SRC ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
+  set(COMMANDS
+      COMMAND echo "#!/usr/bin/env python" > ${EXE}
+      COMMAND echo "import sys" >> ${EXE})
   foreach (python_path ${PYTHON_PATH})
-  add_custom_command(
-    TARGET ${FULL_TARGET} POST_BUILD
-    COMMAND echo "sys.path.append(\"${python_path}\")" >> ${exe}
-    DEPENDS ${exe}
-    VERBATIM)
+    set(COMMANDS ${COMMANDS}
+        COMMAND echo "sys.path.append(\"${python_path}\")" >> ${EXE})
   endforeach ()
+  set(COMMANDS ${COMMANDS}
+      COMMAND echo "execfile(\"${FULL_SRC}\")" >> ${EXE}
+      COMMAND chmod +x ${EXE})
   add_custom_command(
-    TARGET ${FULL_TARGET} POST_BUILD
-    COMMAND echo "execfile(\"${src}\")" >> ${exe}
-    COMMAND chmod +x ${exe}
-    DEPENDS ${exe}
+    OUTPUT ${EXE}
+    ${COMMANDS}
     VERBATIM)
+  add_custom_target(${FULL_TARGET} ALL SOURCES ${FULL_SRC};${INIT_PY};${EXE})
+  set_target_properties(
+      ${FULL_TARGET} PROPERTIES IS_PYTHON TRUE TARGET_FILE ${EXE})
   link(${TARGET} third_party.virtualenv)
 endfunction(py_binary)
 
@@ -879,11 +938,11 @@ function(py_library TARGET)
   set_target_properties(${FULL_TARGET} PROPERTIES IS_PYTHON TRUE)
   foreach (SRC ${ARGN})
     if (NOT SRC MATCHES "^${PROJECT_BINARY_DIR}")
-      set(src ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
+      set(FULL_SRC ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
       set(link ${CMAKE_CURRENT_BINARY_DIR}/${SRC})
       add_custom_command(
         TARGET ${FULL_TARGET} POST_BUILD
-        COMMAND ln -sf ${src} ${link}
+        COMMAND ln -sf ${FULL_SRC} ${link}
         DEPENDS ${link}
         VERBATIM)
     endif ()
@@ -895,16 +954,20 @@ function(r_binary TARGET SRC)
   get_full_target(${TARGET} FULL_TARGET)
   add_custom_target("${FULL_TARGET}" ALL SOURCES ${SRC})
   set_target_properties("${FULL_TARGET}" PROPERTIES IS_R TRUE)
-  set(exe ${CMAKE_CURRENT_BINARY_DIR}/${TARGET})
-  set(src ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
+  set(EXE ${CMAKE_CURRENT_BINARY_DIR}/${TARGET})
+  set(FULL_SRC ${CMAKE_CURRENT_SOURCE_DIR}/${SRC})
   add_custom_command(
     TARGET "${FULL_TARGET}" POST_BUILD
-    COMMAND echo "#!/usr/bin/env Rscript" > ${exe}
-    COMMAND echo "source(\"${src}\")" >> ${exe}
-    COMMAND chmod +x ${exe}
-    DEPENDS ${exe}
+    COMMAND echo "#!/usr/bin/env Rscript" > ${EXE}
+    COMMAND echo "source(\"${FULL_SRC}\")" >> ${EXE}
+    COMMAND chmod +x ${EXE}
+    DEPENDS ${EXE}
     VERBATIM)
 endfunction(r_binary)
+
+function(test_only TARGET)
+
+endfunction()
 
 # Src: https://github.com/maidsafe/MaidSafe/blob/master/cmake_modules/utils.cmake
 function(underscores_to_camel_case IN OUT)
