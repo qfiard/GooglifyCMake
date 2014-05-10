@@ -22,9 +22,9 @@ std::unordered_set<std::string> Command::create_target_commands_(
      "objc_binary", "objc_library", "objc_test", "py_binary", "py_library",
      "r_binary"}),
     Command::generate_files_commands_(
-        {"bison_generate_parser", "configure_file", "flex_generate_scanner",
-         "generate_file", "protobuf_generate_cc", "protobuf_generate_java",
-         "protobuf_generate_py"}),
+        {"bison_generate_parser", "closure_compile_js", "configure_file",
+         "flex_generate_scanner", "generate_file", "protobuf_generate_cc",
+         "protobuf_generate_java", "protobuf_generate_py"}),
     Command::link_commands_({"link"}),
     Command::link_framework_commands_({"link_framework"});
 
