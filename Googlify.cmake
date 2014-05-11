@@ -31,7 +31,8 @@ set(OBJC_TEST_SUPPORTED TRUE)
 find_program(XCTEST xctest)
 if (NOT XCTEST)
   set(OBJC_TEST_SUPPORTED FALSE)
-  message(WARNING "xctest not found, Objective-C unit testing will be disabled.")
+  message(
+      WARNING "xctest not found, Objective-C unit testing will be disabled.")
 endif ()
 
 set(JAVA_SUPPORTED TRUE)
@@ -50,6 +51,10 @@ include_directories(${PROJECT_BINARY_DIR}/src)
 set(PYTHON_PATH)
 list(APPEND PYTHON_PATH "${PROJECT_BINARY_DIR}/src")
 
+#! @brief Adds compile definitions to the given target.
+#! @param TARGET Name of the target (relative to the current package). It is
+#!     assumed to be a C/C++/Objective-C target.
+#! @param ARGN List of definitions to add.
 function(add_compile_defs TARGET)
   get_full_target(${TARGET} FULL_TARGET)
   get_target_property(DEFS "${FULL_TARGET}" COMPILE_DEFINITIONS)
@@ -60,6 +65,10 @@ function(add_compile_defs TARGET)
       "${FULL_TARGET}" PROPERTIES COMPILE_DEFINITIONS "${DEFS} ${ARGN}")
 endfunction(add_compile_defs)
 
+#! @brief Adds compile flags to the given target.
+#! @param TARGET Name of the target (relative to the current package). It is
+#!     assumed to be a C/C++/Objective-C target.
+#! @param ARGN List of flags to add.
 function(add_cxxflags TARGET)
   get_full_target(${TARGET} FULL_TARGET)
   get_target_property(FLAGS "${FULL_TARGET}" COMPILE_FLAGS)
@@ -70,6 +79,10 @@ function(add_cxxflags TARGET)
       "${FULL_TARGET}" PROPERTIES COMPILE_FLAGS "${FLAGS} ${ARGN}")
 endfunction(add_cxxflags)
 
+#! @brief Adds link flags to the given target.
+#! @param TARGET Name of the target (relative to the current package). It is
+#!     assumed to be a C/C++/Objective-C target.
+#! @param ARGN List of flags to add.
 function(add_linkflags TARGET)
   get_full_target(${TARGET} FULL_TARGET)
   get_target_property(FLAGS "${FULL_TARGET}" LINK_FLAGS)
@@ -80,6 +93,14 @@ function(add_linkflags TARGET)
       "${FULL_TARGET}" PROPERTIES LINK_FLAGS "${FLAGS} ${ARGN}")
 endfunction(add_linkflags)
 
+#! @brief Makes a data file (either static of generated) accessible to the
+#!     given target by creating a symlink of the file in the build directory of
+#!     the target.
+#! @param TARGET Name of the target (relative to the current package).
+#! @param ARGN List of data files to add. A data file can be either an absolute
+#!     path to an existing file or the full name of a target. A file name is
+#!     assumed to be a target name if it does not yet exists and it is not mark
+#!     as generated.
 function(add_data TARGET)
   get_current_prefix(PREFIX)
   get_full_target(${TARGET} FULL_TARGET)
@@ -110,6 +131,12 @@ function(add_data TARGET)
   endforeach ()
 endfunction(add_data)
 
+#! @brief Makes a data file, whose path is given relatively to the current
+#!     source directory, accessible to the given target by creating a symlink of
+#!     the file in the build directory of the target.
+#! @param TARGET Name of the target (relative to the current package).
+#! @param ARGN List of data files to add, relative to the current source
+#!     directory.
 function(add_local_data TARGET)
   foreach (DATA ${ARGN})
     add_data(${TARGET} "${CMAKE_CURRENT_SOURCE_DIR}/${DATA}")
@@ -119,6 +146,11 @@ endfunction(add_local_data)
 #! @brief Adds a file specified by its absolute path to a J2E archive or an iOS
 #!     app. It can also be the absolute name of a target, in which case we
 #!     include the output file of the given target.
+#! @param TARGET Name of the target (relative to the current package).
+#! @param SRC Absolute path to a file (static or generated) or full name of a
+#!     target.
+#! @param DEST Destination path, relative to the root of the J2E archive/iOS
+#!     app.
 function(add_file TARGET SRC DEST)
   get_full_target(${TARGET} FULL_TARGET)
   get_target_property(IS_J2E ${FULL_TARGET} IS_J2E)
@@ -135,9 +167,7 @@ function(add_file TARGET SRC DEST)
           "Target ${FULL_TARGET} has an unsupported target type for add_file")
 endfunction(add_file)
 
-#! @brief Adds a file specified by its absolute path to an iOS app. It can also
-#!     be the absolute name of a target, in which case we include the output
-#!     file of the given target.
+#! @brief Implements the add_file(TARGET SRC DEST) logic for an iOS app.
 function(add_file_ios_app TARGET SRC DEST)
   if (NOT IOS_BUILD AND NOT IOS_SIMULATOR_BUILD)
     return()
@@ -190,9 +220,7 @@ function(add_file_ios_app TARGET SRC DEST)
   endif ()
 endfunction(add_file_ios_app)
 
-#! @brief Adds a file specified by its absolute path to a J2E archive. It can
-#!     also be the absolute name of a target, in which case we include the
-#!     output file of the given target.
+#! @brief Implements the add_file(TARGET SRC DEST) logic for an J2E archive.
 function(add_file_j2e TARGET SRC DEST)
   if (NOT JAVA_SUPPORTED)
     return()
@@ -251,9 +279,14 @@ function(add_file_j2e TARGET SRC DEST)
   endif ()
 endfunction(add_file_j2e)
 
-#! @brief Adds a file specified by its relative path to the current source
-#!     directory to a J2E archive. It can also be the relative name of a target,
-#!     in which case we include the output file of the given target.
+#! @brief Adds a file specified by its absolute path to a J2E archive or an iOS
+#!     app. It can also be the absolute name of a target, in which case we
+#!     include the output file of the given target.
+#! @param TARGET Name of the target (relative to the current package).
+#! @param SRC Path to a file (static or generated) relative to the current
+#!     directory or name of a target relative to the current package.
+#! @param DEST Destination path, relative to the root of the J2E archive/iOS
+#!     app.
 function(add_local_file TARGET SRC DEST)
   get_current_prefix(PREFIX)
   if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${SRC}")
@@ -265,6 +298,11 @@ function(add_local_file TARGET SRC DEST)
   endif ()
 endfunction(add_local_file)
 
+#! @brief Adds a subdirectory to the build system conditionally on the value of
+#!    COND. Useful to ignore a subdirectory specific to a different platform,
+#!    most notably to bypass compilation of iOS apps when not targeting an iOS
+#!    platform: you only need to use add_subdirectory_if(som_dir, IS_IOS)
+#!    instead of add_subdirectory.
 function(add_subdirectory_if DIR COND)
   if (${COND})
     add_subdirectory(${DIR})
@@ -317,11 +355,23 @@ function(cc_library TARGET)
   endif ()
 endfunction(cc_library)
 
+#! @brief Creates a new C++ test target in the current package.
+#! @param TARGET Name of the target (relative to the current package).
+#! @param ARGN List of C++ sources.
 function(cc_test TARGET)
   cc_binary(${TARGET} ${ARGN})
   add_test(NAME ${TARGET} COMMAND ${TARGET})
 endfunction(cc_test)
 
+#! @brief Create a target to generate a file using a script. The script can be
+#!     either an existing executable script, or the name of an executable
+#!     target.
+#! @param TARGET Name of the target (relative to the current package).
+#! @param FILE Path to the generated file (absolute or relative to the current
+#!     package).
+#! @param SCRIPT Path to an executable file or name of an executable target. The
+#!     target is considered relative to the current package if prefixed by a
+#!     colon.
 function(generated_file TARGET FILE SCRIPT)
   get_current_prefix(PREFIX)
   get_full_target(${TARGET} FULL_TARGET)
@@ -365,6 +415,9 @@ function(get_current_prefix RESULT)
   endif ()
 endfunction()
 
+#! @brief Returns the absolute path to the classpath file of a Java target.
+#! @param TARGET Absolute name of a Java target.
+#! @param OUT Name of a variable to save the result in.
 function(get_classpath_file_for_target TARGET OUT)
   get_directory_for_target("${TARGET}" TARGET_DIR)
   get_target_name("${TARGET}" TARGET_NAME)
@@ -372,6 +425,9 @@ function(get_classpath_file_for_target TARGET OUT)
       PARENT_SCOPE)
 endfunction(get_classpath_file_for_target)
 
+#! @brief Returns the absolute name to the classpath target of a Java target.
+#! @param TARGET Absolute name of a Java target.
+#! @param OUT Name of a variable to save the result in.
 function(get_classpath_target_for_target TARGET OUT)
   set(${OUT} "${TARGET}.classpath_" PARENT_SCOPE)
 endfunction(get_classpath_target_for_target)
@@ -382,6 +438,7 @@ function(get_cmake_files_subdir TARGET OUT)
   set(${OUT} ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${FULL_TARGET}.dir PARENT_SCOPE)
 endfunction()
 
+#! @brief Returns the absolute path to the build directory of a package.
 function(get_directory_for_prefix PREFIX OUT)
   if ("${PREFIX}" STREQUAL "")
     set(${OUT} "${PROJECT_BINARY_DIR}/src" PARENT_SCOPE)
@@ -391,6 +448,7 @@ function(get_directory_for_prefix PREFIX OUT)
   set(${OUT} "${PROJECT_BINARY_DIR}/src/${PACKAGE_PATH}" PARENT_SCOPE)
 endfunction(get_directory_for_prefix)
 
+#! @brief Returns the absolute path to the build directory of a target.
 function(get_directory_for_target TARGET OUT)
   string(REGEX MATCHALL "[^\\.]+" PARTS ${TARGET})
   list(REMOVE_AT PARTS -1)
@@ -404,12 +462,15 @@ function(get_full_target TARGET RESULT)
   set(${RESULT} ${PREFIX}${TARGET} PARENT_SCOPE)
 endfunction()
 
+#! @brief Returns the path to the source directory of a package relative to the
+#!     root source directory.
 function(get_package_path PREFIX OUT)
   string(REGEX MATCHALL "[^\\.]+" PARTS "${PREFIX}")
   string(REPLACE ";" "/" PACKAGE_PATH "${PARTS}")
   set(${OUT} "${PACKAGE_PATH}" PARENT_SCOPE)
 endfunction(get_package_path)
 
+#! @brief Returns the name of the parent package.
 function(get_parent_prefix PREFIX OUT)
   if ("${PREFIX}" STREQUAL "")
     message(FATAL_ERROR "Root prefix has no parent.")
@@ -424,6 +485,16 @@ function(get_parent_prefix PREFIX OUT)
   set(${OUT} "${PARENT_PREFIX_WITHOUT_TRAILING_DOT}." PARENT_SCOPE)
 endfunction(get_parent_prefix)
 
+#! @brief Returns the absolute path to the output file of a target.
+#!     For executable targets this is the path to the executable binary.
+#!     For library targets this is the path to the library file.
+#!     For other targets, returns the value of the TARGET_FILE target property.
+#! @warning This issues CMake generator expressions as it is in general not
+#!     possible to get the name of the output file of a target if it has not
+#!     already been processed by CMake. Generator expressions postpones the
+#!     evaluation of the output file path.
+#! @param TARGET Absolute name of a target.
+#! @param OUT Name of a variable to save the result in.
 function(get_output_file TARGET OUT)
   set(TARGET_TYPE "$<TARGET_PROPERTY:${TARGET},TYPE>")
   set(IS_EXE "$<STREQUAL:${TARGET_TYPE},EXECUTABLE>")
@@ -435,12 +506,16 @@ function(get_output_file TARGET OUT)
   set(${OUT} "$<${IS_LIB_OR_EXE}:$<TARGET_FILE:${TARGET}>>$<$<NOT:${IS_LIB_OR_EXE}>:$<TARGET_PROPERTY:${TARGET},TARGET_FILE>>" PARENT_SCOPE)
 endfunction(get_output_file)
 
+#! @brief Returns the name of the target (last component of its full name).
 function(get_target_name TARGET OUT)
   string(REGEX MATCHALL "[^\\.]+" PARTS "${TARGET}")
   list(GET PARTS -1 TARGET_NAME)
   set(${OUT} "${TARGET_NAME}" PARENT_SCOPE)
 endfunction(get_target_name)
 
+#! @brief Creates an iOS app target.
+#! @param TARGET Name of the target to create, relative to the current package.
+#! @param NAME Name of the app (example MyApp -> MyApp.app).
 function(ios_app TARGET NAME)
   get_full_target(${TARGET} FULL_TARGET)
   if (NOT IOS_BUILD AND NOT IOS_SIMULATOR_BUILD)
@@ -458,6 +533,9 @@ function(ios_app TARGET NAME)
   set_target_properties(${FULL_TARGET} PROPERTIES TARGET_FILE ${DIR_PATH})
 endfunction(ios_app)
 
+#! @brief Creates a J2E binary.
+#! @param TARGET Name of the target to create, relative to the current package.
+#!     The output binary will be name ${TARGET}.war
 function(j2e_binary TARGET)
   get_full_target(${TARGET} FULL_TARGET)
   if (NOT JAVA_SUPPORTED)
@@ -490,6 +568,9 @@ function(j2e_binary TARGET)
       ${FULL_TARGET} PROPERTIES TEMP_DIR_TARGET "${TEMP_DIR_TARGET}")
 endfunction(j2e_binary)
 
+#! @brief Compiles Java source files into a jar library.
+#! @param TARGET Name of the target to create, relative to the current package.
+#! @param ARGN List of Java sources, relative to the current source directory.
 function(java_library TARGET)
   get_current_prefix(PREFIX)
   get_full_target(${TARGET} FULL_TARGET)
@@ -557,6 +638,9 @@ function(java_library TARGET)
     VERBATIM)
 endfunction(java_library)
 
+#! @brief Creates an executable from an executable Java class.
+#! @param TARGET Name of the target to create, relative to the current package.
+#! @param SRC Java source file containing an executable Java class.
 function(java_binary TARGET SRC)
   get_current_prefix(PREFIX)
   get_full_target(${TARGET} FULL_TARGET)
@@ -634,6 +718,11 @@ function(java_binary TARGET SRC)
     VERBATIM)
 endfunction(java_binary)
 
+#! @brief Links a list of targets into the given target.
+#! @param TARGET Name of the target into which the other targets should be
+#!     linked, relative to the current package.
+#! @param ARGN List of targets, referred either by their absolute name or by a
+#!     colon followed by their name relative to the current package.
 function(link TARGET)
   foreach (LIB ${ARGN})
     # One level of indirection is needed for MATCHES.
@@ -651,21 +740,15 @@ function(link TARGET)
   endforeach ()
 endfunction(link)
 
+#! @brief Save as link but for frameworks (for both Mac and iOS platforms).
 function(link_framework TARGET)
   get_full_target(${TARGET} FULL_TARGET)
   foreach (FRAMEWORK ${ARGN})
     target_link_libraries(${FULL_TARGET} "-framework ${FRAMEWORK}")
   endforeach ()
-#  get_target_property(LINK_FLAGS ${FULL_TARGET} LINK_FLAGS)
-#  if (NOT LINK_FLAGS)
-#    set(LINK_FLAGS)
-#  endif ()
-#  foreach (FRAMEWORK ${ARGN})
-#    set(LINK_FLAGS "${LINK_FLAGS} -framework ${FRAMEWORK}")
-#  endforeach ()
-#  set_target_properties(${FULL_TARGET} PROPERTIES LINK_FLAGS ${LINK_FLAGS})
 endfunction()
 
+#! @deprecated Use link instead.
 function(link_local TARGET)
   get_current_prefix(PREFIX)
   foreach (LIB ${ARGN})
@@ -673,12 +756,13 @@ function(link_local TARGET)
   endforeach ()
 endfunction()
 
-# Note: LIBS are in ARGN.
+#! @deprecated Use link instead.
 function(link_third_party TARGET LIB)
   get_full_target(${TARGET} FULL_TARGET)
   link_third_party_with_full_targets("${FULL_TARGET}" ${LIB})
 endfunction(link_third_party)
 
+#! @brief Auxiliary function used by link for third-party targets.
 function(link_third_party_with_full_targets TARGET LIB)
   get_target_property(IS_JAVA ${TARGET} IS_JAVA)
   if (${IS_JAVA} STREQUAL TRUE)
@@ -693,6 +777,7 @@ function(link_third_party_with_full_targets TARGET LIB)
   link_third_party_with_full_targets_c(${TARGET} ${LIB})
 endfunction(link_third_party_with_full_targets)
 
+#! @brief Auxiliary function used by link for C/C++/Objective-C targets.
 function(link_third_party_with_full_targets_c TARGET LIB)
   get_target_property(IS_OBJC ${TARGET} IS_OBJC)
   get_target_property(IS_TEST ${TARGET} IS_TEST)
@@ -720,6 +805,7 @@ function(link_third_party_with_full_targets_c TARGET LIB)
   endif ()
 endfunction()
 
+#! @brief Auxiliary function used by link for Java targets.
 function(link_third_party_with_full_targets_java TARGET LIB)
   if (NOT JAVA_SUPPORTED)
     return()
@@ -741,6 +827,7 @@ function(link_third_party_with_full_targets_java TARGET LIB)
   add_dependencies(${CLASSPATH_TARGET} ${LIB_TARGET})
 endfunction()
 
+#! @brief Auxiliary function used by link for Python targets.
 function(link_third_party_with_full_targets_python TARGET LIB)
   get_target(${LIB} LIB_TARGET)
   if (NOT LIB_TARGET)
@@ -749,6 +836,7 @@ function(link_third_party_with_full_targets_python TARGET LIB)
   add_dependencies(${TARGET} ${LIB_TARGET})
 endfunction()
 
+#! @brief Auxiliary function used by link for non third-party targets.
 function(link_with_cmake_target TARGET LIB)
   get_full_target(${TARGET} FULL_TARGET)
   get_target_property(IS_JAVA ${FULL_TARGET} IS_JAVA)
@@ -764,6 +852,7 @@ function(link_with_cmake_target TARGET LIB)
   link_with_full_cmake_target_c(${FULL_TARGET} ${LIB})
 endfunction()
 
+#! @brief Auxiliary function used by link for C/C++/Objective-C targets.
 function(link_with_full_cmake_target_c FULL_TARGET LIB)
   get_target_property(IS_OBJC ${FULL_TARGET} IS_OBJC)
   get_target_property(IS_TEST ${FULL_TARGET} IS_TEST)
@@ -774,6 +863,7 @@ function(link_with_full_cmake_target_c FULL_TARGET LIB)
   target_link_libraries(${FULL_TARGET} ${LIB})
 endfunction()
 
+#! @brief Auxiliary function used by link for Java targets.
 function(link_with_full_cmake_target_java FULL_TARGET LIB)
   if (NOT JAVA_SUPPORTED)
     return()
@@ -795,10 +885,17 @@ function(link_with_full_cmake_target_java FULL_TARGET LIB)
   add_dependencies(${CLASSPATH_TARGET} ${LIB_CLASSPATH_TARGET})
 endfunction()
 
+#! @brief Auxiliary function used by link for Python targets.
 function(link_with_full_cmake_target_python FULL_TARGET LIB)
   add_dependencies(${FULL_TARGET} ${LIB})
 endfunction()
 
+#! @brief Creates a new target for an Objective-C executable in the current
+#!     package.
+#! @param TARGET Name of the target (relative to the current package).
+#! @param ARGN List of C/C++/Objective-C sources.
+#! @warning ARC is enforced by default, and the Foundation framework linked into
+#!     the executable.
 function(objc_binary TARGET)
   prepare_sources_for_objc(${ARGN})
   cc_binary(${TARGET} ${ARGN})
@@ -807,6 +904,12 @@ function(objc_binary TARGET)
   add_linkflags(${TARGET} "-all_load")
 endfunction()
 
+#! @brief Creates a new target for an Objective-C library in the current
+#!     package.
+#! @param TARGET Name of the target (relative to the current package).
+#! @param ARGN List of C/C++/Objective-C sources.
+#! @warning ARC is enforced by default, and the Foundation framework linked into
+#!     the library.
 function(objc_library TARGET)
   prepare_sources_for_objc(${ARGN})
   cc_library(${TARGET} ${ARGN})
@@ -815,6 +918,13 @@ function(objc_library TARGET)
   add_linkflags(${TARGET} "-all_load")
 endfunction()
 
+
+#! @brief If xctest was found on the machine, creates a new Objective-C test
+#!     target in the current package.
+#! @param TARGET Name of the target (relative to the current package).
+#! @param ARGN List of C/C++/Objective-C sources.
+#! @warning ARC is enforced by default, and the Foundation framework linked into
+#!     the executable.
 function(objc_test TARGET)
   get_full_target(${TARGET} FULL_TARGET)
   if (NOT OBJC_TEST_SUPPORTED)
@@ -860,6 +970,8 @@ function(objc_test TARGET)
   add_dependencies(${FULL_TARGET} ${TEST_EXE_TARGET})
 endfunction()
 
+#! @brief Prepare the given package to be used as a Python package, by creating
+#!     __init__.py files in all the parent directories.
 function(prepare_python_package PREFIX OUT)
   if (NOT "${PREFIX}" STREQUAL "" AND NOT "${PREFIX}" STREQUAL ".")
     get_parent_prefix(${PREFIX} PARENT_PREFIX)
@@ -882,6 +994,10 @@ __path__ = extend_path(__path__, __name__)" > ${INIT_PY}
   set(${OUT} ${INIT_PY} PARENT_SCOPE)
 endfunction()
 
+#! @brief CMake does not need to know about header files to compile a
+#!     C/C++ target (it uses the compiler dependency graph for this purpose).
+#!     We therefore filter the list of source files to remove the header files
+#!     from it.
 function(prepare_sources_for_c OUT)
   set(SRCS)
   foreach (SRC ${ARGN})
@@ -893,6 +1009,8 @@ function(prepare_sources_for_c OUT)
   set(${OUT} ${SRCS} PARENT_SCOPE)
 endfunction()
 
+#! @brief Prepares Objective-C source files by defining their language based on
+#!     their extension.
 function(prepare_sources_for_objc)
   foreach (SRC ${ARGN})
     if (SRC MATCHES "\\.m$")
@@ -904,6 +1022,11 @@ function(prepare_sources_for_objc)
   endforeach ()
 endfunction()
 
+#! @brief Creates a new target for a Python executable in the current package.
+#! @param TARGET Name of the target (relative to the current package).
+#! @param SRC Name of the executable Python source file to use.
+#! @warning A Shebang is added to use the python executable found
+#!     in the environment.
 function(py_binary TARGET SRC)
   get_current_prefix(PREFIX)
   get_full_target(${TARGET} FULL_TARGET)
@@ -930,6 +1053,9 @@ function(py_binary TARGET SRC)
   link(${TARGET} third_party.virtualenv)
 endfunction(py_binary)
 
+#! @brief Creates a new Python library target in the current package.
+#! @param TARGET Name of the target (relative to the current package).
+#! @param ARGN List of Python source files.
 function(py_library TARGET)
   get_current_prefix(PREFIX)
   get_full_target(${TARGET} FULL_TARGET)
@@ -950,6 +1076,9 @@ function(py_library TARGET)
   link(${TARGET} third_party.virtualenv)
 endfunction(py_library)
 
+#! @brief Creates a new R executable target in the current package.
+#! @param TARGET Name of the target (relative to the current package).
+#! @param SRC Executable R source file to use.
 function(r_binary TARGET SRC)
   get_full_target(${TARGET} FULL_TARGET)
   add_custom_target("${FULL_TARGET}" ALL SOURCES ${SRC})
@@ -965,6 +1094,9 @@ function(r_binary TARGET SRC)
     VERBATIM)
 endfunction(r_binary)
 
+#! @brief Marks a target as test only.
+#! @todo Implement the logic to prevent linking a test target into a regular
+#!     target.
 function(test_only TARGET)
 
 endfunction()
