@@ -48,8 +48,5 @@ int main(int argc, char **argv) {
   [frac print];
   printf("\n");
 
-  // free memory
-  [frac release];
-
   return 0;
 }
