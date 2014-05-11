@@ -8,11 +8,11 @@ ExternalProject_Add(
   CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_DOXYGEN_FILTER_PREFIX})
 set(CMAKE_DOXYGEN_FILTER ${CMAKE_DOXYGEN_FILTER_PREFIX}/bin/CMakeDoxygenFilter)
 
-find_package(Doxygen)
+find_package(Doxygen 1.8.3)
 if(DOXYGEN_FOUND)
   set(DOXYFILE ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
   configure_file(Doxyfile.in ${DOXYFILE})
-  add_custom_target(doxygen
+  add_custom_target(doxygen ALL
       ${DOXYGEN_EXECUTABLE} ${DOXYFILE}
       COMMENT "Generating API documentation with Doxygen" VERBATIM)
   add_dependencies(doxygen CMakeDoxygenFilter)
