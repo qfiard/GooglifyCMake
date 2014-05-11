@@ -209,7 +209,6 @@ add_target(LDAP_SASL ldap_sasl)
 add_target(LIBCROCO libcroco)
 add_target(LIBCURL libcurl)
 add_target(LIBCXX libcxx)
-add_target(LIBCXX_HEADERS libcxx_headers)
 add_target(LIBCXXABI libcxxabi)
 add_target(LIBFFI libffi)
 add_target(LIBICONV libiconv)
@@ -2062,7 +2061,7 @@ add_dependencies(${LIBCURL_TARGET} ${ZLIB_TARGET})
 ################################################################################
 # libcxx_download.
 add_external_project(
-  ${LIBCXX_HEADERS_TARGET}
+  ${LIBCXX_TARGET}_headers
   PREFIX ${LIBCXX_PREFIX}
   DOWNLOAD_COMMAND
       ${SVN} export --force http://llvm.org/svn/llvm-project/libcxx/trunk ${LIBCXX_TARGET}
@@ -2095,7 +2094,7 @@ add_external_project(
       -DLIBCXX_CXX_ABI=libcxxabi
       -DLIBCXX_LIBCXXABI_INCLUDE_PATHS=${LIBCXXABI_PREFIX}/include)
 add_install_name_step(LIBCXX)
-add_dependencies(${LIBCXX_TARGET} ${LIBCXX_HEADERS_TARGET})
+add_dependencies(${LIBCXX_TARGET} ${LIBCXX_TARGET}_headers)
 add_dependencies(${LIBCXX_TARGET} ${LIBCXXABI_TARGET})
 
 ################################################################################
