@@ -17,7 +17,6 @@ option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 # To enable unit-testing.
 enable_testing()
 
-include(ExternalProject)
 include(Googlify.cmake)
 include(ThirdPartyLibraries.cmake)
 
