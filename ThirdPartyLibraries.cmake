@@ -770,7 +770,7 @@ add_external_project(
   PREFIX ${APR_PREFIX}
   DOWNLOAD_DIR ${APR_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O apr-1.5.0.tar.bz2 http://www.mirrorservice.org/sites/ftp.apache.org//apr/apr-1.5.0.tar.bz2 &&
+      wget -O apr-1.5.0.tar.bz2 https://archive.apache.org/dist/apr/apr-1.5.0.tar.bz2 &&
       gpg --verify ${THIRD_PARTY_SOURCE_DIR}/apr-1.5.0.tar.bz2.asc
           apr-1.5.0.tar.bz2 &&
       cd <SOURCE_DIR> &&
@@ -788,7 +788,7 @@ add_external_project(
   PREFIX ${APR_UTIL_PREFIX}
   DOWNLOAD_DIR ${APR_UTIL_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O apr-util-1.5.3.tar.bz2 http://www.mirrorservice.org/sites/ftp.apache.org//apr/apr-util-1.5.3.tar.bz2 &&
+      wget -O apr-util-1.5.3.tar.bz2 https://archive.apache.org/dist/apr/apr-util-1.5.3.tar.bz2 &&
       gpg --verify ${THIRD_PARTY_SOURCE_DIR}/apr-util-1.5.3.tar.bz2.asc
           apr-util-1.5.3.tar.bz2 &&
       cd <SOURCE_DIR> &&
@@ -1717,7 +1717,7 @@ add_external_project(
   PREFIX ${HTTPD_PREFIX}
   DOWNLOAD_DIR ${HTTPD_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O httpd-2.4.7.tar.bz2 http://mirrors.ukfast.co.uk/sites/ftp.apache.org//httpd/httpd-2.4.7.tar.bz2 &&
+      wget -O httpd-2.4.7.tar.bz2 http://archive.apache.org/dist/httpd/httpd-2.4.7.tar.bz2 &&
       gpg --verify ${THIRD_PARTY_SOURCE_DIR}/httpd-2.4.7.tar.bz2.asc
           httpd-2.4.7.tar.bz2 &&
       cd <SOURCE_DIR> &&
@@ -2336,7 +2336,7 @@ add_external_project(
   PREFIX ${MAVEN_PREFIX}
   DOWNLOAD_DIR ${MAVEN_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O apache-maven-3.1.1-src.tar.gz ftp://mirrors.ircam.fr/pub/apache/maven/maven-3/3.1.1/source/apache-maven-3.1.1-src.tar.gz &&
+      wget -O apache-maven-3.1.1-src.tar.gz http://archive.apache.org/dist/maven/maven-3/3.1.1/source/apache-maven-3.1.1-src.tar.gz &&
       gpg --verify ${THIRD_PARTY_SOURCE_DIR}/apache-maven-3.1.1-src.tar.gz.asc
           apache-maven-3.1.1-src.tar.gz &&
       cd <SOURCE_DIR> &&
@@ -2471,7 +2471,7 @@ add_external_project(
   PREFIX ${MOD_JK_PREFIX}
   DOWNLOAD_DIR ${MOD_JK_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O tomcat-connectors-1.2.37-src.tar.gz http://www.apache.org/dist/tomcat/tomcat-connectors/jk/tomcat-connectors-1.2.37-src.tar.gz &&
+      wget -O tomcat-connectors-1.2.37-src.tar.gz http://archive.apache.org/dist/tomcat/tomcat-connectors/jk/tomcat-connectors-1.2.37-src.tar.gz &&
       gpg --verify ${THIRD_PARTY_SOURCE_DIR}/tomcat-connectors-1.2.37-src.tar.gz.sig
           tomcat-connectors-1.2.37-src.tar.gz &&
       cd <SOURCE_DIR> &&
