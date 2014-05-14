@@ -199,6 +199,7 @@ add_target(HTTPXX httpxx)
 add_target(ICU icu)
 add_target(IMAGEMAGICK imagemagick)
 add_target(IMAP_2007F imap-2007f)
+add_target(INTEL_PCM intel_pcm)
 add_target(ISO_3166 iso_3166)
 add_target(ISO_639 iso_639)
 add_target(ISO_COUNTRY_FLAGS iso-country-flags)
@@ -343,6 +344,7 @@ set_libraries(icu_lx ${ICU_PREFIX}/lib iculx)
 set_libraries(icu_test ${ICU_PREFIX}/lib icutest)
 set_libraries(icu_tu ${ICU_PREFIX}/lib icutu)
 set_libraries(icu_uc ${ICU_PREFIX}/lib icuuc)
+set_libraries(intel_pcm ${INTEL_PCM_PREFIX}/lib intel_pcm)
 set_libraries(imagemagick ${IMAGEMAGICK_PREFIX}/lib
               Magick++ MagickCore MagickWand)
 set_libraries(jsoncpp ${JSONCPP_PREFIX}/lib jsoncpp)
@@ -534,6 +536,7 @@ add_library_dependencies(boost_log third_party.boost_filesystem)
 add_library_dependencies(boost_thread third_party.boost_atomic)
 add_library_dependencies(boost_iostreams ${BZ2_LIB})
 add_library_dependencies(gtest pthread)
+add_library_dependencies(intel_pcm pthread)
 add_library_dependencies(openssl third_party.gmp)
 add_library_dependencies(libcurl third_party.zlib)
 if (NOT APPLE)
@@ -651,6 +654,7 @@ set_include_directories(gtest ${GTEST_PREFIX}/include)
 set_include_directories(httpxx ${HTTPXX_PREFIX}/include)
 set_include_directories(icu ${ICU_PREFIX}/include)
 set_include_directories(imagemagick ${IMAGEMAGICK_PREFIX}/include/ImageMagick-6)
+set_include_directories(intel_pcm ${INTEL_PCM_PREFIX}/include)
 set_include_directories(jsoncpp ${JSONCPP_PREFIX}/include)
 set_include_directories(libcurl ${LIBCURL_PREFIX}/include)
 set_include_directories(libcxx ${LIBCXX_PREFIX}/include/c++/v1)
@@ -1791,6 +1795,24 @@ add_external_project(
           ${ICU_PREFIX}/download/icu4c-52_1-src.tgz
   CONFIGURE_COMMAND echo "${ICU_BUILD_COMMAND}" | sh)
 add_install_name_step(ICU)
+
+################################################################################
+# Intel PCM library.
+add_external_project(
+  ${INTEL_PCM_TARGET}
+  PREFIX ${INTEL_PCM_PREFIX}
+  DOWNLOAD_COMMAND
+    git clone --depth 1 git://github.com/QuentinFiard/intel_pcm ${INTEL_PCM_TARGET}
+  CMAKE_ARGS
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_BUILD_TYPE=RELEASE
+      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+      -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_INSTALL_PREFIX=${INTEL_PCM_PREFIX})
 
 ################################################################################
 # ImageMagick. TODO(qfiard): Make portable.
