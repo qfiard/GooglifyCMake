@@ -2334,7 +2334,7 @@ add_external_project(
       tar --strip-components 1 -xvf
           ${LIBCURL_PREFIX}/download/curl-7.33.0.tar.bz2
   CONFIGURE_COMMAND ${CONFIGURE_COMMAND})
-if (NOT APPLE)
+if (NOT APPLE OR IS_IOS)
   add_dependencies(${LIBCURL_TARGET} ${OPENSSL_TARGET})
 endif ()
 add_dependencies(${LIBCURL_TARGET} ${ZLIB_TARGET})
