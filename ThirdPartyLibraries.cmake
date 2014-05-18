@@ -156,6 +156,7 @@ function(add_install_name_step LIB)
 endfunction()
 
 # Forward declarations.
+add_target(AFNETWORKING afnetworking)
 add_target(APR apr)
 add_target(APR_UTIL apr-util)
 add_target(ARABICA arabica)
@@ -266,6 +267,7 @@ set(LLVM_LIB_DIR ${CLANG_LIB_DIR})
 set(OPENCV_LIB_DIR ${OPENCV_PREFIX}/lib)
 
 # Third-party libraries definitions.
+set_libraries(afnetworking ${AFNETWORKING_PREFIX}/lib afnetworking)
 set_libraries(arabica ${ARABICA_PREFIX}/lib arabica)
 set_libraries(boost_atomic ${BOOST_LIB_DIR} boost_atomic)
 set_libraries(boost_chrono ${BOOST_LIB_DIR} boost_chrono)
@@ -527,6 +529,9 @@ else ()
 endif ()
 
 # Dependencies. We must be careful to define a DAG.
+add_framework_dependencies(
+    afnetworking CoreGraphics MobileCoreServices Security SystemConfiguration
+    UIKit)
 add_framework_dependencies(sw_reveal_view_controller CoreGraphics)
 
 add_library_dependencies(boost_filesystem third_party.boost_system)
@@ -630,6 +635,8 @@ set(EIGEN_INCLUDE_PATH ${EIGEN_PREFIX}/include/eigen3)
 
 
 # Include directories.
+set_include_directories(afnetworking ${AFNETWORKING_PREFIX}/include
+                        ${AFNETWORKING_PREFIX}/include/AFNetworking)
 set_include_directories(
     arabica ${ARABICA_PREFIX}/include ${ARABICA_PREFIX}/include/arabica)
 set_include_directories(boost ${BOOST_PREFIX}/include)
@@ -762,6 +769,93 @@ endforeach ()
 ################################################################################
 # External project inclusions.
 ################################################################################
+
+################################################################################
+# libcxx must be the first declared target as it is used by objc_library rules
+# used below.
+################################################################################
+# libcxx.
+add_external_project(
+  ${LIBCXX_TARGET}_headers
+  PREFIX ${LIBCXX_PREFIX}
+  DOWNLOAD_COMMAND
+      ${SVN} export --force http://llvm.org/svn/llvm-project/libcxx/trunk
+          ${LIBCXX_TARGET}
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND ${NOP})
+set(LIBCXX_LINKER_FLAGS "-L${LIBCXXABI_PREFIX}/lib ${CMAKE_SHARED_LINKER_FLAGS}")
+add_external_project(
+  ${LIBCXX_TARGET}
+  PREFIX ${LIBCXX_PREFIX}
+  DOWNLOAD_COMMAND ${NOP}
+  PATCH_COMMAND
+    patch -p0 < ${THIRD_PARTY_SOURCE_DIR}/libcxx.patch
+  CMAKE_ARGS
+      -DLIBCXX_ENABLE_SHARED=${BUILD_SHARED_LIBS}
+
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
+      -DCMAKE_BUILD_TYPE=RELEASE
+      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+      -DCMAKE_SHARED_LINKER_FLAGS=${LIBCXX_LINKER_FLAGS}
+      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_INSTALL_PREFIX=${LIBCXX_PREFIX}
+      -DLIBCXX_CXX_ABI=libcxxabi
+      -DLIBCXX_LIBCXXABI_INCLUDE_PATHS=${LIBCXXABI_PREFIX}/include)
+add_install_name_step(LIBCXX)
+add_dependencies(${LIBCXX_TARGET} ${LIBCXX_TARGET}_headers)
+add_dependencies(${LIBCXX_TARGET} ${LIBCXXABI_TARGET})
+
+################################################################################
+# AFNetworking.
+add_external_project(
+  ${AFNETWORKING_TARGET}_download
+  PREFIX ${AFNETWORKING_PREFIX}
+  SOURCE_DIR ${AFNETWORKING_PREFIX}/src/${AFNETWORKING_TARGET}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --depth 1 git://github.com/AFNetworking/AFNetworking.git ${AFNETWORKING_TARGET}
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND
+      cd <SOURCE_DIR> &&
+      find AFNetworking UIKit+AFNetworking -name "*.h" |
+          cpio -dp <INSTALL_DIR>/include)
+ExternalProject_Get_Property(${AFNETWORKING_TARGET}_download SOURCE_DIR)
+set(AFNETWORKING_SRCS
+    ${SOURCE_DIR}/AFNetworking/AFHTTPRequestOperation.m
+    ${SOURCE_DIR}/AFNetworking/AFHTTPRequestOperationManager.m
+    ${SOURCE_DIR}/AFNetworking/AFHTTPSessionManager.m
+    ${SOURCE_DIR}/AFNetworking/AFNetworkReachabilityManager.m
+    ${SOURCE_DIR}/AFNetworking/AFSecurityPolicy.m
+    ${SOURCE_DIR}/AFNetworking/AFURLConnectionOperation.m
+    ${SOURCE_DIR}/AFNetworking/AFURLRequestSerialization.m
+    ${SOURCE_DIR}/AFNetworking/AFURLResponseSerialization.m
+    ${SOURCE_DIR}/AFNetworking/AFURLSessionManager.m
+    ${SOURCE_DIR}/UIKit+AFNetworking/AFNetworkActivityIndicatorManager.m
+    ${SOURCE_DIR}/UIKit+AFNetworking/UIActivityIndicatorView+AFNetworking.m
+    ${SOURCE_DIR}/UIKit+AFNetworking/UIAlertView+AFNetworking.m
+    ${SOURCE_DIR}/UIKit+AFNetworking/UIButton+AFNetworking.m
+    ${SOURCE_DIR}/UIKit+AFNetworking/UIImageView+AFNetworking.m
+    ${SOURCE_DIR}/UIKit+AFNetworking/UIProgressView+AFNetworking.m
+    ${SOURCE_DIR}/UIKit+AFNetworking/UIRefreshControl+AFNetworking.m
+    ${SOURCE_DIR}/UIKit+AFNetworking/UIWebView+AFNetworking.m)
+set_source_files_properties(${AFNETWORKING_SRCS} PROPERTIES GENERATED TRUE)
+objc_library(${AFNETWORKING_TARGET} ${AFNETWORKING_SRCS})
+link_framework(
+    ${AFNETWORKING_TARGET} CoreGraphics MobileCoreServices Security
+    SystemConfiguration UIKit)
+target_include_directories(
+    ${AFNETWORKING_TARGET} PUBLIC ${AFNETWORKING_PREFIX}/include/AFNetworking)
+set_target_properties(
+    ${AFNETWORKING_TARGET} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${AFNETWORKING_PREFIX}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${AFNETWORKING_PREFIX}/lib
+    OUTPUT_NAME afnetworking)
+add_dependencies(${AFNETWORKING_TARGET} ${AFNETWORKING_TARGET}_download)
 
 ################################################################################
 # APR.
@@ -2058,45 +2152,6 @@ if (NOT APPLE)
   add_dependencies(${LIBCURL_TARGET} ${OPENSSL_TARGET})
 endif ()
 add_dependencies(${LIBCURL_TARGET} ${ZLIB_TARGET})
-
-################################################################################
-# libcxx_download.
-add_external_project(
-  ${LIBCXX_TARGET}_headers
-  PREFIX ${LIBCXX_PREFIX}
-  DOWNLOAD_COMMAND
-      ${SVN} export --force http://llvm.org/svn/llvm-project/libcxx/trunk ${LIBCXX_TARGET}
-  CONFIGURE_COMMAND ${NOP}
-  BUILD_COMMAND ${NOP}
-  INSTALL_COMMAND ${NOP})
-
-################################################################################
-# libcxx.
-set(LIBCXX_LINKER_FLAGS "-L${LIBCXXABI_PREFIX}/lib ${CMAKE_SHARED_LINKER_FLAGS}")
-add_external_project(
-  ${LIBCXX_TARGET}
-  PREFIX ${LIBCXX_PREFIX}
-  DOWNLOAD_COMMAND ${NOP}
-  PATCH_COMMAND
-    patch -p0 < ${THIRD_PARTY_SOURCE_DIR}/libcxx.patch
-  CMAKE_ARGS
-      -DLIBCXX_ENABLE_SHARED=${BUILD_SHARED_LIBS}
-
-      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-      -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
-      -DCMAKE_BUILD_TYPE=RELEASE
-      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
-      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
-      -DCMAKE_SHARED_LINKER_FLAGS=${LIBCXX_LINKER_FLAGS}
-      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
-      -DCMAKE_INSTALL_PREFIX=${LIBCXX_PREFIX}
-      -DLIBCXX_CXX_ABI=libcxxabi
-      -DLIBCXX_LIBCXXABI_INCLUDE_PATHS=${LIBCXXABI_PREFIX}/include)
-add_install_name_step(LIBCXX)
-add_dependencies(${LIBCXX_TARGET} ${LIBCXX_TARGET}_headers)
-add_dependencies(${LIBCXX_TARGET} ${LIBCXXABI_TARGET})
 
 ################################################################################
 # libcxxabi.
