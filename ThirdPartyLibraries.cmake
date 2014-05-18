@@ -202,6 +202,7 @@ add_target(HTTPXX httpxx)
 add_target(ICU icu)
 add_target(IMAGEMAGICK imagemagick)
 add_target(IMAP_2007F imap-2007f)
+add_target(INTEL_PCM intel_pcm)
 add_target(IOS_NTP ios_ntp)
 add_target(ISO_3166 iso_3166)
 add_target(ISO_639 iso_639)
@@ -353,6 +354,7 @@ set_libraries(icu_lx ${ICU_PREFIX}/lib iculx)
 set_libraries(icu_test ${ICU_PREFIX}/lib icutest)
 set_libraries(icu_tu ${ICU_PREFIX}/lib icutu)
 set_libraries(icu_uc ${ICU_PREFIX}/lib icuuc)
+set_libraries(intel_pcm ${INTEL_PCM_PREFIX}/lib intel_pcm)
 set_libraries(ios_ntp ${IOS_NTP_PREFIX}/lib ios_ntp)
 set_libraries(imagemagick ${IMAGEMAGICK_PREFIX}/lib
               Magick++ MagickCore MagickWand)
@@ -553,6 +555,7 @@ add_library_dependencies(boost_thread third_party.boost_atomic)
 add_library_dependencies(boost_iostreams ${BZ2_LIB})
 add_framework_dependencies(formatter_kit AddressBook AddressBookUI CoreLocation)
 add_library_dependencies(gtest pthread)
+add_library_dependencies(intel_pcm pthread)
 add_framework_dependencies(ios_ntp CFNetwork CoreGraphics UIKit)
 add_framework_dependencies(mw_photo_browser AssetsLibrary MapKit MessageUI)
 add_library_dependencies(openssl third_party.gmp)
@@ -678,6 +681,7 @@ set_include_directories(gtest ${GTEST_PREFIX}/include)
 set_include_directories(httpxx ${HTTPXX_PREFIX}/include)
 set_include_directories(icu ${ICU_PREFIX}/include)
 set_include_directories(imagemagick ${IMAGEMAGICK_PREFIX}/include/ImageMagick-6)
+set_include_directories(intel_pcm ${INTEL_PCM_PREFIX}/include)
 set_include_directories(
     ios_ntp ${IOS_NTP_PREFIX}/include ${IOS_NTP_PREFIX}/include/ios-ntp)
 set_include_directories(jsoncpp ${JSONCPP_PREFIX}/include)
@@ -893,7 +897,7 @@ add_external_project(
   PREFIX ${APR_PREFIX}
   DOWNLOAD_DIR ${APR_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O apr-1.5.0.tar.bz2 http://www.mirrorservice.org/sites/ftp.apache.org//apr/apr-1.5.0.tar.bz2 &&
+      wget -O apr-1.5.0.tar.bz2 https://archive.apache.org/dist/apr/apr-1.5.0.tar.bz2 &&
       gpg --verify ${THIRD_PARTY_SOURCE_DIR}/apr-1.5.0.tar.bz2.asc
           apr-1.5.0.tar.bz2 &&
       cd <SOURCE_DIR> &&
@@ -911,7 +915,7 @@ add_external_project(
   PREFIX ${APR_UTIL_PREFIX}
   DOWNLOAD_DIR ${APR_UTIL_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O apr-util-1.5.3.tar.bz2 http://www.mirrorservice.org/sites/ftp.apache.org//apr/apr-util-1.5.3.tar.bz2 &&
+      wget -O apr-util-1.5.3.tar.bz2 https://archive.apache.org/dist/apr/apr-util-1.5.3.tar.bz2 &&
       gpg --verify ${THIRD_PARTY_SOURCE_DIR}/apr-util-1.5.3.tar.bz2.asc
           apr-util-1.5.3.tar.bz2 &&
       cd <SOURCE_DIR> &&
@@ -1909,7 +1913,7 @@ add_external_project(
   PREFIX ${HTTPD_PREFIX}
   DOWNLOAD_DIR ${HTTPD_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O httpd-2.4.7.tar.bz2 http://mirrors.ukfast.co.uk/sites/ftp.apache.org//httpd/httpd-2.4.7.tar.bz2 &&
+      wget -O httpd-2.4.7.tar.bz2 http://archive.apache.org/dist/httpd/httpd-2.4.7.tar.bz2 &&
       gpg --verify ${THIRD_PARTY_SOURCE_DIR}/httpd-2.4.7.tar.bz2.asc
           httpd-2.4.7.tar.bz2 &&
       cd <SOURCE_DIR> &&
@@ -1983,6 +1987,24 @@ add_external_project(
           ${ICU_PREFIX}/download/icu4c-52_1-src.tgz
   CONFIGURE_COMMAND echo "${ICU_BUILD_COMMAND}" | sh)
 add_install_name_step(ICU)
+
+################################################################################
+# Intel PCM library.
+add_external_project(
+  ${INTEL_PCM_TARGET}
+  PREFIX ${INTEL_PCM_PREFIX}
+  DOWNLOAD_COMMAND
+    git clone --depth 1 git://github.com/QuentinFiard/intel_pcm ${INTEL_PCM_TARGET}
+  CMAKE_ARGS
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_BUILD_TYPE=RELEASE
+      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
+      -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_INSTALL_PREFIX=${INTEL_PCM_PREFIX})
 
 ################################################################################
 # ImageMagick. TODO(qfiard): Make portable.
@@ -2555,7 +2577,7 @@ add_external_project(
   PREFIX ${MAVEN_PREFIX}
   DOWNLOAD_DIR ${MAVEN_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O apache-maven-3.1.1-src.tar.gz ftp://mirrors.ircam.fr/pub/apache/maven/maven-3/3.1.1/source/apache-maven-3.1.1-src.tar.gz &&
+      wget -O apache-maven-3.1.1-src.tar.gz http://archive.apache.org/dist/maven/maven-3/3.1.1/source/apache-maven-3.1.1-src.tar.gz &&
       gpg --verify ${THIRD_PARTY_SOURCE_DIR}/apache-maven-3.1.1-src.tar.gz.asc
           apache-maven-3.1.1-src.tar.gz &&
       cd <SOURCE_DIR> &&
@@ -2700,7 +2722,7 @@ add_external_project(
   PREFIX ${MOD_JK_PREFIX}
   DOWNLOAD_DIR ${MOD_JK_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O tomcat-connectors-1.2.37-src.tar.gz http://www.apache.org/dist/tomcat/tomcat-connectors/jk/tomcat-connectors-1.2.37-src.tar.gz &&
+      wget -O tomcat-connectors-1.2.37-src.tar.gz http://archive.apache.org/dist/tomcat/tomcat-connectors/jk/tomcat-connectors-1.2.37-src.tar.gz &&
       gpg --verify ${THIRD_PARTY_SOURCE_DIR}/tomcat-connectors-1.2.37-src.tar.gz.sig
           tomcat-connectors-1.2.37-src.tar.gz &&
       cd <SOURCE_DIR> &&
