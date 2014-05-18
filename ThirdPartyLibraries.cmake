@@ -257,6 +257,7 @@ add_target(SHARK shark)
 add_target(SSTOOLKIT sstoolkit)
 add_target(SW_REVEAL_VIEW_CONTROLLER sw_reveal_view_controller)
 add_target(TBB tbb)
+add_target(UIIMAGE_ANIMATED_GIF uiimage_animated_gif)
 add_target(VIRTUALENV virtualenv)
 add_target(XZ xz)
 add_target(ZLIB zlib)
@@ -529,6 +530,8 @@ set_libraries(sstoolkit ${SSTOOLKIT_PREFIX}/lib SSToolkit)
 set_libraries(sw_reveal_view_controller ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/lib
               sw_reveal_view_controller)
 set_libraries(tbb ${TBB_PREFIX}/lib tbb)
+set_libraries(uiimage_animated_gif ${UIIMAGE_ANIMATED_GIF_PREFIX}/lib
+              uiimage_animated_gif)
 set_libraries(zlib ${ZLIB_PREFIX}/lib z)
 
 
@@ -575,6 +578,8 @@ add_library_dependencies(mobile_commerce_ios_atg_mobile_common
                          third_party.mobile_commerce_ios_ios_rest_client)
 add_framework_dependencies(
     mobile_commerce_ios_atg_mobile_common CoreData SystemConfiguration)
+
+add_framework_dependencies(uiimage_animated_gif ImageIO)
 
 # Aliases.
 add_library_dependencies(boost_asio third_party.boost_system)
@@ -713,6 +718,8 @@ set_include_directories(sstoolkit ${SSTOOLKIT_PREFIX}/include)
 set_include_directories(
     sw_reveal_view_controller ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/include)
 set_include_directories(tbb ${TBB_PREFIX}/include)
+set_include_directories(
+    uiimage_animated_gif ${UIIMAGE_ANIMATED_GIF_PREFIX}/include)
 
 # Fixing implicit header dependencies. Again we must be careful to define a DAG.
 add_include_dependencies(arabica third_party.boost_headers third_party.libxml)
@@ -3533,6 +3540,36 @@ add_external_project_step(${TBB_TARGET} install_libs
   DEPENDEES install
   WORKING_DIRECTORY <SOURCE_DIR>)
 add_install_name_step(TBB)
+
+################################################################################
+# UIImage+animatedGif.
+add_external_project(
+  ${UIIMAGE_ANIMATED_GIF_TARGET}_download
+  PREFIX ${UIIMAGE_ANIMATED_GIF_PREFIX}
+  SOURCE_DIR ${UIIMAGE_ANIMATED_GIF_PREFIX}/src/${UIIMAGE_ANIMATED_GIF_TARGET}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --depth 1 git://github.com/mayoff/uiimage-from-animated-gif.git
+          ${UIIMAGE_ANIMATED_GIF_TARGET}
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND
+      mkdir -p <INSTALL_DIR>/include/UIImage+animatedGIF &&
+      cp <SOURCE_DIR>/uiimage-from-animated-gif/UIImage+animatedGIF.h
+          <INSTALL_DIR>/include/UIImage+animatedGIF)
+ExternalProject_Get_Property(${UIIMAGE_ANIMATED_GIF_TARGET}_download SOURCE_DIR)
+set(SOURCE_DIR ${SOURCE_DIR}/uiimage-from-animated-gif)
+set(UIIMAGE_ANIMATED_GIF_SRCS ${SOURCE_DIR}/UIImage+animatedGIF.m)
+set_source_files_properties(
+    ${UIIMAGE_ANIMATED_GIF_SRCS} PROPERTIES GENERATED TRUE)
+objc_library(${UIIMAGE_ANIMATED_GIF_TARGET} ${UIIMAGE_ANIMATED_GIF_SRCS})
+link_framework(${UIIMAGE_ANIMATED_GIF_TARGET} ImageIO)
+set_target_properties(
+    ${UIIMAGE_ANIMATED_GIF_TARGET} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${UIIMAGE_ANIMATED_GIF_PREFIX}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${UIIMAGE_ANIMATED_GIF_PREFIX}/lib
+    OUTPUT_NAME uiimage_animated_gif)
+add_dependencies(
+    ${UIIMAGE_ANIMATED_GIF_TARGET} ${UIIMAGE_ANIMATED_GIF_TARGET}_download)
 
 ################################################################################
 # virtualenv.
