@@ -178,6 +178,7 @@ add_target(DLIB dlib)
 add_target(EIGEN eigen)
 add_target(EXTRAE extrae)
 add_target(FAST_IMAGE_CACHE fast_image_cache)
+add_target(FB_GALLERY fb_gallery)
 add_target(FLEX flex)
 add_target(FREETYPE freetype)
 add_target(G2LOG g2log)
@@ -327,6 +328,7 @@ set_libraries(curl-asio ${CURL_ASIO_PREFIX}/lib curlasio)
 set_libraries(diff_match_patch ${DIFF_MATCH_PATCH_PREFIX}/lib diff_match_patch)
 set_libraries(dlib ${DLIB_PREFIX}/lib dlib)
 set_libraries(fast_image_cache ${FAST_IMAGE_CACHE_PREFIX}/lib fast_image_cache)
+set_libraries(fb_gallery ${FB_GALLERY_PREFIX}/lib fb_gallery)
 set_libraries(flex ${FLEX_PREFIX}/lib fl)
 set_libraries(freetype ${FREETYPE_PREFIX}/lib freetype)
 set_libraries(g2log ${G2LOG_PREFIX}/lib lib_activeobject lib_g2logger)
@@ -647,6 +649,7 @@ set_include_directories(diff_match_patch ${DIFF_MATCH_PATCH_PREFIX}/include)
 set_include_directories(dlib ${DLIB_PREFIX}/include)
 set_include_directories(eigen ${EIGEN_INCLUDE_PATH})
 set_include_directories(fast_image_cache ${FAST_IMAGE_CACHE_PREFIX}/include)
+set_include_directories(fb_gallery ${FB_GALLERY_PREFIX}/include)
 set_include_directories(flex ${FLEX_PREFIX}/include)
 set_include_directories(freetype ${FREETYPE_PREFIX}/include)
 set_include_directories(g2log ${G2LOG_PREFIX}/include)
@@ -1391,6 +1394,39 @@ set_target_properties(
     LIBRARY_OUTPUT_DIRECTORY ${FAST_IMAGE_CACHE_PREFIX}/lib
     OUTPUT_NAME fast_image_cache)
 add_dependencies(${FAST_IMAGE_CACHE_TARGET} ${FAST_IMAGE_CACHE_TARGET}_download)
+
+################################################################################
+# FBGallery.
+set(DOWNLOAD_TARGET ${FB_GALLERY_TARGET}_download)
+add_external_project(
+  ${DOWNLOAD_TARGET}
+  PREFIX ${FB_GALLERY_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --depth 1 git://github.com/Seitk/FB-Gallery.git
+          ${DOWNLOAD_TARGET}
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND
+    cd "<SOURCE_DIR>/FB Gallery" &&
+    find . -maxdepth 1 -name "*.h" |
+        cpio -dp ${FB_GALLERY_PREFIX}/include/FBGallery)
+ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+set(SOURCE_DIR "${SOURCE_DIR}/FB Gallery")
+set(SRCS
+    "${SOURCE_DIR}/FBGTimelineCell.m"
+    "${SOURCE_DIR}/FBGTimelinePhotoView.m"
+    "${SOURCE_DIR}/UIView+viewController.m")
+set_source_files_properties(${SRCS} PROPERTIES GENERATED TRUE)
+objc_library(${FB_GALLERY_TARGET} ${SRCS})
+set_target_properties(
+    ${FB_GALLERY_TARGET} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${FB_GALLERY_PREFIX}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${FB_GALLERY_PREFIX}/lib
+    OUTPUT_NAME fb_gallery)
+target_include_directories(
+    ${FB_GALLERY_TARGET} PUBLIC ${MW_PHOTO_BROWSER_PREFIX}/include)
+add_dependencies(${FB_GALLERY_TARGET} ${DOWNLOAD_TARGET})
+add_dependencies(${FB_GALLERY_TARGET} ${MW_PHOTO_BROWSER_TARGET})
 
 ################################################################################
 # Flex.
