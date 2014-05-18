@@ -232,6 +232,7 @@ add_target(MOBILE_COMMERCE_IOS mobile_commerce_ios)
 add_target(MOD_JK mod_jk)
 add_target(MPC mpc)
 add_target(MPFR mpfr)
+add_target(MW_PHOTO_BROWSER mw_photo_browser)
 add_target(MYSQL mysql)
 add_target(MYSQLCPPCONN mysqlcppconn)
 add_target(NGINX nginx)
@@ -483,6 +484,7 @@ set_libraries(mobile_commerce_ios_em_mobile_client
               ${MOBILE_COMMERCE_IOS_PREFIX}/lib EMMobileClient)
 set_libraries(mpc ${MPC_PREFIX}/lib mpc)
 set_libraries(mpfr ${MPFR_PREFIX}/lib mpfr)
+set_libraries(mw_photo_browser ${MW_PHOTO_BROWSER_PREFIX}/lib MWPhotoBrowser)
 set_libraries(mysqlcppconn ${MYSQLCPPCONN_PREFIX}/lib mysqlcppconn)
 set_libraries(njk_web_view_progress ${NJK_WEB_VIEW_PROGRESS_PREFIX}/lib
               njk_web_view_progress)
@@ -549,6 +551,7 @@ add_library_dependencies(boost_iostreams ${BZ2_LIB})
 add_framework_dependencies(formatter_kit AddressBook AddressBookUI CoreLocation)
 add_library_dependencies(gtest pthread)
 add_framework_dependencies(ios_ntp CFNetwork CoreGraphics UIKit)
+add_framework_dependencies(mw_photo_browser AssetsLibrary MapKit MessageUI)
 add_library_dependencies(openssl third_party.gmp)
 add_library_dependencies(libcurl third_party.zlib)
 if (NOT APPLE)
@@ -692,6 +695,7 @@ set_include_directories(
     mobile_commerce_ios ${MOBILE_COMMERCE_IOS_PREFIX}/include)
 set_include_directories(mpc ${MPC_PREFIX}/include)
 set_include_directories(mpfr ${MPFR_PREFIX}/include)
+set_include_directories(mw_photo_browser ${MW_PHOTO_BROWSER_PREFIX}/include)
 set_include_directories(mysql ${MYSQL_PREFIX}/include)
 set_include_directories(mysqlcppconn ${MYSQLCPPCONN_PREFIX}/include)
 set_include_directories(
@@ -746,6 +750,9 @@ endif ()
 set(CMAKE_C_FLAGS_WITH_ARCHS "${ARCHS_AS_FLAGS} ${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS_WITH_ARCHS "${ARCHS_AS_FLAGS} ${CMAKE_CXX_FLAGS}")
 set(LDFLAGS_WITH_ARCHS "${ARCHS_AS_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
+if (IS_IOS)
+  string(REGEX REPLACE "^\\-" "" XCODE_SDK ${CMAKE_XCODE_EFFECTIVE_PLATFORMS})
+endif ()
 
 # Sets the --host flag to the appropriate value if necessary.
 if (IOS_BUILD)
@@ -2717,6 +2724,28 @@ add_external_project(
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${CONFIGURE_LIB_TYPE})
 add_dependencies(${MPFR_TARGET} ${GMP_TARGET})
+
+################################################################################
+# MWPhotoBrowser.
+if (IS_IOS)
+  add_external_project(
+    ${MW_PHOTO_BROWSER_TARGET}
+    PREFIX ${MW_PHOTO_BROWSER_PREFIX}
+    DOWNLOAD_COMMAND
+        ${GIT} clone --depth 1 git://github.com/mwaterfall/MWPhotoBrowser.git
+            ${MW_PHOTO_BROWSER_TARGET}
+    CONFIGURE_COMMAND ${NOP}
+    BUILD_COMMAND
+        xcodebuild -project <SOURCE_DIR>/MWPhotoBrowser/MWPhotoBrowser.xcodeproj
+            -sdk ${XCODE_SDK} ARCHS=${SPACE_SEP_ARCHS}
+    INSTALL_COMMAND
+        ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/lib &&
+        cd <SOURCE_DIR>/MWPhotoBrowser &&
+        cp -f build/Release-${XCODE_SDK}/libMWPhotoBrowser.a <INSTALL_DIR>/lib &&
+        cd Classes &&
+        find . -name "*.h" | cpio -dp <INSTALL_DIR>/include/MWPhotoBrowser
+    BUILD_IN_SOURCE 1)
+endif ()
 
 ################################################################################
 # MySQL.
