@@ -180,6 +180,7 @@ add_target(EXTRAE extrae)
 add_target(FAST_IMAGE_CACHE fast_image_cache)
 add_target(FB_GALLERY fb_gallery)
 add_target(FLEX flex)
+add_target(FORMATTER_KIT formatter_kit)
 add_target(FREETYPE freetype)
 add_target(G2LOG g2log)
 add_target(GCC gcc)
@@ -330,6 +331,7 @@ set_libraries(dlib ${DLIB_PREFIX}/lib dlib)
 set_libraries(fast_image_cache ${FAST_IMAGE_CACHE_PREFIX}/lib fast_image_cache)
 set_libraries(fb_gallery ${FB_GALLERY_PREFIX}/lib fb_gallery)
 set_libraries(flex ${FLEX_PREFIX}/lib fl)
+set_libraries(formatter_kit ${FORMATTER_KIT_PREFIX}/lib formatter_kit)
 set_libraries(freetype ${FREETYPE_PREFIX}/lib freetype)
 set_libraries(g2log ${G2LOG_PREFIX}/lib lib_activeobject lib_g2logger)
 set_libraries(gflags ${GFLAGS_PREFIX}/lib gflags)
@@ -540,6 +542,7 @@ add_library_dependencies(boost_filesystem third_party.boost_system)
 add_library_dependencies(boost_log third_party.boost_filesystem)
 add_library_dependencies(boost_thread third_party.boost_atomic)
 add_library_dependencies(boost_iostreams ${BZ2_LIB})
+add_framework_dependencies(formatter_kit AddressBook AddressBookUI CoreLocation)
 add_library_dependencies(gtest pthread)
 add_library_dependencies(openssl third_party.gmp)
 add_library_dependencies(libcurl third_party.zlib)
@@ -651,6 +654,7 @@ set_include_directories(eigen ${EIGEN_INCLUDE_PATH})
 set_include_directories(fast_image_cache ${FAST_IMAGE_CACHE_PREFIX}/include)
 set_include_directories(fb_gallery ${FB_GALLERY_PREFIX}/include)
 set_include_directories(flex ${FLEX_PREFIX}/include)
+set_include_directories(formatter_kit ${FORMATTER_KIT_PREFIX}/include)
 set_include_directories(freetype ${FREETYPE_PREFIX}/include)
 set_include_directories(g2log ${G2LOG_PREFIX}/include)
 set_include_directories(gflags ${GFLAGS_PREFIX}/include)
@@ -1444,6 +1448,42 @@ add_external_project(
   CONFIGURE_COMMAND ./configure --prefix=${FLEX_PREFIX} ${HOST} ${SYSROOT}
   BUILD_IN_SOURCE 1)
 set(FLEX_EXECUTABLE ${FLEX_PREFIX}/bin/flex++)
+
+################################################################################
+# FormatterKit.
+set(DOWNLOAD_TARGET ${FORMATTER_KIT_TARGET}_download)
+add_external_project(
+  ${DOWNLOAD_TARGET}
+  PREFIX ${FORMATTER_KIT_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --depth 1 git://github.com/QuentinFiard/FormatterKit.git
+          ${DOWNLOAD_TARGET}
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND
+      cd <SOURCE_DIR> &&
+      find FormatterKit -name "*.h" | cpio -dp <INSTALL_DIR>/include)
+ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+set(SOURCE_DIR2 ${SOURCE_DIR}/FormatterKit)
+set(SRCS
+    ${SOURCE_DIR2}/TTTAddressFormatter.m
+    ${SOURCE_DIR2}/TTTArrayFormatter.m
+    ${SOURCE_DIR2}/TTTColorFormatter.m
+    ${SOURCE_DIR2}/TTTLocationFormatter.m
+    ${SOURCE_DIR2}/TTTOrdinalNumberFormatter.m
+    ${SOURCE_DIR2}/TTTTimeIntervalFormatter.m
+    ${SOURCE_DIR2}/TTTUnitOfInformationFormatter.m
+    ${SOURCE_DIR2}/TTTURLRequestFormatter.m)
+set_source_files_properties(${SRCS} PROPERTIES GENERATED TRUE)
+objc_library(${FORMATTER_KIT_TARGET} ${SRCS})
+link_framework(${FORMATTER_KIT_TARGET} AddressBook AddressBookUI CoreLocation)
+set_target_properties(
+    ${FORMATTER_KIT_TARGET} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${FORMATTER_KIT_PREFIX}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${FORMATTER_KIT_PREFIX}/lib
+    OUTPUT_NAME formatter_kit)
+add_dependencies(${FORMATTER_KIT_TARGET} ${DOWNLOAD_TARGET})
+set(FORMATTER_KIT_LOCALIZATIONS ${SOURCE_DIR}/Localizations)
 
 ################################################################################
 # Freetype.
