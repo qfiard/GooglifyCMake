@@ -3022,12 +3022,12 @@ if (IOS_BUILD)
     PREFIX ${OPENSSL_PREFIX}
     DOWNLOAD_DIR ${OPENSSL_PREFIX}/download
     DOWNLOAD_COMMAND
-        wget -O openssl-1.0.1e.tar.gz http://www.openssl.org/source/openssl-1.0.1e.tar.gz &&
-        gpg --verify ${THIRD_PARTY_SOURCE_DIR}/openssl-1.0.1e.tar.gz.asc
-            openssl-1.0.1e.tar.gz &&
+        wget -O openssl-1.0.1g.tar.gz https://www.openssl.org/source/openssl-1.0.1g.tar.gz &&
+        gpg --verify ${THIRD_PARTY_SOURCE_DIR}/openssl-1.0.1g.tar.gz.asc
+            openssl-1.0.1g.tar.gz &&
         cd <SOURCE_DIR> &&
         tar --strip-components 1 -xvf
-            ${OPENSSL_PREFIX}/download/openssl-1.0.1e.tar.gz
+            ${OPENSSL_PREFIX}/download/openssl-1.0.1g.tar.gz
     CONFIGURE_COMMAND ${NOP}
     BUILD_COMMAND ${NOP}
     INSTALL_COMMAND
@@ -3095,12 +3095,12 @@ else ()
     PREFIX ${OPENSSL_PREFIX}
     DOWNLOAD_DIR ${OPENSSL_PREFIX}/download
     DOWNLOAD_COMMAND
-        wget -O openssl-1.0.1e.tar.gz http://www.openssl.org/source/openssl-1.0.1e.tar.gz &&
-        gpg --verify ${THIRD_PARTY_SOURCE_DIR}/openssl-1.0.1e.tar.gz.asc
-            openssl-1.0.1e.tar.gz &&
+        wget -O openssl-1.0.1g.tar.gz http://www.openssl.org/source/openssl-1.0.1g.tar.gz &&
+        gpg --verify ${THIRD_PARTY_SOURCE_DIR}/openssl-1.0.1g.tar.gz.asc
+            openssl-1.0.1g.tar.gz &&
         cd <SOURCE_DIR> &&
         tar --strip-components 1 -xvf
-            ${OPENSSL_PREFIX}/download/openssl-1.0.1e.tar.gz
+            ${OPENSSL_PREFIX}/download/openssl-1.0.1g.tar.gz
     CONFIGURE_COMMAND ${CONFIGURE_COMMAND}
     BUILD_IN_SOURCE 1)
 endif ()
