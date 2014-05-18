@@ -3460,7 +3460,6 @@ add_dependencies(${SHARK_TARGET} ${OPENMP_TARGET})
 ################################################################################
 # SSToolkit.
 if (IS_IOS)
-  string(REGEX REPLACE "^\\-" "" SSTOOLKIT_SDK ${CMAKE_XCODE_EFFECTIVE_PLATFORMS})
   add_external_project(
     ${SSTOOLKIT_TARGET}
     PREFIX ${SSTOOLKIT_PREFIX}
@@ -3469,11 +3468,10 @@ if (IS_IOS)
             ${SSTOOLKIT_TARGET}
     CONFIGURE_COMMAND ${NOP}
     BUILD_COMMAND
-        xcodebuild -project <SOURCE_DIR>/SSToolkit.xcodeproj
-            -sdk ${SSTOOLKIT_SDK}
+        xcodebuild -project <SOURCE_DIR>/SSToolkit.xcodeproj -sdk ${XCODE_SDK}
     INSTALL_COMMAND
         ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/lib &&
-        cp -f build/Release-${SSTOOLKIT_SDK}/libSSToolkit.a <INSTALL_DIR>/lib &&
+        cp -f build/Release-${XCODE_SDK}/libSSToolkit.a <INSTALL_DIR>/lib &&
         ditto SSToolkit <INSTALL_DIR>/include/SSToolkit
     BUILD_IN_SOURCE 1)
 endif ()
