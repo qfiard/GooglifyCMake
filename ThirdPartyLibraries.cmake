@@ -208,6 +208,7 @@ add_target(ISO_639 iso_639)
 add_target(ISO_COUNTRY_FLAGS iso-country-flags)
 add_target(IWYU iwyu)
 add_target(JSONCPP jsoncpp)
+add_target(JSONPATH jsonpath)
 add_target(LDAP ldap)
 add_target(LDAP_SASL ldap_sasl)
 add_target(LIBCROCO libcroco)
@@ -354,6 +355,7 @@ set_libraries(ios_ntp ${IOS_NTP_PREFIX}/lib ios_ntp)
 set_libraries(imagemagick ${IMAGEMAGICK_PREFIX}/lib
               Magick++ MagickCore MagickWand)
 set_libraries(jsoncpp ${JSONCPP_PREFIX}/lib jsoncpp)
+set_libraries(jsonpath ${JSONPATH_PREFIX}/lib jsonpath)
 set_libraries(libcurl ${LIBCURL_PREFIX}/lib curl)
 set_libraries(libcxx ${LIBCXX_PREFIX}/lib c++)
 set_libraries(libcxxabi ${LIBCXXABI_PREFIX}/lib c++abi)
@@ -671,6 +673,7 @@ set_include_directories(imagemagick ${IMAGEMAGICK_PREFIX}/include/ImageMagick-6)
 set_include_directories(
     ios_ntp ${IOS_NTP_PREFIX}/include ${IOS_NTP_PREFIX}/include/ios-ntp)
 set_include_directories(jsoncpp ${JSONCPP_PREFIX}/include)
+set_include_directories(jsonpath ${JSONPATH_PREFIX}/include)
 set_include_directories(libcurl ${LIBCURL_PREFIX}/include)
 set_include_directories(libcxx ${LIBCXX_PREFIX}/include/c++/v1)
 set_include_directories(libffi ${LIBFFI_PREFIX}/include)
@@ -2163,6 +2166,36 @@ add_external_project(
       -DCMAKE_INSTALL_PREFIX=${JSONCPP_PREFIX})
 
 ################################################################################
+# jsonpath.
+if (IS_IOS)
+  set(SOURCE_DIR ${MOBILE_COMMERCE_IOS_PREFIX}/src/${MOBILE_COMMERCE_IOS_TARGET})
+  set(SOURCE_DIR ${SOURCE_DIR}/ATGMobileCommon/ATGMobileCommon/JSONPath)
+  set(INSTALL_DIR ${JSONPATH_PREFIX})
+  set(SRCS
+      ${SOURCE_DIR}/ATGCustomJSONPathManager.m
+      ${SOURCE_DIR}/ATGCustomJSONPathParser.m
+      ${SOURCE_DIR}/ATGCustomJSONPathRegex.m
+      ${SOURCE_DIR}/ATGDefaultJSONPathRegex.m
+      ${SOURCE_DIR}/ATGJSONPathManager.m
+      ${SOURCE_DIR}/ATGJSONPathParser.m
+      ${SOURCE_DIR}/ATGJSONPathTokenizer.m)
+  set_source_files_properties(${SRCS} PROPERTIES GENERATED TRUE)
+  objc_library(${JSONPATH_TARGET} ${SRCS})
+  add_custom_command(
+    TARGET ${JSONPATH_TARGET} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${INSTALL_DIR}/include/JSONPath
+    COMMAND find . -name "*.h" | cpio -dp ${INSTALL_DIR}/include/JSONPath
+    WORKING_DIRECTORY ${SOURCE_DIR}
+    VERBATIM)
+  set_target_properties(
+      ${JSONPATH_TARGET} PROPERTIES
+      ARCHIVE_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
+      LIBRARY_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
+      OUTPUT_NAME jsonpath)
+  add_dependencies(${JSONPATH_TARGET} ${MOBILE_COMMERCE_IOS_TARGET}_download)
+endif ()
+
+################################################################################
 # LDAP.
 set(LDAP_CPPFLAGS "-I${BERKELEY_DB_PREFIX}/include")
 set(LDAP_LDFLAGS "-L${BERKELEY_DB_PREFIX}/lib")
@@ -2591,22 +2624,32 @@ add_external_project(
 ################################################################################
 # MobileCommerceiOS.
 if (IS_IOS)
-  string(REGEX REPLACE "^-" "" SDK ${CMAKE_XCODE_EFFECTIVE_PLATFORMS})
   add_external_project(
-    ${MOBILE_COMMERCE_IOS_TARGET}
+    ${MOBILE_COMMERCE_IOS_TARGET}_download
     PREFIX ${MOBILE_COMMERCE_IOS_PREFIX}
     DOWNLOAD_COMMAND
         ${GIT} clone --depth 1 git://github.com/QuentinFiard/MobileCommerceiOS
             ${MOBILE_COMMERCE_IOS_TARGET}
     CONFIGURE_COMMAND ${NOP}
+    BUILD_COMMAND ${NOP}
+    INSTALL_COMMAND ${NOP})
+  add_external_project(
+    ${MOBILE_COMMERCE_IOS_TARGET}
+    PREFIX ${MOBILE_COMMERCE_IOS_PREFIX}
+    DOWNLOAD_COMMAND ${NOP}
+    CONFIGURE_COMMAND ${NOP}
     BUILD_COMMAND
         find <SOURCE_DIR> -path <SOURCE_DIR>/ATGMobileStore -prune -o
             -name "*.xcodeproj" -print |
-        xargs -I{} xcodebuild -project {} -configuration Release -sdk ${SDK} clean build DSTROOT=<INSTALL_DIR> INSTALL_PATH=/lib
+        xargs -I{} xcodebuild -project {} -configuration Release
+            -sdk ${XCODE_SDK} clean build DSTROOT=<INSTALL_DIR>
+            INSTALL_PATH=/lib
     INSTALL_COMMAND
         cd <SOURCE_DIR>/build/Release-${SDK} &&
         find . -name "*.h" | cpio -dp <INSTALL_DIR>/include &&
         find . -name "*.a" | cpio -dp <INSTALL_DIR>/lib)
+  add_dependencies(
+      ${MOBILE_COMMERCE_IOS_TARGET} ${MOBILE_COMMERCE_IOS_TARGET}_download)
 endif ()
 
 ################################################################################
