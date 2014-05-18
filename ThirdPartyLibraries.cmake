@@ -202,6 +202,7 @@ add_target(HTTPXX httpxx)
 add_target(ICU icu)
 add_target(IMAGEMAGICK imagemagick)
 add_target(IMAP_2007F imap-2007f)
+add_target(IOS_NTP ios_ntp)
 add_target(ISO_3166 iso_3166)
 add_target(ISO_639 iso_639)
 add_target(ISO_COUNTRY_FLAGS iso-country-flags)
@@ -349,6 +350,7 @@ set_libraries(icu_lx ${ICU_PREFIX}/lib iculx)
 set_libraries(icu_test ${ICU_PREFIX}/lib icutest)
 set_libraries(icu_tu ${ICU_PREFIX}/lib icutu)
 set_libraries(icu_uc ${ICU_PREFIX}/lib icuuc)
+set_libraries(ios_ntp ${IOS_NTP_PREFIX}/lib ios_ntp)
 set_libraries(imagemagick ${IMAGEMAGICK_PREFIX}/lib
               Magick++ MagickCore MagickWand)
 set_libraries(jsoncpp ${JSONCPP_PREFIX}/lib jsoncpp)
@@ -544,6 +546,7 @@ add_library_dependencies(boost_thread third_party.boost_atomic)
 add_library_dependencies(boost_iostreams ${BZ2_LIB})
 add_framework_dependencies(formatter_kit AddressBook AddressBookUI CoreLocation)
 add_library_dependencies(gtest pthread)
+add_framework_dependencies(ios_ntp CFNetwork CoreGraphics UIKit)
 add_library_dependencies(openssl third_party.gmp)
 add_library_dependencies(libcurl third_party.zlib)
 if (NOT APPLE)
@@ -665,6 +668,8 @@ set_include_directories(gtest ${GTEST_PREFIX}/include)
 set_include_directories(httpxx ${HTTPXX_PREFIX}/include)
 set_include_directories(icu ${ICU_PREFIX}/include)
 set_include_directories(imagemagick ${IMAGEMAGICK_PREFIX}/include/ImageMagick-6)
+set_include_directories(
+    ios_ntp ${IOS_NTP_PREFIX}/include ${IOS_NTP_PREFIX}/include/ios-ntp)
 set_include_directories(jsoncpp ${JSONCPP_PREFIX}/include)
 set_include_directories(libcurl ${LIBCURL_PREFIX}/include)
 set_include_directories(libcxx ${LIBCXX_PREFIX}/include/c++/v1)
@@ -2017,6 +2022,42 @@ if (BUILD_SHARED_LIBS)
 add_dependencies(${IMAGEMAGICK_TARGET} ${LIBRSVG_TARGET})
 add_dependencies(${IMAGEMAGICK_TARGET} ${PANGO_TARGET})
 endif ()
+
+################################################################################
+# ios-ntp.
+set(DOWNLOAD_TARGET ${IOS_NTP_TARGET}_download)
+add_external_project(
+  ${DOWNLOAD_TARGET}
+  PREFIX ${IOS_NTP_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --depth 1 git://github.com/jbenet/ios-ntp.git
+          ${DOWNLOAD_TARGET}
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND
+      cd <SOURCE_DIR>/src &&
+      find . -name "*.h" | cpio -dp <INSTALL_DIR>/include/ios-ntp &&
+      cd <SOURCE_DIR>/lib &&
+      find . -name "*.h" | cpio -dp <INSTALL_DIR>/include/ios-ntp)
+ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+set(SRCS
+    ${SOURCE_DIR}/lib/GCDAsyncUdpSocket.m
+    ${SOURCE_DIR}/src/NSDate+NetworkClock.m
+    ${SOURCE_DIR}/src/NetAssociation.m
+    ${SOURCE_DIR}/src/NetworkClock.m)
+set_source_files_properties(${SRCS} PROPERTIES GENERATED TRUE)
+objc_library(${IOS_NTP_TARGET} ${SRCS})
+link_framework(${IOS_NTP_TARGET} CFNetwork CoreGraphics UIKit)
+target_include_directories(${IOS_NTP_TARGET} PUBLIC ${SOURCE_DIR}/lib)
+set_target_properties(
+    ${IOS_NTP_TARGET} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${IOS_NTP_PREFIX}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${IOS_NTP_PREFIX}/lib
+    COMPILE_FLAGS
+        "-fno-objc-arc -include ${SOURCE_DIR}/resources/ios-ntp-Prefix.pch"
+    OUTPUT_NAME ios_ntp)
+add_dependencies(${IOS_NTP_TARGET} ${DOWNLOAD_TARGET})
+set(IOS_NTP_HOSTS ${SOURCE_DIR}/resources/ntp.hosts)
 
 ################################################################################
 # IMAP-2007f. TODO(qfiard): Make portable.
