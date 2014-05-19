@@ -258,6 +258,7 @@ add_target(SHARK shark)
 add_target(SSTOOLKIT sstoolkit)
 add_target(SW_REVEAL_VIEW_CONTROLLER sw_reveal_view_controller)
 add_target(TBB tbb)
+add_target(UIALERTVIEW_BLOCKS uialertview_blocks)
 add_target(UIIMAGE_ANIMATED_GIF uiimage_animated_gif)
 add_target(VIRTUALENV virtualenv)
 add_target(XZ xz)
@@ -532,6 +533,8 @@ set_libraries(sstoolkit ${SSTOOLKIT_PREFIX}/lib SSToolkit)
 set_libraries(sw_reveal_view_controller ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/lib
               sw_reveal_view_controller)
 set_libraries(tbb ${TBB_PREFIX}/lib tbb)
+set_libraries(uialertview_blocks ${UIALERTVIEW_BLOCKS_PREFIX}/lib
+              uialertview_blocks)
 set_libraries(uiimage_animated_gif ${UIIMAGE_ANIMATED_GIF_PREFIX}/lib
               uiimage_animated_gif)
 set_libraries(zlib ${ZLIB_PREFIX}/lib z)
@@ -581,7 +584,7 @@ add_library_dependencies(mobile_commerce_ios_atg_mobile_common
                          third_party.mobile_commerce_ios_ios_rest_client)
 add_framework_dependencies(
     mobile_commerce_ios_atg_mobile_common CoreData SystemConfiguration)
-
+add_framework_dependencies(uialertview_blocks UIKit)
 add_framework_dependencies(uiimage_animated_gif ImageIO)
 
 # Aliases.
@@ -722,6 +725,7 @@ set_include_directories(sstoolkit ${SSTOOLKIT_PREFIX}/include)
 set_include_directories(
     sw_reveal_view_controller ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/include)
 set_include_directories(tbb ${TBB_PREFIX}/include)
+set_include_directories(uialertview_blocks ${UIALERTVIEW_BLOCKS_PREFIX}/include)
 set_include_directories(
     uiimage_animated_gif ${UIIMAGE_ANIMATED_GIF_PREFIX}/include)
 
@@ -3590,6 +3594,36 @@ set_target_properties(
     OUTPUT_NAME uiimage_animated_gif)
 add_dependencies(
     ${UIIMAGE_ANIMATED_GIF_TARGET} ${UIIMAGE_ANIMATED_GIF_TARGET}_download)
+
+################################################################################
+# UIAlertView+Blocks.
+set(DOWNLOAD_TARGET ${UIALERTVIEW_BLOCKS_TARGET}_download)
+add_external_project(
+  ${DOWNLOAD_TARGET}
+  PREFIX ${UIALERTVIEW_BLOCKS_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --depth 1 git://github.com/jivadevoe/UIAlertView-Blocks.git
+          ${DOWNLOAD_TARGET}
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND
+      cd <SOURCE_DIR> &&
+      find . -name "*.h" | cpio -dp <INSTALL_DIR>/include/UIAlertView+Blocks)
+ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+set(UIALERTVIEW_BLOCKS_SRCS
+    ${SOURCE_DIR}/RIButtonItem.m
+    ${SOURCE_DIR}/UIActionSheet+Blocks.m
+    ${SOURCE_DIR}/UIAlertView+Blocks.m)
+set_source_files_properties(
+    ${UIALERTVIEW_BLOCKS_SRCS} PROPERTIES GENERATED TRUE)
+objc_library(${UIALERTVIEW_BLOCKS_TARGET} ${UIALERTVIEW_BLOCKS_SRCS})
+link_framework(${UIALERTVIEW_BLOCKS_TARGET} UIKit)
+set_target_properties(
+    ${UIALERTVIEW_BLOCKS_TARGET} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${UIALERTVIEW_BLOCKS_PREFIX}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${UIALERTVIEW_BLOCKS_PREFIX}/lib
+    OUTPUT_NAME uialertview_blocks)
+add_dependencies(${UIALERTVIEW_BLOCKS_TARGET} ${DOWNLOAD_TARGET})
 
 ################################################################################
 # virtualenv.
