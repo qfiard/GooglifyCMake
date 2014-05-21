@@ -255,6 +255,7 @@ add_target(PROXY_LIBINTL proxy-libintl)
 add_target(RAPIDXML rapidxml)
 add_target(READLINE readline)
 add_target(SHARK shark)
+add_target(SQLITE3 sqlite3)
 add_target(SSTOOLKIT sstoolkit)
 add_target(SW_REVEAL_VIEW_CONTROLLER sw_reveal_view_controller)
 add_target(TBB tbb)
@@ -529,6 +530,7 @@ set_libraries(pretty_kit ${PRETTY_KIT_PREFIX}/lib pretty_kit)
 set_libraries(protobuf ${PROTOBUF_PREFIX}/lib protobuf)
 set_libraries(readline ${READLINE_PREFIX}/lib readline history)
 set_libraries(shark ${SHARK_PREFIX}/lib shark)
+set_libraries(sqlite3 ${SQLITE3_PREFIX}/lib sqlite3)
 set_libraries(sstoolkit ${SSTOOLKIT_PREFIX}/lib SSToolkit)
 set_libraries(sw_reveal_view_controller ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/lib
               sw_reveal_view_controller)
@@ -721,6 +723,7 @@ set_include_directories(
 set_include_directories(protobuf ${PROTOBUF_PREFIX}/include)
 set_include_directories(readline ${READLINE_PREFIX}/include)
 set_include_directories(shark ${SHARK_PREFIX}/include)
+set_include_directories(sqlite3 ${SQLITE3_PREFIX}/include)
 set_include_directories(sstoolkit ${SSTOOLKIT_PREFIX}/include)
 set_include_directories(
     sw_reveal_view_controller ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/include)
@@ -3482,6 +3485,27 @@ add_definitions(-DSHARK_USE_OPENMP)
 # Adds dependencies.
 add_dependencies(${SHARK_TARGET} ${BOOST_TARGET})
 add_dependencies(${SHARK_TARGET} ${OPENMP_TARGET})
+
+################################################################################
+# Sqlite3.
+add_external_project(
+  ${SQLITE3_TARGET}
+  PREFIX ${SQLITE3_PREFIX}
+  DOWNLOAD_DIR ${SQLITE3_PREFIX}/download
+  DOWNLOAD_COMMAND
+    wget -O sqlite-autoconf-3080403.tar.gz http://www.sqlite.org/2014/sqlite-autoconf-3080403.tar.gz &&
+        gpg --verify ${THIRD_PARTY_SOURCE_DIR}/sqlite-autoconf-3080403.tar.gz.sig
+            sqlite-autoconf-3080403.tar.gz &&
+        cd <SOURCE_DIR> &&
+        tar --strip-components 1 -xvf
+            ${SQLITE3_PREFIX}/download/sqlite-autoconf-3080403.tar.gz
+  CONFIGURE_COMMAND
+      <SOURCE_DIR>/configure --prefix=${SQLITE3_PREFIX} ${HOST} ${SYSROOT}
+      CC=${CMAKE_C_COMPILER}
+      CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+      CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+      LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+      ${CONFIGURE_LIB_TYPE})
 
 ################################################################################
 # SSToolkit.
