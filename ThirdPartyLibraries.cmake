@@ -1872,11 +1872,8 @@ add_external_project(
       -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
       -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
   INSTALL_COMMAND
-    ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/include &&
-    ${CMAKE_COMMAND} -E make_directory <INSTALL_DIR>/lib &&
     cd <BINARY_DIR> &&
-    find . -name "*${CMAKE_SHARED_LIBRARY_SUFFIX}" | cpio -dp <INSTALL_DIR>/lib &&
-    find . -name "*${CMAKE_STATIC_LIBRARY_SUFFIX}" | cpio -dp <INSTALL_DIR>/lib &&
+    find . -name "*${LIBRARY_SUFFIX}" | cpio -dp <INSTALL_DIR>/lib &&
     cd <SOURCE_DIR>/include &&
     find . -name "*.h" | cpio -dp <INSTALL_DIR>/include)
 
