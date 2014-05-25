@@ -172,6 +172,7 @@ add_target(CLDR cldr)
 add_target(CLOSURE_COMPILER closure-compiler)
 add_target(CLOSURE_LIBRARY closure-library)
 add_target(COUNTRY_INFOS country_infos)
+add_target(CPP_NETLIB_URI cpp-netlib-uri)
 add_target(CURL_ASIO curl-asio)
 add_target(DIFF_MATCH_PATCH diff_match_patch)
 add_target(DLIB dlib)
@@ -332,6 +333,7 @@ set_libraries(
 set_libraries(
     clang_static_analyzer_frontend ${CLANG_LIB_DIR} clangStaticAnalyzerFrontend)
 set_libraries(clang_tooling ${CLANG_LIB_DIR} clangTooling)
+set_libraries(cpp-netlib-uri ${CPP_NETLIB_URI_PREFIX}/lib network-uri)
 set_libraries(curl-asio ${CURL_ASIO_PREFIX}/lib curlasio)
 set_libraries(diff_match_patch ${DIFF_MATCH_PATCH_PREFIX}/lib diff_match_patch)
 set_libraries(dlib ${DLIB_PREFIX}/lib dlib)
@@ -559,6 +561,7 @@ add_library_dependencies(boost_log third_party.boost_filesystem)
 add_library_dependencies(
     boost_thread third_party.boost_atomic third_party.boost_system)
 add_library_dependencies(boost_iostreams ${BZ2_LIB})
+add_library_dependencies(cpp-netlib-uri third_party.boost_system)
 add_framework_dependencies(formatter_kit AddressBook AddressBookUI CoreLocation)
 add_library_dependencies(gtest pthread)
 add_library_dependencies(intel_pcm pthread)
@@ -669,6 +672,7 @@ set_include_directories(
 set_include_directories(boost ${BOOST_PREFIX}/include)
 set_include_directories(bzip2 ${BZIP2_PREFIX}/include)
 set_include_directories(clang ${CLANG_PREFIX}/include)
+set_include_directories(cpp-netlib-uri ${CPP_NETLIB_URI_PREFIX}/include)
 set_include_directories(curl-asio ${CURL_ASIO_PREFIX}/include)
 set_include_directories(diff_match_patch ${DIFF_MATCH_PATCH_PREFIX}/include)
 set_include_directories(dlib ${DLIB_PREFIX}/include)
@@ -735,6 +739,7 @@ set_include_directories(
 
 # Fixing implicit header dependencies. Again we must be careful to define a DAG.
 add_include_dependencies(arabica third_party.boost_headers third_party.libxml)
+add_include_dependencies(cpp-netlib-uri third_party.boost_headers)
 add_include_dependencies(curl-asio third_party.libcurl)
 
 
@@ -1243,6 +1248,31 @@ add_external_project(
   BUILD_COMMAND ${NOP}
   INSTALL_COMMAND ${NOP})
 set(CLOSURE_LIBRARY ${CLOSURE_LIBRARY_PREFIX}/lib/closure-library)
+
+################################################################################
+# cpp-netlib-uri.
+add_external_project(
+  ${CPP_NETLIB_URI_TARGET}
+  PREFIX ${CPP_NETLIB_URI_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --recursive --depth 1
+          git://github.com/QuentinFiard/uri.git
+          ${CPP_NETLIB_URI_TARGET}
+  CMAKE_ARGS
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
+      -DCMAKE_BUILD_TYPE=RELEASE
+      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+      -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_INSTALL_PREFIX=${CPP_NETLIB_URI_PREFIX}
+
+      -DBOOST_ROOT=${BOOST_PREFIX}
+      -DCPP-NETLIB_BUILD_TESTS=NO)
+add_dependencies(${CPP_NETLIB_URI_TARGET} ${BOOST_TARGET})
 
 ################################################################################
 # Country Infos.
