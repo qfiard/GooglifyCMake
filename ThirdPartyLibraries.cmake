@@ -1273,6 +1273,7 @@ add_external_project(
       -DBOOST_ROOT=${BOOST_PREFIX}
       -DCPP-NETLIB_BUILD_TESTS=NO)
 add_dependencies(${CPP_NETLIB_URI_TARGET} ${BOOST_TARGET})
+add_install_name_step(CPP_NETLIB_URI)
 
 ################################################################################
 # Country Infos.
