@@ -172,6 +172,7 @@ add_target(CLDR cldr)
 add_target(CLOSURE_COMPILER closure-compiler)
 add_target(CLOSURE_LIBRARY closure-library)
 add_target(COUNTRY_INFOS country_infos)
+add_target(CPP_NETLIB cpp-netlib)
 add_target(CPP_NETLIB_URI cpp-netlib-uri)
 add_target(CURL_ASIO curl-asio)
 add_target(DIFF_MATCH_PATCH diff_match_patch)
@@ -232,6 +233,7 @@ add_target(MCRYPT mcrypt)
 add_target(MILI mili)
 add_target(MOBILE_COMMERCE_IOS mobile_commerce_ios)
 add_target(MOD_JK mod_jk)
+add_target(MOD_WSGI mod_wsgi)
 add_target(MPC mpc)
 add_target(MPFR mpfr)
 add_target(MW_PHOTO_BROWSER mw_photo_browser)
@@ -242,6 +244,7 @@ add_target(NJK_WEB_VIEW_PROGRESS njk_web_view_progress)
 add_target(NTP ntp)
 add_target(OPENCV opencv)
 add_target(OPENMP openmp)
+add_target(OPENMPI openmpi)
 add_target(OPENSSL openssl)
 add_target(PANGO pango)
 add_target(PAPI papi)
@@ -1248,6 +1251,37 @@ add_external_project(
   BUILD_COMMAND ${NOP}
   INSTALL_COMMAND ${NOP})
 set(CLOSURE_LIBRARY ${CLOSURE_LIBRARY_PREFIX}/lib/closure-library)
+
+################################################################################
+# cpp-netlib.
+add_external_project(
+  ${CPP_NETLIB_TARGET}
+  PREFIX ${CPP_NETLIB_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --recursive --depth 1
+          git://github.com/cpp-netlib/cpp-netlib.git
+          ${CPP_NETLIB_TARGET}
+  CMAKE_ARGS
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
+      -DCMAKE_BUILD_TYPE=RELEASE
+      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+      -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_INSTALL_PREFIX=${CPP_NETLIB_PREFIX}
+
+      -DBOOST_ROOT=${BOOST_PREFIX}
+      -DCMAKE_INCLUDE_PATH=${ICU_PREFIX}/include
+      -DCMAKE_LIBRARY_PATH=${ICU_PREFIX}/lib
+      -DOPENSSL_ROOT_DIR=${OPENSSL_PREFIX}
+      -DCPP-NETLIB_BUILD_TESTS=NO
+      -DCPP-NETLIB_BUILD_SINGLE_LIB=YES)
+add_dependencies(${CPP_NETLIB_TARGET} ${BOOST_TARGET})
+add_dependencies(${CPP_NETLIB_TARGET} ${ICU_TARGET})
+add_dependencies(${CPP_NETLIB_TARGET} ${OPENSSL_TARGET})
 
 ################################################################################
 # cpp-netlib-uri.
@@ -2768,6 +2802,24 @@ add_external_project(
       <SOURCE_DIR>/configure --with-apache=${HTTPD_SOURCE_DIR})
 
 ################################################################################
+# mod_wsgi.
+add_external_project(
+  ${MOD_WSGI_TARGET}
+  PREFIX ${MOD_WSGI_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --depth 1 git://github.com/GrahamDumpleton/mod_wsgi.git
+          ${MOD_WSGI_TARGET}
+  CONFIGURE_COMMAND
+      <SOURCE_DIR>/configure
+          --with-apxs=/usr/local/apache/httpd/bin/apxs
+          --with-python=${VIRTUALENV_PREFIX}/env/bin/python
+  INSTALL_COMMAND
+      echo "This will install mod_wsgi in /usr/local/apache/httpd/modules" &&
+      sudo make install
+  BUILD_IN_SOURCE 1)
+add_dependencies(${MOD_WSGI_TARGET} ${VIRTUALENV_TARGET})
+
+################################################################################
 # MPFR.
 add_external_project(
   ${MPFR_TARGET}
@@ -3039,6 +3091,28 @@ add_external_project(
 add_install_name_step(OPENMP)
 set(OPENMP_COMPILE_FLAG "-fopenmp")
 add_dependencies(${OPENMP_TARGET} ${GCC_TARGET})
+
+################################################################################
+# OpenMPI.
+set(OPENMPI_C_FLAGS "${CMAKE_C_FLAGS_WITH_ARCHS} ${LINKER_AS_COMPILER_FLAGS}")
+set(OPENMPI_CXX_FLAGS "${CMAKE_CXX_FLAGS_WITH_ARCHS} ${LINKER_AS_COMPILER_FLAGS}")
+add_external_project(
+  ${OPENMPI_TARGET}
+  PREFIX ${OPENMPI_PREFIX}
+  DOWNLOAD_DIR ${OPENMPI_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O openmpi-1.8.1.tar.bz2 http://www.open-mpi.org/software/ompi/v1.8/downloads/openmpi-1.8.1.tar.bz2 &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/openmpi-1.8.1.tar.bz2.sig
+          openmpi-1.8.1.tar.bz2 &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf
+          ${OPENMPI_PREFIX}/download/openmpi-1.8.1.tar.bz2
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${OPENMPI_PREFIX}
+      CC=${CMAKE_C_COMPILER}
+      CXX=${CMAKE_CXX_COMPILER}
+      CFLAGS=${OPENMPI_C_FLAGS}
+      CXXFLAGS=${OPENMPI_CXX_FLAGS}
+      ${CONFIGURE_LIB_TYPE})
 
 ################################################################################
 # OpenSSL.
