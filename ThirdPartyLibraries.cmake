@@ -2797,7 +2797,7 @@ add_external_project(
           tomcat-connectors-1.2.37-src.tar.gz &&
       cd <SOURCE_DIR> &&
       tar --strip-components 1 -xvf
-          ${MPC_PREFIX}/download/tomcat-connectors-1.2.37-src.tar.gz
+          ${MOD_JK_PREFIX}/download/tomcat-connectors-1.2.37-src.tar.gz
   CONFIGURE_COMMAND
       <SOURCE_DIR>/configure --with-apache=${HTTPD_SOURCE_DIR})
 
