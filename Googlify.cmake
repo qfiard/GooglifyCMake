@@ -1039,10 +1039,10 @@ function(py_binary TARGET SRC)
       COMMAND echo "import sys" >> ${EXE})
   foreach (python_path ${PYTHON_PATH})
     set(COMMANDS ${COMMANDS}
-        COMMAND echo "sys.path.append(\"${python_path}\")" >> ${EXE})
+        COMMAND echo "sys.path.append('${python_path}')" >> ${EXE})
   endforeach ()
   set(COMMANDS ${COMMANDS}
-      COMMAND echo "execfile(\"${FULL_SRC}\")" >> ${EXE}
+      COMMAND echo "execfile('${FULL_SRC}')" >> ${EXE}
       COMMAND chmod +x ${EXE})
   add_custom_command(
     OUTPUT ${EXE}
