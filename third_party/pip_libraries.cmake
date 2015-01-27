@@ -9,6 +9,9 @@ function(pip_library LIB REF)
   set(${FULL_NAME} "dummy" PARENT_SCOPE)  # No link occurs in python case.
   set(TARGET ${FULL_NAME}_target)
   set(${TARGET} ${TARGET} PARENT_SCOPE)
+  if (NOT "$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+    return ()
+  endif ()
   add_custom_target(${TARGET})
   add_dependencies(${TARGET} ${VIRTUALENV_TARGET})
   add_custom_command(

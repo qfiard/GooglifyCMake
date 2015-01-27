@@ -25,6 +25,9 @@ function(maven_library LIB ARTIFACT_ID VERSION)
       ${TARGET} PROPERTIES JAR_FILE "${ARTIFACT_ID}-${VERSION}.jar")
   set_target_properties(
       ${TARGET} PROPERTIES VERSION "${VERSION}")
+  if (NOT "$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+    return ()
+  endif ()
   add_dependencies(${TARGET} ${MAVEN_LIBS_TARGET})
 endfunction(maven_library)
 
