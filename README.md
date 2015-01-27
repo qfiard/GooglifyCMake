@@ -1,6 +1,8 @@
 GooglifyCMake
 ============
 
+[![Build Status](https://travis-ci.org/QuentinFiard/GooglifyCMake.svg?branch=master)](https://travis-ci.org/QuentinFiard/GooglifyCMake)
+
 A project that allows using CMake like Blaze (Google's build system) for C++, Objective-C, Java, Python and R. iOS apps are now supported, as well as the compilation of a few third-party libraries (Boost, OpenSSL, gflags, protobuf, ...) under i386 and armv7-armv7s architectures for the iOS simulator and iPhone targets. Check this out!
 
 TODO
