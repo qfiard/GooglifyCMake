@@ -2,13 +2,7 @@ language: cpp
 compiler:
   - clang
 install:
-  # CMake 3.1.1.
-  - wget https://github.com/Kitware/CMake/archive/v3.1.1.tar.gz
-  - tar -xvf v3.1.1.tar.gz
-  - cd CMake-3.1.1
-  - cmake .
-  - make
-  - sudo make install
-  - cd -
+  - cd travis
+  - ./install-cmake-3.1.1.sh
 script:
   - cmake --version
