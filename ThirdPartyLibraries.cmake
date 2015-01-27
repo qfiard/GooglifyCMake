@@ -12,7 +12,6 @@ if (IS_IOS)
   endif ()
 endif ()
 
-
 set(SUPPORT_DIR ${CMAKE_CURRENT_LIST_DIR}/support)
 set(THIRD_PARTY_BINARY_DIR ${PROJECT_BINARY_DIR}/third_party)
 set(THIRD_PARTY_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party)
@@ -126,6 +125,9 @@ macro(add_include_dependencies NAME)
 endmacro()
 
 function(add_external_project NAME)
+  if (NOT "$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+    return ()
+  endif ()
   ExternalProject_Add(${NAME} ${ARGN})
   set_target_properties(${NAME} PROPERTIES EXCLUDE_FROM_ALL TRUE)
   if (NOT NAME MATCHES "^third_party.libcxx")
@@ -134,6 +136,9 @@ function(add_external_project NAME)
 endfunction()
 
 function(add_external_project_step)
+  if (NOT "$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+    return ()
+  endif ()
   ExternalProject_Add_Step(${ARGN})
 endfunction()
 
@@ -144,6 +149,9 @@ function(set_include_directories LIB)
 endfunction()
 
 function(add_install_name_step LIB)
+  if (NOT "$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+    return ()
+  endif ()
   if (BUILD_SHARED_LIBS)
     add_external_project_step(${${LIB}_TARGET} set_install_names
       COMMAND
@@ -154,6 +162,29 @@ function(add_install_name_step LIB)
       WORKING_DIRECTORY ${${LIB}_PREFIX}/lib)
   endif ()
 endfunction()
+
+function(add_target_dependencies LIB)
+  if (NOT "$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+    return ()
+  endif ()
+  set(TARGET "${${LIB}_TARGET}")
+  add_dependencies(${TARGET} ${ARGN})
+endfunction()
+
+function(get_source_dir LIB OUT)
+  set(${OUT} "${${LIB}_PREFIX}/src/${${LIB}_TARGET}" PARENT_SCOPE)
+endfunction()
+
+function(get_download_target LIB OUT)
+  set(${OUT} "${${LIB}_TARGET}_download" PARENT_SCOPE)
+endfunction()
+
+function(get_download_source_dir LIB OUT)
+  get_download_target(${LIB} DOWNLOAD_TARGET)
+  set(${OUT} "${${LIB}_PREFIX}/src/${DOWNLOAD_TARGET}" PARENT_SCOPE)
+endfunction()
+
+
 
 # Forward declarations.
 add_target(AFNETWORKING afnetworking)
@@ -856,13 +887,14 @@ add_external_project(
       -DLIBCXX_CXX_ABI=libcxxabi
       -DLIBCXX_LIBCXXABI_INCLUDE_PATHS=${LIBCXXABI_PREFIX}/include)
 add_install_name_step(LIBCXX)
-add_dependencies(${LIBCXX_TARGET} ${LIBCXX_TARGET}_headers)
-add_dependencies(${LIBCXX_TARGET} ${LIBCXXABI_TARGET})
+add_target_dependencies(LIBCXX ${LIBCXX_TARGET}_headers)
+add_target_dependencies(LIBCXX ${LIBCXXABI_TARGET})
 
 ################################################################################
 # AFNetworking.
+get_download_target(AFNETWORKING DOWNLOAD_TARGET)
 add_external_project(
-  ${AFNETWORKING_TARGET}_download
+  ${DOWNLOAD_TARGET}
   PREFIX ${AFNETWORKING_PREFIX}
   SOURCE_DIR ${AFNETWORKING_PREFIX}/src/${AFNETWORKING_TARGET}
   DOWNLOAD_COMMAND
@@ -873,7 +905,7 @@ add_external_project(
       cd <SOURCE_DIR> &&
       find AFNetworking UIKit+AFNetworking -name "*.h" |
           cpio -dp <INSTALL_DIR>/include)
-ExternalProject_Get_Property(${AFNETWORKING_TARGET}_download SOURCE_DIR)
+get_download_source_dir(AFNETWORKING SOURCE_DIR)
 set(AFNETWORKING_SRCS
     ${SOURCE_DIR}/AFNetworking/AFHTTPRequestOperation.m
     ${SOURCE_DIR}/AFNetworking/AFHTTPRequestOperationManager.m
@@ -904,7 +936,7 @@ set_target_properties(
     ARCHIVE_OUTPUT_DIRECTORY ${AFNETWORKING_PREFIX}/lib
     LIBRARY_OUTPUT_DIRECTORY ${AFNETWORKING_PREFIX}/lib
     OUTPUT_NAME afnetworking)
-add_dependencies(${AFNETWORKING_TARGET} ${AFNETWORKING_TARGET}_download)
+add_target_dependencies(AFNETWORKING ${DOWNLOAD_TARGET})
 
 ################################################################################
 # APR.
@@ -942,8 +974,8 @@ add_external_project(
       --with-apr=${APR_PREFIX}
       --with-berkeley-db=${BERKELEY_DB_PREFIX}
   BUILD_IN_SOURCE 1)
-add_dependencies(${APR_UTIL_TARGET} ${APR_TARGET})
-add_dependencies(${APR_UTIL_TARGET} ${BERKELEY_DB_TARGET})
+add_target_dependencies(APR_UTIL ${APR_TARGET})
+add_target_dependencies(APR_UTIL ${BERKELEY_DB_TARGET})
 
 ################################################################################
 # Arabica, an XML and HTML processing toolkit, providing SAX2, DOM, XPath, and
@@ -977,9 +1009,9 @@ add_external_project(
       -DCMAKE_INSTALL_PREFIX=${ARABICA_PREFIX}
       -DBUILD_ARABICA_EXAMPLES=OFF)
 add_install_name_step(ARABICA)
-add_dependencies(${ARABICA_TARGET} ${BOOST_TARGET})
+add_target_dependencies(ARABICA ${BOOST_TARGET})
 if (NOT IS_IOS)
-  add_dependencies(${ARABICA_TARGET} ${LIBXML_TARGET})
+  add_target_dependencies(ARABICA ${LIBXML_TARGET})
 endif ()
 add_definitions(-DBOOST_SPIRIT_THREADSAFE)
 
@@ -1108,8 +1140,9 @@ add_external_project(
 
 ################################################################################
 # bzip2.
+get_download_target(BZIP2 DOWNLOAD_TARGET)
 add_external_project(
-  ${BZIP2_TARGET}_download
+  ${DOWNLOAD_TARGET}
   PREFIX ${BZIP2_PREFIX}
   DOWNLOAD_DIR ${BZIP2_PREFIX}/download
   DOWNLOAD_COMMAND
@@ -1122,7 +1155,7 @@ add_external_project(
   CONFIGURE_COMMAND ${NOP}
   BUILD_COMMAND ${NOP}
   INSTALL_COMMAND ${NOP})
-ExternalProject_Get_Property(${BZIP2_TARGET}_download SOURCE_DIR)
+get_download_source_dir(BZIP2 SOURCE_DIR)
 set(BZIP2_SRCS
     ${SOURCE_DIR}/blocksort.c
     ${SOURCE_DIR}/huffman.c
@@ -1138,7 +1171,7 @@ set_target_properties(
     ARCHIVE_OUTPUT_DIRECTORY ${BZIP2_PREFIX}/lib
     LIBRARY_OUTPUT_DIRECTORY ${BZIP2_PREFIX}/lib
     OUTPUT_NAME bz2)
-add_dependencies(${BZIP2_TARGET} ${BZIP2_TARGET}_download)
+add_target_dependencies(BZIP2 ${DOWNLOAD_TARGET})
 
 ################################################################################
 # cairo.
@@ -1162,10 +1195,10 @@ add_external_project(
       ${CONFIGURE_LIB_TYPE_STR}\
       --enable-xlib=no\
       PKG_CONFIG_PATH=\"${PIXMAN_PREFIX}/lib/pkgconfig:${FREETYPE_PREFIX}/lib/pkgconfig:${LIBPNG_PREFIX}/lib/pkgconfig:${ZLIB_PREFIX}/lib/pkgconfig\"" | sh)
-add_dependencies(${CAIRO_TARGET} ${GNUTAR_TARGET})
-add_dependencies(${CAIRO_TARGET} ${FREETYPE_TARGET})
-add_dependencies(${CAIRO_TARGET} ${LIBPNG_TARGET})
-add_dependencies(${CAIRO_TARGET} ${PIXMAN_TARGET})
+add_target_dependencies(CAIRO ${GNUTAR_TARGET})
+add_target_dependencies(CAIRO ${FREETYPE_TARGET})
+add_target_dependencies(CAIRO ${LIBPNG_TARGET})
+add_target_dependencies(CAIRO ${PIXMAN_TARGET})
 
 ################################################################################
 # Clang compiler.
@@ -1279,9 +1312,9 @@ add_external_project(
       -DOPENSSL_ROOT_DIR=${OPENSSL_PREFIX}
       -DCPP-NETLIB_BUILD_TESTS=NO
       -DCPP-NETLIB_BUILD_SINGLE_LIB=YES)
-add_dependencies(${CPP_NETLIB_TARGET} ${BOOST_TARGET})
-add_dependencies(${CPP_NETLIB_TARGET} ${ICU_TARGET})
-add_dependencies(${CPP_NETLIB_TARGET} ${OPENSSL_TARGET})
+add_target_dependencies(CPP_NETLIB ${BOOST_TARGET})
+add_target_dependencies(CPP_NETLIB ${ICU_TARGET})
+add_target_dependencies(CPP_NETLIB ${OPENSSL_TARGET})
 
 ################################################################################
 # cpp-netlib-uri.
@@ -1306,7 +1339,7 @@ add_external_project(
 
       -DBOOST_ROOT=${BOOST_PREFIX}
       -DCPP-NETLIB_BUILD_TESTS=NO)
-add_dependencies(${CPP_NETLIB_URI_TARGET} ${BOOST_TARGET})
+add_target_dependencies(CPP_NETLIB_URI ${BOOST_TARGET})
 add_install_name_step(CPP_NETLIB_URI)
 
 ################################################################################
@@ -1353,8 +1386,8 @@ add_external_project(
       -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
       -DCMAKE_INSTALL_PREFIX=${CURL_ASIO_PREFIX})
 add_install_name_step(CURL_ASIO)
-add_dependencies(${CURL_ASIO_TARGET} ${BOOST_TARGET})
-add_dependencies(${CURL_ASIO_TARGET} ${LIBCURL_TARGET})
+add_target_dependencies(CURL_ASIO ${BOOST_TARGET})
+add_target_dependencies(CURL_ASIO ${LIBCURL_TARGET})
 
 ################################################################################
 # diff_match_patch.
@@ -1436,8 +1469,8 @@ add_external_project(
       -DGMP_LIBRARIES=${GMP_PREFIX}/lib
       -DMPFR_INCLUDES=${MPFR_PREFIX}/include
       -DMPFR_LIBRARIES=${MPFR_PREFIX}/lib)
-add_dependencies(${EIGEN_TARGET} ${GMP_TARGET})
-add_dependencies(${EIGEN_TARGET} ${MPFR_TARGET})
+add_target_dependencies(EIGEN ${GMP_TARGET})
+add_target_dependencies(EIGEN ${MPFR_TARGET})
 
 ################################################################################
 # Extrae.
@@ -1462,14 +1495,15 @@ add_external_project(
       --with-boost=${BOOST_PREFIX}
       --with-libz=${ZLIB_PREFIX}
       --with-papi=${PAPI_PREFIX})
-add_dependencies(${EXTRAE_TARGET} ${BOOST_TARGET})
-add_dependencies(${EXTRAE_TARGET} ${PAPI_TARGET})
-add_dependencies(${EXTRAE_TARGET} ${ZLIB_PREFIX})
+add_target_dependencies(EXTRAE ${BOOST_TARGET})
+add_target_dependencies(EXTRAE ${PAPI_TARGET})
+add_target_dependencies(EXTRAE ${ZLIB_PREFIX})
 
 ################################################################################
 # FastImageCache.
+get_download_target(FAST_IMAGE_CACHE DOWNLOAD_TARGET)
 add_external_project(
-  ${FAST_IMAGE_CACHE_TARGET}_download
+  ${DOWNLOAD_TARGET}
   PREFIX ${FAST_IMAGE_CACHE_PREFIX}
   SOURCE_DIR ${FAST_IMAGE_CACHE_PREFIX}/src/${FAST_IMAGE_CACHE_TARGET}
   DOWNLOAD_COMMAND
@@ -1479,7 +1513,7 @@ add_external_project(
   INSTALL_COMMAND
       cd <SOURCE_DIR> &&
       find FastImageCache -name "*.h" | cpio -dp <INSTALL_DIR>/include)
-ExternalProject_Get_Property(${FAST_IMAGE_CACHE_TARGET}_download SOURCE_DIR)
+get_download_source_dir(FAST_IMAGE_CACHE SOURCE_DIR)
 set(SOURCE_DIR ${SOURCE_DIR}/FastImageCache)
 set(FAST_IMAGE_CACHE_SRCS
     ${SOURCE_DIR}/FICImageCache.m
@@ -1496,11 +1530,11 @@ set_target_properties(
     ARCHIVE_OUTPUT_DIRECTORY ${FAST_IMAGE_CACHE_PREFIX}/lib
     LIBRARY_OUTPUT_DIRECTORY ${FAST_IMAGE_CACHE_PREFIX}/lib
     OUTPUT_NAME fast_image_cache)
-add_dependencies(${FAST_IMAGE_CACHE_TARGET} ${FAST_IMAGE_CACHE_TARGET}_download)
+add_target_dependencies(FAST_IMAGE_CACHE ${DOWNLOAD_TARGET})
 
 ################################################################################
 # FBGallery.
-set(DOWNLOAD_TARGET ${FB_GALLERY_TARGET}_download)
+get_download_target(FB_GALLERY DOWNLOAD_TARGET)
 add_external_project(
   ${DOWNLOAD_TARGET}
   PREFIX ${FB_GALLERY_PREFIX}
@@ -1513,7 +1547,7 @@ add_external_project(
     cd "<SOURCE_DIR>/FB Gallery" &&
     find . -maxdepth 1 -name "*.h" |
         cpio -dp ${FB_GALLERY_PREFIX}/include/FBGallery)
-ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+get_download_source_dir(FB_GALLERY SOURCE_DIR)
 set(SOURCE_DIR "${SOURCE_DIR}/FB Gallery")
 set(SRCS
     "${SOURCE_DIR}/FBGTimelineCell.m"
@@ -1528,8 +1562,8 @@ set_target_properties(
     OUTPUT_NAME fb_gallery)
 target_include_directories(
     ${FB_GALLERY_TARGET} PUBLIC ${MW_PHOTO_BROWSER_PREFIX}/include)
-add_dependencies(${FB_GALLERY_TARGET} ${DOWNLOAD_TARGET})
-add_dependencies(${FB_GALLERY_TARGET} ${MW_PHOTO_BROWSER_TARGET})
+add_target_dependencies(FB_GALLERY ${DOWNLOAD_TARGET})
+add_target_dependencies(FB_GALLERY ${MW_PHOTO_BROWSER_TARGET})
 
 ################################################################################
 # Flex.
@@ -1550,7 +1584,7 @@ set(FLEX_EXECUTABLE ${FLEX_PREFIX}/bin/flex++)
 
 ################################################################################
 # FormatterKit.
-set(DOWNLOAD_TARGET ${FORMATTER_KIT_TARGET}_download)
+get_download_target(FORMATTER_KIT DOWNLOAD_TARGET)
 add_external_project(
   ${DOWNLOAD_TARGET}
   PREFIX ${FORMATTER_KIT_PREFIX}
@@ -1562,7 +1596,7 @@ add_external_project(
   INSTALL_COMMAND
       cd <SOURCE_DIR> &&
       find FormatterKit -name "*.h" | cpio -dp <INSTALL_DIR>/include)
-ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+get_download_source_dir(FORMATTER_KIT SOURCE_DIR)
 set(SOURCE_DIR2 ${SOURCE_DIR}/FormatterKit)
 set(SRCS
     ${SOURCE_DIR2}/TTTAddressFormatter.m
@@ -1581,7 +1615,7 @@ set_target_properties(
     ARCHIVE_OUTPUT_DIRECTORY ${FORMATTER_KIT_PREFIX}/lib
     LIBRARY_OUTPUT_DIRECTORY ${FORMATTER_KIT_PREFIX}/lib
     OUTPUT_NAME formatter_kit)
-add_dependencies(${FORMATTER_KIT_TARGET} ${DOWNLOAD_TARGET})
+add_target_dependencies(FORMATTER_KIT ${DOWNLOAD_TARGET})
 set(FORMATTER_KIT_LOCALIZATIONS ${SOURCE_DIR}/Localizations)
 
 ################################################################################
@@ -1616,9 +1650,9 @@ add_external_project(
       make install &&
       ln -s ${FREETYPE_PREFIX}/include/freetype2
           ${FREETYPE_PREFIX}/include/freetype2/freetype)
-add_dependencies(${FREETYPE_TARGET} ${BZIP2_TARGET})
-add_dependencies(${FREETYPE_TARGET} ${LIBPNG_TARGET})
-add_dependencies(${FREETYPE_TARGET} ${ZLIB_TARGET})
+add_target_dependencies(FREETYPE ${BZIP2_TARGET})
+add_target_dependencies(FREETYPE ${LIBPNG_TARGET})
+add_target_dependencies(FREETYPE ${ZLIB_TARGET})
 
 ################################################################################
 # g2log.
@@ -1655,7 +1689,7 @@ add_external_project(
 
 ################################################################################
 # GNU GCC compiler.
-if (NOT SKIP_PORTABILITY_WARNINGS)
+if (NOT SKIP_PORTABILITY_WARNINGS AND "$ENV{BUILD_3RD_PARTY_LIBRARIES}")
   message(
       WARNING
       "If you indend to build GCC please replace GCC_SYSROOT with the correct value"
@@ -1680,10 +1714,10 @@ add_external_project(
           CFLAGS=-O4 CXXFLAGS=-O4
           CPPFLAGS=-O4
   BUILD_IN_SOURCE 1)
-add_dependencies(${GCC_TARGET} ${GMP_TARGET})
-add_dependencies(${GCC_TARGET} ${GNUTAR_TARGET})
-add_dependencies(${GCC_TARGET} ${MPFR_TARGET})
-add_dependencies(${GCC_TARGET} ${MPC_TARGET})
+add_target_dependencies(GCC ${GMP_TARGET})
+add_target_dependencies(GCC ${GNUTAR_TARGET})
+add_target_dependencies(GCC ${MPFR_TARGET})
+add_target_dependencies(GCC ${MPC_TARGET})
 
 ################################################################################
 # gdk-pixbuf.
@@ -1706,9 +1740,9 @@ add_external_project(
       LDFLAGS=\"${CMAKE_SHARED_LINKER_FLAGS}\"\
       ${CONFIGURE_LIB_TYPE_STR}\
       PKG_CONFIG_PATH=\"${GLIB_PREFIX}/lib/pkgconfig:${LIBPNG_PREFIX}/lib/pkgconfig\"" | sh)
-add_dependencies(${GDK_PIXBUF_TARGET} ${GNUTAR_TARGET})
-add_dependencies(${GDK_PIXBUF_TARGET} ${GLIB_TARGET})
-add_dependencies(${GDK_PIXBUF_TARGET} ${LIBPNG_TARGET})
+add_target_dependencies(GDK_PIXBUF ${GNUTAR_TARGET})
+add_target_dependencies(GDK_PIXBUF ${GLIB_TARGET})
+add_target_dependencies(GDK_PIXBUF ${LIBPNG_TARGET})
 
 ################################################################################
 # gettext.
@@ -1766,10 +1800,10 @@ add_external_project(
       --disable-compile-warnings\
       PKG_CONFIG_PATH=\"${LIBFFI_PREFIX}/lib/pkgconfig:${ZLIB_PREFIX}/lib/pkgconfig\"\
       LIBFFI_LIBS=\"${third_party.libffi}\"" | sh)
-add_dependencies(${GLIB_TARGET} ${GNUTAR_TARGET})
-add_dependencies(${GLIB_TARGET} ${LIBFFI_TARGET})
-add_dependencies(${GLIB_TARGET} ${PROXY_LIBINTL_TARGET})
-add_dependencies(${GLIB_TARGET} ${ZLIB_TARGET})
+add_target_dependencies(GLIB ${GNUTAR_TARGET})
+add_target_dependencies(GLIB ${LIBFFI_TARGET})
+add_target_dependencies(GLIB ${PROXY_LIBINTL_TARGET})
+add_target_dependencies(GLIB ${ZLIB_TARGET})
 
 ################################################################################
 # gmock.
@@ -1822,7 +1856,7 @@ add_external_project(
           ${GMP_PREFIX}/download/gmp-5.1.3.tar.bz2
   CONFIGURE_COMMAND ${CONFIGURE_COMMAND}
   BUILD_IN_SOURCE 1)
-add_dependencies(${GMP_TARGET} ${GNUTAR_TARGET})
+add_target_dependencies(GMP ${GNUTAR_TARGET})
 
 ################################################################################
 # gnome-common.
@@ -1838,7 +1872,7 @@ add_external_project(
       ${GNUTAR} --strip-components 1 -xvJf
           ${GNOME_COMMON_PREFIX}/download/gnome-common-3.12.0.tar.xz
   CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${GNOME_COMMON_PREFIX})
-add_dependencies(${GNOME_COMMON_TARGET} ${GNUTAR_TARGET})
+add_target_dependencies(GNOME_COMMON ${GNUTAR_TARGET})
 
 ################################################################################
 # GNU automake.
@@ -1877,7 +1911,7 @@ add_external_project(
   INSTALL_COMMAND
       echo "This will install bash in /usr/local." &&
       sudo make install)
-add_dependencies(${GNUBASH_TARGET} ${LIBICONV_TARGET})
+add_target_dependencies(GNUBASH ${LIBICONV_TARGET})
 
 ################################################################################
 # GNU grep.
@@ -1897,9 +1931,9 @@ add_external_project(
       ${SYSROOT}
       --with-libiconv-prefix=${LIBICONV_PREFIX}
       LDFLAGS=${GNUGREP_LD_FLAGS})
-add_dependencies(${GNUGREP_TARGET} ${GNUTAR_TARGET})
-add_dependencies(${GNUGREP_TARGET} ${LIBICONV_TARGET})
-add_dependencies(${GNUGREP_TARGET} ${PCRE_TARGET})
+add_target_dependencies(GNUGREP ${GNUTAR_TARGET})
+add_target_dependencies(GNUGREP ${LIBICONV_TARGET})
+add_target_dependencies(GNUGREP ${PCRE_TARGET})
 
 ################################################################################
 # GNU tar.
@@ -1917,7 +1951,7 @@ add_external_project(
   CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${GNUTAR_PREFIX} ${HOST}
       ${SYSROOT}
       --with-xz=${XZ})
-add_dependencies(${GNUTAR_TARGET} ${XZ_TARGET})
+add_target_dependencies(GNUTAR ${XZ_TARGET})
 
 ################################################################################
 # gtest.
@@ -1973,8 +2007,8 @@ add_external_project(
       sudo rm -rf ${HAPROXY_PREFIX}/usr &&
       sudo ${CMAKE_COMMAND} -E make_directory /usr/local/haproxy/logs
   BUILD_IN_SOURCE 1)
-add_dependencies(${HAPROXY_TARGET} ${OPENSSL_TARGET})
-add_dependencies(${HAPROXY_TARGET} ${PCRE_TARGET})
+add_target_dependencies(HAPROXY ${OPENSSL_TARGET})
+add_target_dependencies(HAPROXY ${PCRE_TARGET})
 
 ################################################################################
 # httpd.
@@ -1999,12 +2033,12 @@ add_external_project(
   INSTALL_COMMAND
       echo "This will install httpd in /usr/local/apache." &&
       sudo make install)
-add_dependencies(${HTTPD_TARGET} ${APR_TARGET})
-add_dependencies(${HTTPD_TARGET} ${APR_UTIL_TARGET})
-add_dependencies(${HTTPD_TARGET} ${LIBXML_TARGET})
-add_dependencies(${HTTPD_TARGET} ${OPENSSL_TARGET})
-add_dependencies(${HTTPD_TARGET} ${PCRE_TARGET})
-add_dependencies(${HTTPD_TARGET} ${ZLIB_TARGET})
+add_target_dependencies(HTTPD ${APR_TARGET})
+add_target_dependencies(HTTPD ${APR_UTIL_TARGET})
+add_target_dependencies(HTTPD ${LIBXML_TARGET})
+add_target_dependencies(HTTPD ${OPENSSL_TARGET})
+add_target_dependencies(HTTPD ${PCRE_TARGET})
+add_target_dependencies(HTTPD ${ZLIB_TARGET})
 
 ################################################################################
 # httpxx.
@@ -2124,17 +2158,17 @@ add_external_project(
       for f in *${LIBRARY_SUFFIX}$<SEMICOLON> do\
         echo $f| sed 's/\\(\\(^.*\\)-.*\\.\\(.*$\\)\\)/ln -sf \\1 \\2.\\3/'|grep ln|sh$<SEMICOLON>\
       done" | sh)
-add_dependencies(${IMAGEMAGICK_TARGET} ${FREETYPE_TARGET})
-add_dependencies(${IMAGEMAGICK_TARGET} ${LIBPNG_TARGET})
-add_dependencies(${IMAGEMAGICK_TARGET} ${LIBXML_TARGET})
+add_target_dependencies(IMAGEMAGICK ${FREETYPE_TARGET})
+add_target_dependencies(IMAGEMAGICK ${LIBPNG_TARGET})
+add_target_dependencies(IMAGEMAGICK ${LIBXML_TARGET})
 if (BUILD_SHARED_LIBS)
-add_dependencies(${IMAGEMAGICK_TARGET} ${LIBRSVG_TARGET})
-add_dependencies(${IMAGEMAGICK_TARGET} ${PANGO_TARGET})
+  add_target_dependencies(IMAGEMAGICK ${LIBRSVG_TARGET})
+  add_target_dependencies(IMAGEMAGICK ${PANGO_TARGET})
 endif ()
 
 ################################################################################
 # ios-ntp.
-set(DOWNLOAD_TARGET ${IOS_NTP_TARGET}_download)
+get_download_target(IOS_NTP DOWNLOAD_TARGET)
 add_external_project(
   ${DOWNLOAD_TARGET}
   PREFIX ${IOS_NTP_PREFIX}
@@ -2148,7 +2182,7 @@ add_external_project(
       find . -name "*.h" | cpio -dp <INSTALL_DIR>/include/ios-ntp &&
       cd <SOURCE_DIR>/lib &&
       find . -name "*.h" | cpio -dp <INSTALL_DIR>/include/ios-ntp)
-ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+get_download_source_dir(IOS_NTP SOURCE_DIR)
 set(SRCS
     ${SOURCE_DIR}/lib/GCDAsyncUdpSocket.m
     ${SOURCE_DIR}/src/NSDate+NetworkClock.m
@@ -2165,7 +2199,7 @@ set_target_properties(
     COMPILE_FLAGS
         "-fno-objc-arc -include ${SOURCE_DIR}/resources/ios-ntp-Prefix.pch"
     OUTPUT_NAME ios_ntp)
-add_dependencies(${IOS_NTP_TARGET} ${DOWNLOAD_TARGET})
+add_target_dependencies(IOS_NTP ${DOWNLOAD_TARGET})
 set(IOS_NTP_HOSTS ${SOURCE_DIR}/resources/ntp.hosts)
 
 ################################################################################
@@ -2194,7 +2228,7 @@ add_external_project(
       cd c-client &&
       find . -name "*.h" | cpio -dp ${IMAP_2007F_PREFIX}/include/
   BUILD_IN_SOURCE 1)
-add_dependencies(${IMAP_2007F_TARGET} ${OPENSSL_TARGET})
+add_target_dependencies(IMAP_2007F ${OPENSSL_TARGET})
 
 ################################################################################
 # iso_3166.
@@ -2245,7 +2279,7 @@ add_external_project(
       -DLLVM_PATH=${CLANG_PREFIX}
       -DCMAKE_EXE_LINKER_FLAGS=${IWYU_LINKER_FLAGS}
       -DCMAKE_INSTALL_PREFIX=${IWYU_PREFIX})
-add_dependencies(${IWYU_TARGET} ${CLANG_TARGET})
+add_target_dependencies(IWYU ${CLANG_TARGET})
 
 ################################################################################
 # jsoncpp.
@@ -2298,7 +2332,8 @@ if (IS_IOS)
       ARCHIVE_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
       LIBRARY_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
       OUTPUT_NAME jsonpath)
-  add_dependencies(${JSONPATH_TARGET} ${MOBILE_COMMERCE_IOS_TARGET}_download)
+  get_download_target(MOBILE_COMMERCE_IOS MOBILE_COMMERCE_IOS_DOWNLOAD_TARGET)
+  add_target_dependencies(JSONPATH ${MOBILE_COMMERCE_IOS_DOWNLOAD_TARGET})
 endif ()
 
 ################################################################################
@@ -2320,7 +2355,7 @@ add_external_project(
       <SOURCE_DIR>/configure --prefix=${LDAP_PREFIX} ${HOST} ${SYSROOT}
   BUILD_COMMAND make
   INSTALL_COMMAND make install)
-add_dependencies(${LDAP_TARGET} ${BERKELEY_DB_TARGET})
+add_target_dependencies(LDAP ${BERKELEY_DB_TARGET})
 
 ################################################################################
 # LDAP SASL. TODO(qfiard): Make portable.
@@ -2348,9 +2383,9 @@ add_external_project(
       --disable-macos-framework
   BUILD_COMMAND make
   INSTALL_COMMAND make install)
-add_dependencies(${LDAP_SASL_TARGET} ${BERKELEY_DB_TARGET})
-add_dependencies(${LDAP_SASL_TARGET} ${LDAP_TARGET})
-add_dependencies(${LDAP_SASL_TARGET} ${OPENSSL_TARGET})
+add_target_dependencies(LDAP_SASL ${BERKELEY_DB_TARGET})
+add_target_dependencies(LDAP_SASL ${LDAP_TARGET})
+add_target_dependencies(LDAP_SASL ${OPENSSL_TARGET})
 
 ################################################################################
 # libcroco.
@@ -2374,8 +2409,8 @@ add_external_project(
       ${CONFIGURE_LIB_TYPE_STR}\
       --disable-Bsymbolic\
       PKG_CONFIG_PATH=\"${GLIB_PREFIX}/lib/pkgconfig\"" | sh)
-add_dependencies(${LIBCROCO_TARGET} ${GLIB_TARGET})
-add_dependencies(${LIBCROCO_TARGET} ${GNUTAR_TARGET})
+add_target_dependencies(LIBCROCO ${GLIB_TARGET})
+add_target_dependencies(LIBCROCO ${GNUTAR_TARGET})
 
 ################################################################################
 # libcurl. TODO(qfiard): Make portable.
@@ -2405,13 +2440,13 @@ add_external_project(
           ${LIBCURL_PREFIX}/download/curl-7.33.0.tar.bz2
   CONFIGURE_COMMAND ${CONFIGURE_COMMAND})
 if (NOT APPLE OR IS_IOS)
-  add_dependencies(${LIBCURL_TARGET} ${OPENSSL_TARGET})
+  add_target_dependencies(LIBCURL ${OPENSSL_TARGET})
 endif ()
-add_dependencies(${LIBCURL_TARGET} ${ZLIB_TARGET})
+add_target_dependencies(LIBCURL ${ZLIB_TARGET})
 
 ################################################################################
 # libcxxabi.
-ExternalProject_Get_Property(${LIBCXX_TARGET} SOURCE_DIR)
+get_source_dir(LIBCXX SOURCE_DIR)
 set(LIBCXXABI_OPTIONS "-I${SOURCE_DIR}/include ${ARCHS_AS_FLAGS}")
 if (APPLE AND NOT "${CMAKE_OSX_SYSROOT}" STREQUAL "")
   set(LIBCXXABI_OPTIONS "${LIBCXXABI_OPTIONS} --sysroot ${CMAKE_OSX_SYSROOT}")
@@ -2439,7 +2474,7 @@ add_external_project(
   BUILD_COMMAND echo ${LIBCXXABI_BUILD_COMMAND} | sh
   INSTALL_COMMAND ${NOP})
 add_install_name_step(LIBCXXABI)
-add_dependencies(${LIBCXXABI_TARGET} ${LIBCXX_TARGET}_headers)
+add_target_dependencies(LIBCXXABI ${LIBCXX_TARGET}_headers)
 
 ################################################################################
 # libffi.
@@ -2559,7 +2594,7 @@ add_external_project(
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${CONFIGURE_LIB_TYPE})
 add_install_name_step(LIBPNG)
-add_dependencies(${LIBPNG_TARGET} ${GNUAUTOMAKE_TARGET})
+add_target_dependencies(LIBPNG ${GNUAUTOMAKE_TARGET})
 
 ################################################################################
 # librsvg.
@@ -2584,14 +2619,14 @@ add_external_project(
       --disable-Bsymbolic\
       --enable-introspection=no\
       PKG_CONFIG_PATH=\"${GDK_PIXBUF_PREFIX}/lib/pkgconfig:${GLIB_PREFIX}/lib/pkgconfig:${CAIRO_PREFIX}/lib/pkgconfig:${LIBCROCO_PREFIX}/lib/pkgconfig:${LIBPNG_PREFIX}/lib/pkgconfig:${PIXMAN_PREFIX}/lib/pkgconfig:${PANGO_PREFIX}/lib/pkgconfig\"" | sh)
-add_dependencies(${LIBRSVG_TARGET} ${CAIRO_TARGET})
-add_dependencies(${LIBRSVG_TARGET} ${GNUTAR_TARGET})
-add_dependencies(${LIBRSVG_TARGET} ${GDK_PIXBUF_TARGET})
-add_dependencies(${LIBRSVG_TARGET} ${GLIB_TARGET})
-add_dependencies(${LIBRSVG_TARGET} ${LIBCROCO_TARGET})
-add_dependencies(${LIBRSVG_TARGET} ${LIBPNG_TARGET})
-add_dependencies(${LIBRSVG_TARGET} ${PANGO_TARGET})
-add_dependencies(${LIBRSVG_TARGET} ${PIXMAN_TARGET})
+add_target_dependencies(LIBRSVG ${CAIRO_TARGET})
+add_target_dependencies(LIBRSVG ${GNUTAR_TARGET})
+add_target_dependencies(LIBRSVG ${GDK_PIXBUF_TARGET})
+add_target_dependencies(LIBRSVG ${GLIB_TARGET})
+add_target_dependencies(LIBRSVG ${LIBCROCO_TARGET})
+add_target_dependencies(LIBRSVG ${LIBPNG_TARGET})
+add_target_dependencies(LIBRSVG ${PANGO_TARGET})
+add_target_dependencies(LIBRSVG ${PIXMAN_TARGET})
 
 ################################################################################
 # libxml.
@@ -2614,9 +2649,9 @@ else ()
             LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
             ${WITH_PYTHON}
             ${CONFIGURE_LIB_TYPE})
-  add_dependencies(${LIBXML_TARGET} ${ICU_TARGET})
-  add_dependencies(${LIBXML_TARGET} ${XZ_TARGET})
-  add_dependencies(${LIBXML_TARGET} ${ZLIB_TARGET})
+  add_target_dependencies(LIBXML ${ICU_TARGET})
+  add_target_dependencies(LIBXML ${XZ_TARGET})
+  add_target_dependencies(LIBXML ${ZLIB_TARGET})
 endif ()
 
 ################################################################################
@@ -2685,7 +2720,7 @@ add_custom_command(
   DEPENDS ${GENERATE_CLASSPATH_FOR_MAVEN_LIBS})
 add_custom_target(${MAVEN_LIBS_TARGET}
                   SOURCES ${MAVEN_LAST_DOWNLOAD} ${MAVEN_CLASSPATH_UPDATE})
-add_dependencies(${MAVEN_LIBS_TARGET} ${MAVEN_TARGET})
+add_target_dependencies(MAVEN_LIBS ${MAVEN_TARGET})
 
 ################################################################################
 # Mcrypt.
@@ -2711,9 +2746,9 @@ add_external_project(
       CPPFLAGS=${MCRYPT_CPPFLAGS}
       LDFLAGS=${MCRYPT_LDFLAGS}
   BUILD_IN_SOURCE 1)
-add_dependencies(${MCRYPT_TARGET} ${LIBICONV_TARGET})
-add_dependencies(${MCRYPT_TARGET} ${LIBMCRYPT_TARGET})
-add_dependencies(${MCRYPT_TARGET} ${LIBMHASH_TARGET})
+add_target_dependencies(MCRYPT ${LIBICONV_TARGET})
+add_target_dependencies(MCRYPT ${LIBMCRYPT_TARGET})
+add_target_dependencies(MCRYPT ${LIBMHASH_TARGET})
 
 ################################################################################
 # Mili.
@@ -2730,8 +2765,9 @@ add_external_project(
 ################################################################################
 # MobileCommerceiOS.
 if (IS_IOS)
+  get_download_target(MOBILE_COMMERCE_IOS DOWNLOAD_TARGET)
   add_external_project(
-    ${MOBILE_COMMERCE_IOS_TARGET}_download
+    ${DOWNLOAD_TARGET}
     PREFIX ${MOBILE_COMMERCE_IOS_PREFIX}
     DOWNLOAD_COMMAND
         ${GIT} clone --depth 1 git://github.com/QuentinFiard/MobileCommerceiOS
@@ -2754,8 +2790,7 @@ if (IS_IOS)
         cd <SOURCE_DIR>/build/Release-${SDK} &&
         find . -name "*.h" | cpio -dp <INSTALL_DIR>/include &&
         find . -name "*.a" | cpio -dp <INSTALL_DIR>/lib)
-  add_dependencies(
-      ${MOBILE_COMMERCE_IOS_TARGET} ${MOBILE_COMMERCE_IOS_TARGET}_download)
+  add_dependencies(${MOBILE_COMMERCE_IOS_TARGET} ${DOWNLOAD_TARGET})
 endif ()
 
 ################################################################################
@@ -2780,12 +2815,12 @@ add_external_project(
           CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${CONFIGURE_LIB_TYPE})
-add_dependencies(${MPC_TARGET} ${GMP_TARGET})
-add_dependencies(${MPC_TARGET} ${MPFR_TARGET})
+add_target_dependencies(MPC ${GMP_TARGET})
+add_target_dependencies(MPC ${MPFR_TARGET})
 
 ################################################################################
 # mod_jk.
-ExternalProject_Get_Property(${HTTPD_TARGET} SOURCE_DIR)
+get_source_dir(HTTPD SOURCE_DIR)
 set(HTTPD_SOURCE_DIR ${SOURCE_DIR})
 add_external_project(
   ${MOD_JK_TARGET}
@@ -2817,7 +2852,7 @@ add_external_project(
       echo "This will install mod_wsgi in /usr/local/apache/httpd/modules" &&
       sudo make install
   BUILD_IN_SOURCE 1)
-add_dependencies(${MOD_WSGI_TARGET} ${VIRTUALENV_TARGET})
+add_target_dependencies(MOD_WSGI ${VIRTUALENV_TARGET})
 
 ################################################################################
 # MPFR.
@@ -2840,7 +2875,7 @@ add_external_project(
           CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
           LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
           ${CONFIGURE_LIB_TYPE})
-add_dependencies(${MPFR_TARGET} ${GMP_TARGET})
+add_target_dependencies(MPFR ${GMP_TARGET})
 
 ################################################################################
 # MWPhotoBrowser.
@@ -2894,8 +2929,8 @@ add_external_project(
       -DZLIB_ROOT=${ZLIB_PREFIX}
       -DWITH_SSL_PATH=${OPENSSL_PREFIX})
 add_install_name_step(MYSQL)
-add_dependencies(${MYSQL_TARGET} ${OPENSSL_TARGET})
-add_dependencies(${MYSQL_TARGET} ${ZLIB_TARGET})
+add_target_dependencies(MYSQL ${OPENSSL_TARGET})
+add_target_dependencies(MYSQL ${ZLIB_TARGET})
 
 ################################################################################
 # Mysql C++/Connector.
@@ -2924,7 +2959,7 @@ add_external_project(
   BUILD_IN_SOURCE 1  # Needed for config header file.
   )
 add_install_name_step(MYSQLCPPCONN)
-add_dependencies(${MYSQLCPPCONN_TARGET} ${MYSQL_TARGET})
+add_target_dependencies(MYSQLCPPCONN ${MYSQL_TARGET})
 
 ################################################################################
 # Nginx.
@@ -2953,7 +2988,7 @@ add_external_project(
 ################################################################################
 # NJKWebViewProgress.
 if (IS_IOS)
-  set(DOWNLOAD_TARGET ${NJK_WEB_VIEW_PROGRESS_TARGET}_download)
+  get_download_target(NJK_WEB_VIEW_PROGRESS DOWNLOAD_TARGET)
   add_external_project(
     ${DOWNLOAD_TARGET}
     PREFIX ${NJK_WEB_VIEW_PROGRESS_PREFIX}
@@ -2967,8 +3002,8 @@ if (IS_IOS)
       ${CMAKE_COMMAND} -E make_directory ${NJK_WEB_VIEW_PROGRESS_PREFIX}/include &&
       find NJKWebViewProgress -name "*.h" |
       cpio -dp ${NJK_WEB_VIEW_PROGRESS_PREFIX}/include)
-  ExternalProject_Get_Property(${DOWNLOAD_TARGET} INSTALL_DIR)
-  ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+  set(INSTALL_DIR ${NJK_WEB_VIEW_PROGRESS_PREFIX})
+  get_download_source_dir(NJK_WEB_VIEW_PROGRESS SOURCE_DIR)
   set(SOURCE_DIR ${SOURCE_DIR}/NJKWebViewProgress)
   set(SRCS
       ${SOURCE_DIR}/NJKWebViewProgress.h
@@ -2984,7 +3019,7 @@ if (IS_IOS)
       ARCHIVE_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
       LIBRARY_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
       OUTPUT_NAME njk_web_view_progress)
-  add_dependencies(${NJK_WEB_VIEW_PROGRESS_TARGET} ${DOWNLOAD_TARGET})
+  add_target_dependencies(NJK_WEB_VIEW_PROGRESS ${DOWNLOAD_TARGET})
 endif ()
 
 ################################################################################
@@ -3061,9 +3096,9 @@ add_external_project(
     ${GIT} clone --depth 1 git://github.com/Itseez/opencv.git ${OPENCV_TARGET}
   CMAKE_ARGS ${OPENCV_CMAKE_ARGS})
 add_install_name_step(OPENCV)
-add_dependencies(${OPENCV_TARGET} ${EIGEN_TARGET})
-# add_dependencies(${OPENCV_TARGET} ${GCC_TARGET})
-add_dependencies(${OPENCV_TARGET} ${TBB_PREFIX})
+add_target_dependencies(OPENCV ${EIGEN_TARGET})
+# add_target_dependencies(OPENCV ${GCC_TARGET})
+add_target_dependencies(OPENCV ${TBB_PREFIX})
 
 ################################################################################
 # OpenMP.
@@ -3090,7 +3125,7 @@ add_external_project(
   BUILD_IN_SOURCE 1)
 add_install_name_step(OPENMP)
 set(OPENMP_COMPILE_FLAG "-fopenmp")
-add_dependencies(${OPENMP_TARGET} ${GCC_TARGET})
+add_target_dependencies(OPENMP ${GCC_TARGET})
 
 ################################################################################
 # OpenMPI.
@@ -3214,7 +3249,7 @@ else ()
     CONFIGURE_COMMAND ${CONFIGURE_COMMAND}
     BUILD_IN_SOURCE 1)
 endif ()
-add_dependencies(${OPENSSL_TARGET} ${GMP_TARGET})
+add_target_dependencies(OPENSSL ${GMP_TARGET})
 
 ################################################################################
 # pango.
@@ -3238,11 +3273,11 @@ add_external_project(
       ${CONFIGURE_LIB_TYPE_STR}\
       --disable-Bsymbolic\
       PKG_CONFIG_PATH=\"${CAIRO_PREFIX}/lib/pkgconfig:${GLIB_PREFIX}/lib/pkgconfig:${PIXMAN_PREFIX}/lib/pkgconfig:${LIBPNG_PREFIX}/lib/pkgconfig\"" | sh)
-add_dependencies(${PANGO_TARGET} ${CAIRO_TARGET})
-add_dependencies(${PANGO_TARGET} ${GNUTAR_TARGET})
-add_dependencies(${PANGO_TARGET} ${GLIB_TARGET})
-add_dependencies(${PANGO_TARGET} ${LIBPNG_TARGET})
-add_dependencies(${PANGO_TARGET} ${PIXMAN_TARGET})
+add_target_dependencies(PANGO ${CAIRO_TARGET})
+add_target_dependencies(PANGO ${GNUTAR_TARGET})
+add_target_dependencies(PANGO ${GLIB_TARGET})
+add_target_dependencies(PANGO ${LIBPNG_TARGET})
+add_target_dependencies(PANGO ${PIXMAN_TARGET})
 
 ################################################################################
 # papi.
@@ -3268,8 +3303,8 @@ add_external_project(
           <SOURCE_DIR>/configure --prefix=${PAPI_PREFIX} ${HOST} ${SYSROOT}
           ${CONFIGURE_LIB_TYPE}
   BUILD_IN_SOURCE 1)
-add_dependencies(${PAPI_TARGET} ${GCC_TARGET})
-add_dependencies(${PAPI_TARGET} ${OPENMP_TARGET})
+add_target_dependencies(PAPI ${GCC_TARGET})
+add_target_dependencies(PAPI ${OPENMP_TARGET})
 
 ################################################################################
 # pcre.
@@ -3360,22 +3395,22 @@ add_external_project(
   INSTALL_COMMAND
       echo "This will install PHP in /usr/local/php." &&
       sudo make install)
-add_dependencies(${PHP_TARGET} ${APR_TARGET})
-add_dependencies(${PHP_TARGET} ${APR_UTIL_TARGET})
-add_dependencies(${PHP_TARGET} ${BZIP2_TARGET})
-add_dependencies(${PHP_TARGET} ${FREETYPE_TARGET})
-add_dependencies(${PHP_TARGET} ${ICU_TARGET})
-add_dependencies(${PHP_TARGET} ${IMAP_2007F_TARGET})
-add_dependencies(${PHP_TARGET} ${LDAP_TARGET})
-add_dependencies(${PHP_TARGET} ${LDAP_SASL_TARGET})
-add_dependencies(${PHP_TARGET} ${LIBCURL_TARGET})
-add_dependencies(${PHP_TARGET} ${LIBICONV_TARGET})
-add_dependencies(${PHP_TARGET} ${LIBJPG_TARGET})
-add_dependencies(${PHP_TARGET} ${LIBMCRYPT_TARGET})
-add_dependencies(${PHP_TARGET} ${LIBPNG_TARGET})
-add_dependencies(${PHP_TARGET} ${OPENSSL_TARGET})
-add_dependencies(${PHP_TARGET} ${READLINE_TARGET})
-add_dependencies(${PHP_TARGET} ${ZLIB_TARGET})
+add_target_dependencies(PHP ${APR_TARGET})
+add_target_dependencies(PHP ${APR_UTIL_TARGET})
+add_target_dependencies(PHP ${BZIP2_TARGET})
+add_target_dependencies(PHP ${FREETYPE_TARGET})
+add_target_dependencies(PHP ${ICU_TARGET})
+add_target_dependencies(PHP ${IMAP_2007F_TARGET})
+add_target_dependencies(PHP ${LDAP_TARGET})
+add_target_dependencies(PHP ${LDAP_SASL_TARGET})
+add_target_dependencies(PHP ${LIBCURL_TARGET})
+add_target_dependencies(PHP ${LIBICONV_TARGET})
+add_target_dependencies(PHP ${LIBJPG_TARGET})
+add_target_dependencies(PHP ${LIBMCRYPT_TARGET})
+add_target_dependencies(PHP ${LIBPNG_TARGET})
+add_target_dependencies(PHP ${OPENSSL_TARGET})
+add_target_dependencies(PHP ${READLINE_TARGET})
+add_target_dependencies(PHP ${ZLIB_TARGET})
 
 ################################################################################
 # pixman.
@@ -3405,7 +3440,7 @@ add_external_project(
       LDFLAGS=\"${CMAKE_SHARED_LINKER_FLAGS}\"\
       ${CONFIGURE_LIB_TYPE_STR}\
       PKG_CONFIG_PATH=${LIBPNG_PREFIX}/lib/pkgconfig" | sh)
-add_dependencies(${PIXMAN_TARGET} ${LIBPNG_TARGET})
+add_target_dependencies(PIXMAN ${LIBPNG_TARGET})
 
 ################################################################################
 # pkg-config.
@@ -3424,7 +3459,7 @@ add_external_project(
 
 ################################################################################
 # PrettyKit.
-set(DOWNLOAD_TARGET ${PRETTY_KIT_TARGET}_download)
+get_download_target(PRETTY_KIT DOWNLOAD_TARGET)
 add_external_project(
   ${DOWNLOAD_TARGET}
   PREFIX ${PRETTY_KIT_PREFIX}
@@ -3438,8 +3473,8 @@ add_external_project(
     ${CMAKE_COMMAND} -E make_directory ${PRETTY_KIT_PREFIX}/include &&
     find PrettyKit -name "*.h" |
     cpio -dp ${PRETTY_KIT_PREFIX}/include)
-ExternalProject_Get_Property(${DOWNLOAD_TARGET} INSTALL_DIR)
-ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+set(INSTALL_DIR ${PRETTY_KIT_PREFIX})
+get_download_source_dir(PRETTY_KIT SOURCE_DIR)
 set(SOURCE_DIR ${SOURCE_DIR}/PrettyKit)
 set(SRCS
     ${SOURCE_DIR}/Cells/PrettyCustomViewTableViewCell.m
@@ -3460,7 +3495,7 @@ set_target_properties(
     COMPILE_FLAGS -fno-objc-arc
     OUTPUT_NAME pretty_kit)
 target_include_directories(${PRETTY_KIT_TARGET} PUBLIC ${SOURCE_DIR})
-add_dependencies(${PRETTY_KIT_TARGET} ${DOWNLOAD_TARGET})
+add_target_dependencies(PRETTY_KIT ${DOWNLOAD_TARGET})
 
 ################################################################################
 # protobuf - Google's Protocol Buffers library.
@@ -3479,8 +3514,8 @@ add_external_project(
           --with-protoc=${PROTOBUF_PROTOC_EXECUTABLE}
           ${CONFIGURE_LIB_TYPE}
   BUILD_IN_SOURCE 1)
-  add_dependencies(${PROTOBUF_TARGET} ${PROTOC_TARGET})
-  add_dependencies(${PROTOBUF_TARGET} ${ZLIB_TARGET})
+  add_target_dependencies(PROTOBUF ${PROTOC_TARGET})
+  add_target_dependencies(PROTOBUF ${ZLIB_TARGET})
 if (PYTHON_SUPPORTED)
   add_external_project_step(${PROTOBUF_TARGET} build_python_runtime
     COMMAND /usr/bin/env python setup.py build
@@ -3491,7 +3526,7 @@ if (PYTHON_SUPPORTED)
     COMMAND /usr/bin/env python setup.py install
     DEPENDEES install
     WORKING_DIRECTORY <SOURCE_DIR>/python)
-  add_dependencies(${PROTOBUF_TARGET} ${VIRTUALENV_TARGET})
+  add_target_dependencies(PROTOBUF ${VIRTUALENV_TARGET})
 endif ()
 
 ################################################################################
@@ -3510,8 +3545,9 @@ set(PROTOBUF_PROTOC_EXECUTABLE ${PROTOC_PREFIX}/bin/protoc)
 
 ################################################################################
 # proxy-libintl - Google's Protocol Buffers compiler.
+get_download_target(PROXY_LIBINTL DOWNLOAD_TARGET)
 add_external_project(
-  ${PROXY_LIBINTL_TARGET}_download
+  ${DOWNLOAD_TARGET}
   PREFIX ${PROXY_LIBINTL_PREFIX}
   SOURCE_DIR ${PROXY_LIBINTL_PREFIX}/src/${PROXY_LIBINTL_TARGET}
   DOWNLOAD_COMMAND
@@ -3521,7 +3557,7 @@ add_external_project(
   INSTALL_COMMAND
       mkdir -p <INSTALL_DIR>/include &&
       cp -f <SOURCE_DIR>/libintl.h <INSTALL_DIR>/include)
-ExternalProject_Get_Property(${PROXY_LIBINTL_TARGET}_download SOURCE_DIR)
+get_download_source_dir(PROXY_LIBINTL SOURCE_DIR)
 set(PROXY_LIBINTL_SRCS ${PROXY_LIBINTL_PREFIX}/src/${PROXY_LIBINTL_TARGET}/libintl.c)
 set_source_files_properties(${PROXY_LIBINTL_SRCS} PROPERTIES GENERATED TRUE)
 cc_library(${PROXY_LIBINTL_TARGET} ${PROXY_LIBINTL_SRCS})
@@ -3532,7 +3568,7 @@ set_target_properties(
     OUTPUT_NAME intl)
 target_include_directories(
     ${PROXY_LIBINTL_TARGET} PUBLIC ${PROXY_LIBINTL_PREFIX}/include)
-add_dependencies(${PROXY_LIBINTL_TARGET} ${PROXY_LIBINTL_TARGET}_download)
+add_target_dependencies(PROXY_LIBINTL ${DOWNLOAD_TARGET})
 
 ################################################################################
 # Readline.
@@ -3586,8 +3622,8 @@ add_install_name_step(SHARK)
 add_definitions(-DSHARK_USE_OPENMP)
 
 # Adds dependencies.
-add_dependencies(${SHARK_TARGET} ${BOOST_TARGET})
-add_dependencies(${SHARK_TARGET} ${OPENMP_TARGET})
+add_target_dependencies(SHARK ${BOOST_TARGET})
+add_target_dependencies(SHARK ${OPENMP_TARGET})
 
 ################################################################################
 # Sqlite3.
@@ -3631,7 +3667,7 @@ endif ()
 
 ################################################################################
 # SWRevealViewController.
-set(DOWNLOAD_TARGET ${SW_REVEAL_VIEW_CONTROLLER_TARGET}_download)
+get_download_target(SW_REVEAL_VIEW_CONTROLLER DOWNLOAD_TARGET)
 add_external_project(
   ${DOWNLOAD_TARGET}
   PREFIX ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}
@@ -3645,8 +3681,8 @@ add_external_project(
     ${CMAKE_COMMAND} -E make_directory ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/include &&
     find SWRevealViewController -name "*.h" |
     cpio -dp ${SW_REVEAL_VIEW_CONTROLLER_PREFIX}/include)
-ExternalProject_Get_Property(${DOWNLOAD_TARGET} INSTALL_DIR)
-ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+set(INSTALL_DIR ${SW_REVEAL_VIEW_CONTROLLER_PREFIX})
+get_download_source_dir(SW_REVEAL_VIEW_CONTROLLER SOURCE_DIR)
 set(SOURCE_DIR ${SOURCE_DIR}/SWRevealViewController)
 set(SRCS ${SOURCE_DIR}/SWRevealViewController.h
     ${SOURCE_DIR}/SWRevealViewController.m)
@@ -3658,7 +3694,7 @@ set_target_properties(
     ARCHIVE_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY ${INSTALL_DIR}/lib
     OUTPUT_NAME sw_reveal_view_controller)
-add_dependencies(${SW_REVEAL_VIEW_CONTROLLER_TARGET} ${DOWNLOAD_TARGET})
+add_target_dependencies(SW_REVEAL_VIEW_CONTROLLER ${DOWNLOAD_TARGET})
 
 ################################################################################
 # TBB.
@@ -3694,8 +3730,9 @@ add_install_name_step(TBB)
 
 ################################################################################
 # UIImage+animatedGif.
+get_download_target(UIIMAGE_ANIMATED_GIF DOWNLOAD_TARGET)
 add_external_project(
-  ${UIIMAGE_ANIMATED_GIF_TARGET}_download
+  ${DOWNLOAD_TARGET}
   PREFIX ${UIIMAGE_ANIMATED_GIF_PREFIX}
   SOURCE_DIR ${UIIMAGE_ANIMATED_GIF_PREFIX}/src/${UIIMAGE_ANIMATED_GIF_TARGET}
   DOWNLOAD_COMMAND
@@ -3707,7 +3744,7 @@ add_external_project(
       mkdir -p <INSTALL_DIR>/include/UIImage+animatedGIF &&
       cp <SOURCE_DIR>/uiimage-from-animated-gif/UIImage+animatedGIF.h
           <INSTALL_DIR>/include/UIImage+animatedGIF)
-ExternalProject_Get_Property(${UIIMAGE_ANIMATED_GIF_TARGET}_download SOURCE_DIR)
+get_download_source_dir(UIIMAGE_ANIMATED_GIF SOURCE_DIR)
 set(SOURCE_DIR ${SOURCE_DIR}/uiimage-from-animated-gif)
 set(UIIMAGE_ANIMATED_GIF_SRCS ${SOURCE_DIR}/UIImage+animatedGIF.m)
 set_source_files_properties(
@@ -3719,12 +3756,11 @@ set_target_properties(
     ARCHIVE_OUTPUT_DIRECTORY ${UIIMAGE_ANIMATED_GIF_PREFIX}/lib
     LIBRARY_OUTPUT_DIRECTORY ${UIIMAGE_ANIMATED_GIF_PREFIX}/lib
     OUTPUT_NAME uiimage_animated_gif)
-add_dependencies(
-    ${UIIMAGE_ANIMATED_GIF_TARGET} ${UIIMAGE_ANIMATED_GIF_TARGET}_download)
+add_target_dependencies(UIIMAGE_ANIMATED_GIF ${DOWNLOAD_TARGET})
 
 ################################################################################
 # UIAlertView+Blocks.
-set(DOWNLOAD_TARGET ${UIALERTVIEW_BLOCKS_TARGET}_download)
+get_download_target(UIALERTVIEW_BLOCKS DOWNLOAD_TARGET)
 add_external_project(
   ${DOWNLOAD_TARGET}
   PREFIX ${UIALERTVIEW_BLOCKS_PREFIX}
@@ -3736,7 +3772,7 @@ add_external_project(
   INSTALL_COMMAND
       cd <SOURCE_DIR> &&
       find . -name "*.h" | cpio -dp <INSTALL_DIR>/include/UIAlertView+Blocks)
-ExternalProject_Get_Property(${DOWNLOAD_TARGET} SOURCE_DIR)
+get_download_source_dir(UIALERTVIEW_BLOCKS SOURCE_DIR)
 set(UIALERTVIEW_BLOCKS_SRCS
     ${SOURCE_DIR}/RIButtonItem.m
     ${SOURCE_DIR}/UIActionSheet+Blocks.m
@@ -3750,7 +3786,7 @@ set_target_properties(
     ARCHIVE_OUTPUT_DIRECTORY ${UIALERTVIEW_BLOCKS_PREFIX}/lib
     LIBRARY_OUTPUT_DIRECTORY ${UIALERTVIEW_BLOCKS_PREFIX}/lib
     OUTPUT_NAME uialertview_blocks)
-add_dependencies(${UIALERTVIEW_BLOCKS_TARGET} ${DOWNLOAD_TARGET})
+add_target_dependencies(UIALERTVIEW_BLOCKS ${DOWNLOAD_TARGET})
 
 ################################################################################
 # virtualenv.
@@ -3773,12 +3809,14 @@ if (PYTHON_SUPPORTED)
         cd ${VIRTUALENV_PREFIX} && ./bin/virtualenv env
     BUILD_IN_SOURCE 1)
   set(LINE "source ${CMAKE_CURRENT_LIST_DIR}/.profile")
-  add_custom_command(TARGET ${VIRTUALENV_TARGET} POST_BUILD
-    COMMAND
-        grep -q "${LINE}" $ENV{HOME}/.profile && exit 0 ||
-        echo "\\033[31;1m***********************************************************\\nPlease add the following line to your .profile file\\n\\n${LINE}\\n***********************************************************\\n\\033[0m" &&
-        exit 1
-    VERBATIM)
+  if ("$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+    add_custom_command(TARGET ${VIRTUALENV_TARGET} POST_BUILD
+      COMMAND
+          grep -q "${LINE}" $ENV{HOME}/.profile && exit 0 ||
+          echo "\\033[31;1m***********************************************************\\nPlease add the following line to your .profile file\\n\\n${LINE}\\n***********************************************************\\n\\033[0m" &&
+          exit 1
+      VERBATIM)
+  endif ()
 endif ()
 
 ################################################################################

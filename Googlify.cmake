@@ -10,6 +10,10 @@ option(IOS_BUILD "Build for iOS" OFF)
 option(IOS_SIMULATOR_BUILD "Build for iOS simulator" OFF)
 option(ENFORCE_CUSTOM_LIBCXX "Enforce link with custom libcxx" OFF)
 
+if (NOT "$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+  message(WARNING "3rd-party libraries are not built by default. Set BUILD_3RD_PARTY_LIBRARIES=1 in your environment to build them.")
+endif ()
+
 if (IOS_BUILD OR IOS_SIMULATOR_BUILD)
   set(IS_IOS 1)
 else ()
@@ -127,7 +131,9 @@ function(add_data TARGET)
         TARGET ${FULL_TARGET} POST_BUILD
         COMMAND ln -sf ${OUTPUT_FILE} ${CMAKE_CURRENT_BINARY_DIR}
         VERBATIM)
-      add_dependencies(${FULL_TARGET} ${DATA})
+      if ("$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+        add_dependencies(${FULL_TARGET} ${DATA})
+      endif ()
     endif ()
   endforeach ()
 endfunction(add_data)
@@ -217,7 +223,9 @@ function(add_file_ios_app TARGET SRC DEST)
       TARGET ${FULL_TARGET} POST_BUILD
       COMMAND ditto ${OUTPUT_FILE} ${DEST}
       VERBATIM)
-    add_dependencies(${FULL_TARGET} ${SRC})
+    if ("$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+      add_dependencies(${FULL_TARGET} ${SRC})
+    endif ()
   endif ()
 endfunction(add_file_ios_app)
 
@@ -276,7 +284,9 @@ function(add_file_j2e TARGET SRC DEST)
       MAIN_DEPENDENCY
       DEPENDS $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE>
       VERBATIM)
-    add_dependencies(${TEMP_DIR_TARGET} ${SRC})
+    if ("$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+      add_dependencies(${TEMP_DIR_TARGET} ${SRC})
+    endif ()
   endif ()
 endfunction(add_file_j2e)
 
@@ -789,7 +799,9 @@ function(link_third_party_with_full_targets_c TARGET LIB)
   if (NOT LIB_TARGET)
     message(FATAL_ERROR "No such library: ${LIB}")
   endif ()
-  add_dependencies(${TARGET} ${LIB_TARGET})
+  if ("$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+    add_dependencies(${TARGET} ${LIB_TARGET})
+  endif ()
   get_libraries(${LIB} LIBRARIES)
   get_include_directories(${LIB} INCLUDE_DIRECTORIES)
   if (NOT "${LIBRARIES}" STREQUAL "")
@@ -797,12 +809,6 @@ function(link_third_party_with_full_targets_c TARGET LIB)
   endif ()
   if (NOT "${INCLUDE_DIRECTORIES}" STREQUAL "")
     target_include_directories(${TARGET} PUBLIC ${INCLUDE_DIRECTORIES})
-  endif ()
-  get_target_property(
-      COMPILE_DEFINITIONS ${LIB_TARGET} INTERFACE_COMPILE_DEFINITIONS)
-  if (COMPILE_DEFINITIONS)
-    set_target_properties(
-        ${TARGET} PROPERTIES COMPILE_DEFINITIONS ${COMPILE_DEFINITIONS})
   endif ()
 endfunction()
 
@@ -825,7 +831,9 @@ function(link_third_party_with_full_targets_java TARGET LIB)
     COMMAND cat $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE> | sort | uniq | tee
         $<TARGET_PROPERTY:${TARGET},CLASSPATH_FILE> > /dev/null
     VERBATIM)
-  add_dependencies(${CLASSPATH_TARGET} ${LIB_TARGET})
+  if ("$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+    add_dependencies(${CLASSPATH_TARGET} ${LIB_TARGET})
+  endif ()
 endfunction()
 
 #! @brief Auxiliary function used by link for Python targets.
@@ -834,7 +842,9 @@ function(link_third_party_with_full_targets_python TARGET LIB)
   if (NOT LIB_TARGET)
     message(FATAL_ERROR "No such library: ${LIB}")
   endif ()
-  add_dependencies(${TARGET} ${LIB_TARGET})
+  if ("$ENV{BUILD_3RD_PARTY_LIBRARIES}")
+    add_dependencies(${TARGET} ${LIB_TARGET})
+  endif ()
 endfunction()
 
 #! @brief Auxiliary function used by link for non third-party targets.
