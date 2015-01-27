@@ -1,5 +1,8 @@
 language: cpp
 compiler:
   - clang
+install:
+  - cd travis
+  - ./install-cmake-3.1.1.sh
 script:
   - cmake --version
