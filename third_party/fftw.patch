@@ -1,0 +1,21 @@
+diff -rupN third_party.fftw_target.old/Makefile.am third_party.fftw_target/Makefile.am
+--- third_party.fftw_target.old/Makefile.am	2014-06-25 13:01:17.000000000 +0100
++++ third_party.fftw_target/Makefile.am	2014-06-25 13:01:45.000000000 +0100
+@@ -1,4 +1,4 @@
+-SUBDIRS = fftw rfftw tests doc threads mpi
++SUBDIRS = fftw rfftw doc threads mpi
+ EXTRA_DIST = README.hacks bootstrap.sh COPYRIGHT acx_pthread.m4 acx_mpi.m4
+ 
+ extradist = fortran gensrc matlab cilk FAQ
+diff -rupN third_party.fftw_target.old/Makefile.in third_party.fftw_target/Makefile.in
+--- third_party.fftw_target.old/Makefile.in	2014-06-25 13:01:17.000000000 +0100
++++ third_party.fftw_target/Makefile.in	2014-06-25 13:01:35.000000000 +0100
+@@ -143,7 +143,7 @@ sbindir = @sbindir@
+ sharedstatedir = @sharedstatedir@
+ sysconfdir = @sysconfdir@
+ target_alias = @target_alias@
+-SUBDIRS = fftw rfftw tests doc threads mpi
++SUBDIRS = fftw rfftw doc threads mpi
+ EXTRA_DIST = README.hacks bootstrap.sh COPYRIGHT acx_pthread.m4 acx_mpi.m4
+ 
+ extradist = fortran gensrc matlab cilk FAQ
