@@ -20,6 +20,12 @@ function(pip_library LIB REF)
     DEPENDS ${VIRTUALENV_TARGET})
 endfunction(pip_library)
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  set(BYPASS_UNUSED_ARGUMENTS -Qunused-arguments)
+else ()
+  set(BYPASS_UNUSED_ARGUMENTS)
+endif ()
+
 pip_library(
     Pillow Pillow CC=/usr/bin/gcc
     ARCHFLAGS=-Wno-error=unused-command-line-argument-hard-error-in-future)
@@ -29,16 +35,27 @@ pip_library(cssselect cssselect)
 pip_library(django django)
 pip_library(django-nonrel git+git://github.com/django-nonrel/django)
 pip_library(djangotoolbox git+git://github.com/django-nonrel/djangotoolbox)
+pip_library(enum34 enum34)
+pip_library(google-api-python-client google-api-python-client)
+pip_library(httplib2 httplib2)
 pip_library(jinja2 Jinja2)
+pip_library(leveldb leveldb CC=/usr/bin/gcc CXX=/usr/bin/g++)
+pip_library(lmdb lmdb CFLAGS=${BYPASS_UNUSED_ARGUMENTS}
+            CPPFLAGS=${BYPASS_UNUSED_ARGUMENTS})
 pip_library(lxml lxml)
 pip_library(marisa-trie marisa-trie CC=/usr/bin/gcc CXX=/usr/bin/g++)
-pip_library(mysql-python MySQL-python CLAGS=-Qunused-arguments
-            CPPLAGS=-Qunused-arguments)
+pip_library(matplotlib matplotlib CFLAGS=${BYPASS_UNUSED_ARGUMENTS}
+            CPPFLAGS=${BYPASS_UNUSED_ARGUMENTS})
+pip_library(mysql-python MySQL-python CFLAGS=${BYPASS_UNUSED_ARGUMENTS}
+            CPPFLAGS=${BYPASS_UNUSED_ARGUMENTS})
 pip_library(mongodb-engine git+git://github.com/django-nonrel/mongodb-engine)
-pip_library(numpy numpy CC=/usr/bin/gcc)
+pip_library(networkx networkx)
+pip_library(numpy numpy)
 pip_library(psd-tools psd-tools)
 pip_library(pycountry pycountry)
 pip_library(python-gflags python-gflags)
 pip_library(requests requests)
 pip_library(scikit-learn scikit-learn CC=/usr/bin/gcc CXX=/usr/bin/g++)
-pip_library(scipy scipy CC=/usr/bin/gcc CXX=/usr/bin/g++)
+pip_library(scipy scipy CFLAGS=${BYPASS_UNUSED_ARGUMENTS}
+            CPPFLAGS=${BYPASS_UNUSED_ARGUMENTS})
+pip_library(watchdog watchdog CFLAGS=${BYPASS_UNUSED_ARGUMENTS})
