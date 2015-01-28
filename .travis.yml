@@ -7,5 +7,7 @@ compiler:
 install:
   - cd travis
   - ./install-cmake-3.1.1.sh
+env:
+  - BUILD_3RD_PARTY_LIBRARIES=1
 script:
-  - cmake --version
+  - cmake ..
