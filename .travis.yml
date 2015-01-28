@@ -10,4 +10,4 @@ install:
 env:
   - BUILD_3RD_PARTY_LIBRARIES=1
 script:
-  - mkdir build && cd build && cmake ..
+  - cmake ..
