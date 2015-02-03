@@ -366,7 +366,6 @@ set_libraries(clang_rewrite_core ${CLANG_LIB_DIR} clangRewriteCore)
 set_libraries(clang_rewrite_frontend ${CLANG_LIB_DIR} clangRewriteFrontend)
 set_libraries(clang_sema ${CLANG_LIB_DIR} clangSema)
 set_libraries(clang_serialization ${CLANG_LIB_DIR} clangSerialization)
-set_libraries(cluster ${CLUSTER_PREFIX}/lib cluster)
 set_libraries(
     clang_static_analyzer_checkers ${CLANG_LIB_DIR} clangStaticAnalyzerCheckers)
 set_libraries(
@@ -374,6 +373,7 @@ set_libraries(
 set_libraries(
     clang_static_analyzer_frontend ${CLANG_LIB_DIR} clangStaticAnalyzerFrontend)
 set_libraries(clang_tooling ${CLANG_LIB_DIR} clangTooling)
+set_libraries(cluster ${CLUSTER_PREFIX}/lib cluster)
 set_libraries(cpp-netlib-uri ${CPP_NETLIB_URI_PREFIX}/lib network-uri)
 set_libraries(curl-asio ${CURL_ASIO_PREFIX}/lib curlasio)
 set_libraries(diff_match_patch ${DIFF_MATCH_PATCH_PREFIX}/lib diff_match_patch)
