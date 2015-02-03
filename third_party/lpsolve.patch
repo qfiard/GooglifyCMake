@@ -1,0 +1,12 @@
+diff -rupN third_party.lpsolve_target.old/lpsolve55/ccc.osx third_party.lpsolve_target/lpsolve55/ccc.osx
+--- third_party.lpsolve_target.old/lpsolve55/ccc.osx	2014-07-04 00:06:21.000000000 +0100
++++ third_party.lpsolve_target/lpsolve55/ccc.osx	2014-07-04 00:06:23.000000000 +0100
+@@ -33,7 +33,7 @@ so=y
+ opts='-idirafter /usr/include/sys -O3 -DINTEGERTIME -Wno-long-double'
+ 
+ $c -s -c -I.. -I../shared -I../bfp -I../bfp/bfp_LUSOL -I../bfp/bfp_LUSOL/LUSOL -I../colamd $opts $def $NOISNAN -DYY_NEVER_INTERACTIVE -DPARSER_LP -DINVERSE_ACTIVE=INVERSE_LUSOL -DRoleIsExternalInvEngine $src
+-libtool -static -o bin/$PLATFORM/liblpsolve55.a `echo $src|sed s/[.]c/.o/g|sed 's/[^ ]*\///g'`
++ar q bin/$PLATFORM/liblpsolve55.a `echo $src|sed s/[.]c/.o/g|sed 's/[^ ]*\///g'`
+ 
+ if [ "$so" != "" ]
+ then

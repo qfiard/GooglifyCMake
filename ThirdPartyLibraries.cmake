@@ -202,6 +202,7 @@ add_target(CLANG_OMP clang_omp)
 add_target(CLDR cldr)
 add_target(CLOSURE_COMPILER closure-compiler)
 add_target(CLOSURE_LIBRARY closure-library)
+add_target(CLUSTER cluster)
 add_target(COUNTRY_INFOS country_infos)
 add_target(CPP_NETLIB cpp-netlib)
 add_target(CPP_NETLIB_URI cpp-netlib-uri)
@@ -212,6 +213,7 @@ add_target(EIGEN eigen)
 add_target(EXTRAE extrae)
 add_target(FAST_IMAGE_CACHE fast_image_cache)
 add_target(FB_GALLERY fb_gallery)
+add_target(FFTW fftw)
 add_target(FLEX flex)
 add_target(FORMATTER_KIT formatter_kit)
 add_target(FREETYPE freetype)
@@ -232,6 +234,7 @@ add_target(GTEST gtest)
 add_target(HAPROXY haproxy)
 add_target(HTTPD httpd)
 add_target(HTTPXX httpxx)
+add_target(HWLOC hwloc)
 add_target(ICU icu)
 add_target(IMAGEMAGICK imagemagick)
 add_target(IMAP_2007F imap-2007f)
@@ -245,6 +248,7 @@ add_target(JSONCPP jsoncpp)
 add_target(JSONPATH jsonpath)
 add_target(LDAP ldap)
 add_target(LDAP_SASL ldap_sasl)
+add_target(LEVELDB leveldb)
 add_target(LIBCROCO libcroco)
 add_target(LIBCURL libcurl)
 add_target(LIBCXX libcxx)
@@ -258,6 +262,8 @@ add_target(LIBPNG libpng)
 add_target(LIBRSVG librsvg)
 add_target(LIBUSB libusb)
 add_target(LIBXML libxml)
+add_target(LMDB lmdb)
+add_target(LPSOLVE lpsolve)
 add_target(MARISA_TRIE marisa_trie)
 add_target(MAVEN maven)
 add_target(MAVEN_LIBS maven_libs)
@@ -368,6 +374,7 @@ set_libraries(
 set_libraries(
     clang_static_analyzer_frontend ${CLANG_LIB_DIR} clangStaticAnalyzerFrontend)
 set_libraries(clang_tooling ${CLANG_LIB_DIR} clangTooling)
+set_libraries(cluster ${CLUSTER_PREFIX}/lib cluster)
 set_libraries(cpp-netlib-uri ${CPP_NETLIB_URI_PREFIX}/lib network-uri)
 set_libraries(curl-asio ${CURL_ASIO_PREFIX}/lib curlasio)
 set_libraries(diff_match_patch ${DIFF_MATCH_PATCH_PREFIX}/lib diff_match_patch)
@@ -399,6 +406,9 @@ set_libraries(imagemagick ${IMAGEMAGICK_PREFIX}/lib
               Magick++ MagickCore MagickWand)
 set_libraries(jsoncpp ${JSONCPP_PREFIX}/lib jsoncpp)
 set_libraries(jsonpath ${JSONPATH_PREFIX}/lib jsonpath)
+set_libraries(hwloc ${HWLOC_PREFIX}/lib hwloc)
+set_libraries(intel_pcm ${INTEL_PCM_PREFIX}/lib intel_pcm pthread)
+set_libraries(leveldb ${LEVELDB_PREFIX}/lib leveldb)
 set_libraries(libcurl ${LIBCURL_PREFIX}/lib curl)
 set_libraries(libcxx ${LIBCXX_PREFIX}/lib c++)
 set_libraries(libcxxabi ${LIBCXXABI_PREFIX}/lib c++abi)
@@ -513,6 +523,8 @@ set_libraries(llvm_xcore_code_gen ${LLVM_LIB_DIR} LLVMXCoreCodeGen)
 set_libraries(llvm_xcore_desc ${LLVM_LIB_DIR} LLVMXCoreDesc)
 set_libraries(llvm_xcore_disassembler ${LLVM_LIB_DIR} LLVMXCoreDisassembler)
 set_libraries(llvm_xcore_info ${LLVM_LIB_DIR} LLVMXCoreInfo)
+set_libraries(lmdb ${LMDB_PREFIX}/lib lmdb)
+set_libraries(lpsolve ${LPSOLVE_PREFIX}/lib lpsolve55)
 set_libraries(marisa_trie ${MARISA_TRIE_PREFIX}/lib marisa)
 set_libraries(mili "")  # Mili is header only.
 set_libraries(mobile_commerce_ios_atg_mobile_client
@@ -708,6 +720,7 @@ set_include_directories(
 set_include_directories(boost ${BOOST_PREFIX}/include)
 set_include_directories(bzip2 ${BZIP2_PREFIX}/include)
 set_include_directories(clang ${CLANG_PREFIX}/include)
+set_include_directories(cluster ${CLUSTER_PREFIX}/include)
 set_include_directories(cpp-netlib-uri ${CPP_NETLIB_URI_PREFIX}/include)
 set_include_directories(curl-asio ${CURL_ASIO_PREFIX}/include)
 set_include_directories(diff_match_patch ${DIFF_MATCH_PATCH_PREFIX}/include)
@@ -725,6 +738,7 @@ set_include_directories(gmock ${GMOCK_PREFIX}/include)
 set_include_directories(gmp ${GMP_PREFIX}/include)
 set_include_directories(gtest ${GTEST_PREFIX}/include)
 set_include_directories(httpxx ${HTTPXX_PREFIX}/include)
+set_include_directories(hwloc ${HWLOC_PREFIX}/include)
 set_include_directories(icu ${ICU_PREFIX}/include)
 set_include_directories(imagemagick ${IMAGEMAGICK_PREFIX}/include/ImageMagick-6)
 set_include_directories(intel_pcm ${INTEL_PCM_PREFIX}/include)
@@ -732,6 +746,7 @@ set_include_directories(
     ios_ntp ${IOS_NTP_PREFIX}/include ${IOS_NTP_PREFIX}/include/ios-ntp)
 set_include_directories(jsoncpp ${JSONCPP_PREFIX}/include)
 set_include_directories(jsonpath ${JSONPATH_PREFIX}/include)
+set_include_directories(leveldb ${LEVELDB_PREFIX}/include)
 set_include_directories(libcurl ${LIBCURL_PREFIX}/include)
 set_include_directories(libcxx ${LIBCXX_PREFIX}/include/c++/v1)
 set_include_directories(libffi ${LIBFFI_PREFIX}/include)
@@ -745,6 +760,8 @@ else ()
   set_include_directories(
       libxml ${LIBXML_PREFIX}/include ${LIBXML_PREFIX}/include/libxml2)
 endif ()
+set_include_directories(lmdb ${LMDB_PREFIX}/include)
+set_include_directories(lpsolve ${LPSOLVE_PREFIX}/include)
 set_include_directories(marisa_trie ${MARISA_TRIE_PREFIX}/include)
 set_include_directories(mili ${MILI_PREFIX}/include)
 set_include_directories(
@@ -778,7 +795,6 @@ set_include_directories(
 add_include_dependencies(arabica third_party.boost_headers third_party.libxml)
 add_include_dependencies(cpp-netlib-uri third_party.boost_headers)
 add_include_dependencies(curl-asio third_party.libcurl)
-
 
 # 3rd-party executables.
 set(CLANG_OMP_C_COMPILER ${CLANG_OMP_PREFIX}/bin/clang)
@@ -1358,6 +1374,36 @@ add_external_project(
   INSTALL_COMMAND ${NOP})
 
 ################################################################################
+# Open Source Clustering Library.
+add_external_project(
+  ${CLUSTER_TARGET}_download
+  PREFIX ${CLUSTER_PREFIX}
+  DOWNLOAD_DIR ${CLUSTER_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O cluster-1.52.tar.gz http://bonsai.hgc.jp/~mdehoon/software/cluster/cluster-1.52.tar.gz &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/cluster-1.52.tar.gz.sig
+          cluster-1.52.tar.gz &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf ${CLUSTER_PREFIX}/download/cluster-1.52.tar.gz
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${NOP}
+  INSTALL_COMMAND
+      mkdir -p <INSTALL_DIR>/include &&
+      cp -f <SOURCE_DIR>/src/cluster.h <INSTALL_DIR>/include)
+ExternalProject_Get_Property(${CLUSTER_TARGET}_download SOURCE_DIR)
+set(SRCS ${SOURCE_DIR}/src/cluster.c)
+set_source_files_properties(${SRCS} PROPERTIES GENERATED TRUE)
+cc_library(${CLUSTER_TARGET} ${SRCS})
+target_include_directories(
+    ${CLUSTER_TARGET} PUBLIC ${CLUSTER_PREFIX}/include)
+set_target_properties(
+    ${CLUSTER_TARGET} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${CLUSTER_PREFIX}/lib
+    LIBRARY_OUTPUT_DIRECTORY ${CLUSTER_PREFIX}/lib
+    OUTPUT_NAME cluster)
+add_dependencies(${CLUSTER_TARGET} ${CLUSTER_TARGET}_download)
+
+################################################################################
 # curl-asio, an asynchronous CURL wrapper based on Boost Asio.
 # See https://github.com/mologie/curl-asio.
 set(CURL_ASIO_C_FLAGS "-I${LIBCURL_PREFIX}/include ${CMAKE_C_FLAGS_WITH_ARCHS}")
@@ -1567,6 +1613,28 @@ target_include_directories(
     ${FB_GALLERY_TARGET} PUBLIC ${MW_PHOTO_BROWSER_PREFIX}/include)
 add_target_dependencies(FB_GALLERY ${DOWNLOAD_TARGET})
 add_target_dependencies(FB_GALLERY ${MW_PHOTO_BROWSER_TARGET})
+
+################################################################################
+# FFTW.
+add_external_project(
+  ${FFTW_TARGET}
+  PREFIX ${FFTW_PREFIX}
+  DOWNLOAD_DIR ${FFTW_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O fftw-2.1.5.tar.gz http://www.fftw.org/fftw-2.1.5.tar.gz &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/fftw-2.1.5.tar.gz.sig
+          fftw-2.1.5.tar.gz &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf ${FFTW_PREFIX}/download/fftw-2.1.5.tar.gz
+  PATCH_COMMAND
+      patch -p1 < ${THIRD_PARTY_SOURCE_DIR}/fftw.patch
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${FFTW_PREFIX}
+      CC=${CMAKE_C_COMPILER}
+      CXX=${CMAKE_CXX_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+      LDFLAGS=${CMAKE_SHARED_LIBRARY_FLAGS}
+      ${CONFIGURE_LIB_TYPE})
 
 ################################################################################
 # Flex.
@@ -2066,6 +2134,26 @@ add_external_project(
 add_install_name_step(HTTPXX)
 
 ################################################################################
+# HWLOC.
+add_external_project(
+  ${HWLOC_TARGET}
+  PREFIX ${HWLOC_PREFIX}
+  DOWNLOAD_DIR ${HWLOC_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O hwloc-1.9.tar.bz2 http://www.open-mpi.org/software/hwloc/v1.9/downloads/hwloc-1.9.tar.bz2 &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/hwloc-1.9.tar.bz2.sig
+          hwloc-1.9.tar.bz2 &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf ${HWLOC_PREFIX}/download/hwloc-1.9.tar.bz2
+  CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=${HWLOC_PREFIX}
+      CC=${CMAKE_C_COMPILER}
+      CXX=${CMAKE_CXX_COMPILER}
+      CFLAGS=${CMAKE_C_FLAGS}
+      CXXFLAGS=${CMAKE_CXX_FLAGS}
+      LDFLAGS=${CMAKE_SHARED_LIBRARY_FLAGS}
+      ${CONFIGURE_LIB_TYPE})
+
+################################################################################
 # ICU. TODO(qfiard): Make portable.
 set(ICU_BUILD_COMMAND "\
   CC=\"${CMAKE_C_COMPILER}\"\
@@ -2094,24 +2182,6 @@ add_external_project(
           ${ICU_PREFIX}/download/icu4c-52_1-src.tgz
   CONFIGURE_COMMAND echo "${ICU_BUILD_COMMAND}" | sh)
 add_install_name_step(ICU)
-
-################################################################################
-# Intel PCM library.
-add_external_project(
-  ${INTEL_PCM_TARGET}
-  PREFIX ${INTEL_PCM_PREFIX}
-  DOWNLOAD_COMMAND
-    git clone --depth 1 git://github.com/QuentinFiard/intel_pcm ${INTEL_PCM_TARGET}
-  CMAKE_ARGS
-      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-      -DCMAKE_BUILD_TYPE=RELEASE
-      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
-      -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
-      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
-      -DCMAKE_INSTALL_PREFIX=${INTEL_PCM_PREFIX})
 
 ################################################################################
 # ImageMagick. TODO(qfiard): Make portable.
@@ -2168,6 +2238,26 @@ if (BUILD_SHARED_LIBS)
   add_target_dependencies(IMAGEMAGICK ${LIBRSVG_TARGET})
   add_target_dependencies(IMAGEMAGICK ${PANGO_TARGET})
 endif ()
+
+################################################################################
+# Intel PCM library.
+set(INTEL_PCM_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+set(INTEL_PCM_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+add_external_project(
+  ${INTEL_PCM_TARGET}
+  PREFIX ${INTEL_PCM_PREFIX}
+  DOWNLOAD_COMMAND
+      git clone --depth 1 git://github.com/QuentinFiard/intel_pcm ${INTEL_PCM_TARGET}
+  CMAKE_ARGS
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_BUILD_TYPE=RELEASE
+      -DCMAKE_C_FLAGS=${INTEL_PCM_C_FLAGS}
+      -DCMAKE_CXX_FLAGS=${INTEL_PCM_CXX_FLAGS}
+      -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_INSTALL_PREFIX=${INTEL_PCM_PREFIX})
 
 ################################################################################
 # ios-ntp.
@@ -2389,6 +2479,19 @@ add_external_project(
 add_target_dependencies(LDAP_SASL ${BERKELEY_DB_TARGET})
 add_target_dependencies(LDAP_SASL ${LDAP_TARGET})
 add_target_dependencies(LDAP_SASL ${OPENSSL_TARGET})
+
+################################################################################
+# Leveldb.
+add_external_project(
+  ${LEVELDB_TARGET}
+  PREFIX ${LEVELDB_PREFIX}
+  DOWNLOAD_COMMAND
+      git clone https://code.google.com/p/leveldb ${LEVELDB_TARGET}
+  CONFIGURE_COMMAND ${NOP}
+  INSTALL_COMMAND
+      find . -name "*${LIBRARY_SUFFIX}*" | cpio -dp <INSTALL_DIR>/lib &&
+      cp -rf include <INSTALL_DIR>/include
+  BUILD_IN_SOURCE 1)
 
 ################################################################################
 # libcroco.
@@ -2676,6 +2779,58 @@ else ()
   add_target_dependencies(LIBXML ${XZ_TARGET})
   add_target_dependencies(LIBXML ${ZLIB_TARGET})
 endif ()
+
+################################################################################
+# LMDB.
+add_external_project(
+  ${LMDB_TARGET}
+  PREFIX ${LMDB_PREFIX}
+  DOWNLOAD_DIR ${LMDB_PREFIX}/download
+  DOWNLOAD_COMMAND
+    git clone --depth 1 -b mdb.master git://github.com/QuentinFiard/lmdb.git &&
+    rm -rf <SOURCE_DIR> &&
+    mv -f lmdb/libraries/liblmdb <SOURCE_DIR>
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND
+    make CC=${CMAKE_C_COMPILER}
+  INSTALL_COMMAND
+    mkdir -p <INSTALL_DIR>/include/lmdb &&
+    cp -f lmdb.h <INSTALL_DIR>/include/lmdb &&
+    mkdir -p <INSTALL_DIR>/lib &&
+    cp -f liblmdb.so <INSTALL_DIR>/lib/liblmdb${CMAKE_SHARED_LIBRARY_SUFFIX} &&
+    cp -f liblmdb.a <INSTALL_DIR>/lib/liblmdb${CMAKE_STATIC_LIBRARY_SUFFIX}
+  BUILD_IN_SOURCE 1)
+add_install_name_step(LMDB)
+
+################################################################################
+# lpsolve.
+set(BUILD_COMMAND cd lpsolve55 && sh)
+if (APPLE)
+  set(BUILD_COMMAND ${BUILD_COMMAND} ccc.osx)
+else ()
+  set(BUILD_COMMAND ${BUILD_COMMAND} ccc)
+endif ()
+add_external_project(
+  ${LPSOLVE_TARGET}
+  PREFIX ${LPSOLVE_PREFIX}
+  DOWNLOAD_DIR ${LPSOLVE_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O lp_solve_5.5.0.15_source.tar.gz http://downloads.sourceforge.net/project/lpsolve/lpsolve/5.5.0.15/lp_solve_5.5.0.15_source.tar.gz &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/lp_solve_5.5.0.15_source.tar.gz.sig
+          lp_solve_5.5.0.15_source.tar.gz &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf
+          ${LPSOLVE_PREFIX}/download/lp_solve_5.5.0.15_source.tar.gz
+  PATCH_COMMAND
+      patch -p1 < ${THIRD_PARTY_SOURCE_DIR}/lpsolve.patch
+  CONFIGURE_COMMAND ${NOP}
+  BUILD_COMMAND ${BUILD_COMMAND}
+  INSTALL_COMMAND
+      mkdir -p <INSTALL_DIR>/lib &&
+      find . -name "*${LIBRARY_SUFFIX}" | xargs -Ifile cp -f file <INSTALL_DIR>/lib &&
+      find . -name "*.h" | cpio -dp <INSTALL_DIR>/include
+  BUILD_IN_SOURCE 1)
+add_install_name_step(LPSOLVE)
 
 ################################################################################
 # MarisaTrie.
@@ -3655,12 +3810,12 @@ add_external_project(
   PREFIX ${SQLITE3_PREFIX}
   DOWNLOAD_DIR ${SQLITE3_PREFIX}/download
   DOWNLOAD_COMMAND
-    wget -O sqlite-autoconf-3080403.tar.gz http://www.sqlite.org/2014/sqlite-autoconf-3080403.tar.gz &&
-        gpg --verify ${THIRD_PARTY_SOURCE_DIR}/sqlite-autoconf-3080403.tar.gz.sig
-            sqlite-autoconf-3080403.tar.gz &&
-        cd <SOURCE_DIR> &&
-        tar --strip-components 1 -xvf
-            ${SQLITE3_PREFIX}/download/sqlite-autoconf-3080403.tar.gz
+      wget -O sqlite-autoconf-3080403.tar.gz http://www.sqlite.org/2014/sqlite-autoconf-3080403.tar.gz &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/sqlite-autoconf-3080403.tar.gz.sig
+          sqlite-autoconf-3080403.tar.gz &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf
+          ${SQLITE3_PREFIX}/download/sqlite-autoconf-3080403.tar.gz
   CONFIGURE_COMMAND
       <SOURCE_DIR>/configure --prefix=${SQLITE3_PREFIX} ${HOST} ${SYSROOT}
       CC=${CMAKE_C_COMPILER}
@@ -4043,7 +4198,6 @@ function (closure_library TARGET)
         VERBATIM)
     list(APPEND SRCS ${OUT})
   endforeach ()
-  get_full_target(${TARGET} FULL_TARGET)
   add_custom_target(${FULL_TARGET} ALL SOURCES ${SRCS})
   set_target_properties(${FULL_TARGET} PROPERTIES TARGET_FILE ${SRCS})
 endfunction ()
