@@ -256,6 +256,7 @@ add_target(LIBMCRYPT libmcrypt)
 add_target(LIBMHASH libmhash)
 add_target(LIBPNG libpng)
 add_target(LIBRSVG librsvg)
+add_target(LIBUSB libusb)
 add_target(LIBXML libxml)
 add_target(MARISA_TRIE marisa_trie)
 add_target(MAVEN maven)
@@ -403,6 +404,7 @@ set_libraries(libcxx ${LIBCXX_PREFIX}/lib c++)
 set_libraries(libcxxabi ${LIBCXXABI_PREFIX}/lib c++abi)
 set_libraries(libffi ${LIBFFI_PREFIX}/lib ffi)
 set_libraries(libpng ${LIBPNG_PREFIX}/lib png)
+set_libraries(libusb ${LIBUSB_PREFIX}/lib libusb-1.0)
 if (IS_IOS)
   set(BUILD_SHARED_LIBS_OLD ${BUILD_SHARED_LIBS})
   set(BUILD_SHARED_LIBS ON)
@@ -734,6 +736,7 @@ set_include_directories(libcurl ${LIBCURL_PREFIX}/include)
 set_include_directories(libcxx ${LIBCXX_PREFIX}/include/c++/v1)
 set_include_directories(libffi ${LIBFFI_PREFIX}/include)
 set_include_directories(libpng ${LIBPNG_PREFIX}/include)
+set_include_directories(libusb ${LIBUSB_PREFIX}/include)
 if (IS_IOS)
   set_include_directories(
       libxml ${CMAKE_IOS_SDK_ROOT}/usr/include
@@ -2627,6 +2630,26 @@ add_target_dependencies(LIBRSVG ${LIBCROCO_TARGET})
 add_target_dependencies(LIBRSVG ${LIBPNG_TARGET})
 add_target_dependencies(LIBRSVG ${PANGO_TARGET})
 add_target_dependencies(LIBRSVG ${PIXMAN_TARGET})
+
+################################################################################
+# libusb.
+add_external_project(
+  ${LIBUSB_TARGET}
+  PREFIX ${LIBUSB_PREFIX}
+  DOWNLOAD_COMMAND
+      ${GIT} clone --depth 1 git://git.libusb.org/libusb.git ${LIBUSB_TARGET}
+  CONFIGURE_COMMAND
+      <SOURCE_DIR>/autogen.sh --prefix=${LIBUSB_PREFIX} ${HOST} ${SYSROOT}
+          CC=${CMAKE_C_COMPILER}
+          CXX=${CMAKE_CXX_COMPILER}
+          CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+          CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+          LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+          ${CONFIGURE_LIB_TYPE}
+  INSTALL_COMMAND
+      make install &&
+      mv -f <INSTALL_DIR>/include/libusb-1.0 <INSTALL_DIR>/include/libusb
+  BUILD_IN_SOURCE 1)
 
 ################################################################################
 # libxml.
