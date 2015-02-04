@@ -5,8 +5,12 @@ os:
 compiler:
   - clang
 install:
+  - sudo add-apt-repository --yes ppa:h-rayflood/llvm-upper
+  - sudo add-apt-repository --yes ppa:h-rayflood/gcc-upper
+  - sudo apt-get update
+  - sudo apt-get install clang-3.5
   - cd travis
-  - ./install-cmake-3.1.1.sh
+  - ./install-cmake-3.1.1.sh >/dev/null
 env:
   global:
     - BUILD_3RD_PARTY_LIBRARIES=1
