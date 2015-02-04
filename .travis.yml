@@ -8,6 +8,10 @@ install:
   - cd travis
   - ./install-cmake-3.1.1.sh
 env:
-  - BUILD_3RD_PARTY_LIBRARIES=1
+  global:
+    - BUILD_3RD_PARTY_LIBRARIES=1
+  matrix:
+    - TARGET="third_party.libcxxabi_target"
 script:
   - cmake ..
+  - make $TARGET
