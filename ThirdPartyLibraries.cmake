@@ -874,6 +874,7 @@ endforeach ()
 # used below.
 ################################################################################
 # libcxx.
+get_source_dir(LIBCXX SOURCE_DIR)
 add_external_project(
   ${LIBCXX_TARGET}_headers
   PREFIX ${LIBCXX_PREFIX}
@@ -882,7 +883,8 @@ add_external_project(
           ${LIBCXX_TARGET}
   CONFIGURE_COMMAND ${NOP}
   BUILD_COMMAND ${NOP}
-  INSTALL_COMMAND ${NOP})
+  INSTALL_COMMAND
+      cp -rf ${SOURCE_DIR}/include <INSTALL_DIR>/include)
 set(LIBCXX_LINKER_FLAGS "-L${LIBCXXABI_PREFIX}/lib ${CMAKE_SHARED_LINKER_FLAGS}")
 add_external_project(
   ${LIBCXX_TARGET}
@@ -2552,33 +2554,27 @@ add_target_dependencies(LIBCURL ${ZLIB_TARGET})
 
 ################################################################################
 # libcxxabi.
-get_source_dir(LIBCXX SOURCE_DIR)
-set(LIBCXXABI_OPTIONS "-I${SOURCE_DIR}/include ${ARCHS_AS_FLAGS}")
-if (APPLE AND NOT "${CMAKE_OSX_SYSROOT}" STREQUAL "")
-  set(LIBCXXABI_OPTIONS "${LIBCXXABI_OPTIONS} --sysroot ${CMAKE_OSX_SYSROOT}")
-endif ()
-set(LIBCXXABI_BUILD_COMMAND
-    "cd <INSTALL_DIR>/lib &&\
-     CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}\
-     OPTIONS=\"${LIBCXXABI_OPTIONS}\"")
-set(LIBCXXABI_BUILD_COMMAND_END "./buildit")
-if (BUILD_SHARED_LIBS)
-  set(LIBCXXABI_BUILD_COMMAND_END
-      "${LIBCXXABI_BUILD_COMMAND_END} && ln -sf libcxxabi.1.0.dylib libcxxabi.dylib")
-else ()
-  set(LIBCXXABI_BUILD_COMMAND "${LIBCXXABI_BUILD_COMMAND} BUILD_STATIC=1")
-endif ()
-set(LIBCXXABI_BUILD_COMMAND "${LIBCXXABI_BUILD_COMMAND} ${LIBCXXABI_BUILD_COMMAND_END}")
+set(LIBCXXABI_C_FLAGS "-I ${CMAKE_C_FLAGS_WITH_ARCHS}")
 add_external_project(
   ${LIBCXXABI_TARGET}
   PREFIX ${LIBCXXABI_PREFIX}
   DOWNLOAD_COMMAND
-      ${SVN} export --force http://llvm.org/svn/llvm-project/libcxxabi/trunk <INSTALL_DIR>
-  PATCH_COMMAND
-    cd <INSTALL_DIR>/lib && patch -p0 < ${THIRD_PARTY_SOURCE_DIR}/libcxxabi.patch
-  CONFIGURE_COMMAND ${NOP}
-  BUILD_COMMAND echo ${LIBCXXABI_BUILD_COMMAND} | sh
-  INSTALL_COMMAND ${NOP})
+      ${SVN} export --force http://llvm.org/svn/llvm-project/libcxxabi/trunk
+          ${LIBCXXABI_TARGET}
+  CMAKE_ARGS
+      -DLIBCXXABI_ENABLE_SHARED=${BUILD_SHARED_LIBS}
+
+      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+      -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
+      -DCMAKE_BUILD_TYPE=RELEASE
+      -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+      -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+      -DCMAKE_SHARED_LINKER_FLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+      -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+      -DCMAKE_OSX_ARCHITECTURES=${ARCHS}
+      -DCMAKE_INSTALL_PREFIX=${LIBCXXABI_PREFIX}
+      -DLIBCXXABI_LIBCXX_PATH=${LIBCXX_PREFIX})
 add_install_name_step(LIBCXXABI)
 add_target_dependencies(LIBCXXABI ${LIBCXX_TARGET}_headers)
 
