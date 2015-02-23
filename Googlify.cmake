@@ -986,9 +986,8 @@ function(prepare_python_package PREFIX OUT)
   endif ()
   add_custom_command(
       OUTPUT ${INIT_PY}
-      COMMAND echo "\
-from pkgutil import extend_path\\n\
-__path__ = extend_path(__path__, __name__)" > ${INIT_PY}
+      COMMAND echo "from pkgutil import extend_path" > ${INIT_PY}
+      COMMAND echo "__path__ = extend_path(__path__, __name__)" >> ${INIT_PY}
       ${DEPENDS}
       COMMENT "Creating empty package file ${INIT_PY}"
       VERBATIM)

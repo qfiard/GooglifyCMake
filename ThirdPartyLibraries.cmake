@@ -236,6 +236,7 @@ add_target(MOD_JK mod_jk)
 add_target(MOD_WSGI mod_wsgi)
 add_target(MPC mpc)
 add_target(MPFR mpfr)
+add_target(MPICH mpich)
 add_target(MW_PHOTO_BROWSER mw_photo_browser)
 add_target(MYSQL mysql)
 add_target(MYSQLCPPCONN mysqlcppconn)
@@ -1863,14 +1864,8 @@ add_external_project(
 add_external_project(
   ${GNUBASH_TARGET}
   PREFIX ${GNUBASH_PREFIX}
-  DOWNLOAD_DIR ${GNUBASH_PREFIX}/download
   DOWNLOAD_COMMAND
-      wget -O bash-4.2.tar.gz http://ftp.gnu.org/pub/gnu/bash/bash-4.2.tar.gz &&
-      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/bash-4.2.tar.gz.sig
-          bash-4.2.tar.gz &&
-      cd <SOURCE_DIR> &&
-      tar --strip-components 1 -xvf
-          ${GNUBASH_PREFIX}/download/bash-4.2.tar.gz
+      ${GIT} clone --depth 1 git://git.savannah.gnu.org/bash.git ${GNUBASH_TARGET}
   CONFIGURE_COMMAND <SOURCE_DIR>/configure
       --with-libiconv-prefix=${LIBICONV_PREFIX}
   BUILD_COMMAND make
@@ -2843,6 +2838,28 @@ add_external_project(
 add_dependencies(${MPFR_TARGET} ${GMP_TARGET})
 
 ################################################################################
+# MPICH.
+add_external_project(
+  ${MPICH_TARGET}
+  PREFIX ${MPICH_PREFIX}
+  DOWNLOAD_DIR ${MPICH_PREFIX}/download
+  DOWNLOAD_COMMAND
+      wget -O mpich-3.1.1.tar.gz http://www.mpich.org/static/downloads/3.1.1/mpich-3.1.1.tar.gz &&
+      gpg --verify ${THIRD_PARTY_SOURCE_DIR}/mpich-3.1.1.tar.gz.sig
+          mpich-3.1.1.tar.gz &&
+      cd <SOURCE_DIR> &&
+      tar --strip-components 1 -xvf
+          ${MPICH_PREFIX}/download/mpich-3.1.1.tar.gz
+  CONFIGURE_COMMAND
+      <SOURCE_DIR>/configure --prefix=${MPICH_PREFIX} ${HOST} ${SYSROOT}
+          --enable-threads=multiple
+          CC=${CMAKE_C_COMPILER}
+          CXX=${CMAKE_CXX_COMPILER} CFLAGS=${CMAKE_C_FLAGS_WITH_ARCHS}
+          CXXFLAGS=${CMAKE_CXX_FLAGS_WITH_ARCHS}
+          LDFLAGS=${CMAKE_SHARED_LINKER_FLAGS}
+          ${CONFIGURE_LIB_TYPE})
+
+################################################################################
 # MWPhotoBrowser.
 if (IS_IOS)
   add_external_project(
@@ -3112,7 +3129,8 @@ add_external_project(
       CXX=${CMAKE_CXX_COMPILER}
       CFLAGS=${OPENMPI_C_FLAGS}
       CXXFLAGS=${OPENMPI_CXX_FLAGS}
-      ${CONFIGURE_LIB_TYPE})
+      ${CONFIGURE_LIB_TYPE}
+      --enable-mpi-thread-multiple)
 
 ################################################################################
 # OpenSSL.
@@ -3975,7 +3993,7 @@ function (closure_library TARGET)
         ARGS --root=${CLOSURE_LIBRARY} --root=${CMAKE_CURRENT_SOURCE_DIR}
             --namespace=${FULL_TARGET} --output_mode=compiled
             --compiler_jar=${CLOSURE_COMPILER_JAR}
-            # --compiler_flags=--compilation_level=ADVANCED_OPTIMIZATIONS # Breaks other javascript code.
+            --compiler_flags=--compilation_level=ADVANCED_OPTIMIZATIONS
             > ${TMP} && mv ${TMP} ${OUT}
         DEPENDS ${CLOSURE_COMPILER_TARGET} ${CLOSURE_LIBRARY_TARGET} ${SRC}
         COMMENT "Compiling ${SRC} with Closure compiler"

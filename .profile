@@ -38,6 +38,7 @@ export PATH=$DEV_ROOT/build/src/tools/buildifier:$PATH
 export PATH=$DEV_ROOT/build/third_party/bsdiff/bin:$PATH
 export PATH=$DEV_ROOT/build/third_party/gcc/bin:$PATH
 export PATH=$DEV_ROOT/build/third_party/maven/bin:$PATH
+export PATH=$DEV_ROOT/build/third_party/mpich/bin:$PATH
 export PATH=$DEV_ROOT/build/third_party/virtualenv/lib/python:$PATH
 export PATH=/usr/local/ntp/bin:$PATH
 export PYTHONPATH=$DEV_ROOT/build/third_party/virtualenv/lib/python:$PYTHONPATH
