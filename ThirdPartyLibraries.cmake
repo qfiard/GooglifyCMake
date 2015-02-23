@@ -1856,7 +1856,7 @@ add_external_project(
           ${GNUAUTOMAKE_PREFIX}/download/automake-1.14.1.tar.gz
   CONFIGURE_COMMAND <SOURCE_DIR>/configure
   INSTALL_COMMAND
-      echo "This will install bash in /usr/local." &&
+      echo "This will install automake in /usr/local." &&
       sudo make install)
 
 ################################################################################
